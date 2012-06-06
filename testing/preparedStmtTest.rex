@@ -44,15 +44,15 @@
 
 	dbName = 'ooFoods.rdbx'
 
-  dbConn = .ooSQLiteDB~new(dbName, .ooSQL~OPEN_READWRITE)
+  dbConn = .ooSQLiteConnection~new(dbName, .ooSQLite~OPEN_READWRITE)
 
   if dbConn~initCode <> 0 then do
     errRC  = dbConn~lastErrCode
     errMsg = dbConn~lastErrMsg
 
-    say 'ooSQLiteDB initialization error:' dbConn~initCode
+    say 'ooSQLiteConnection initialization error:' dbConn~initCode
     say '  Error code:' errRC '('errMsg')'
-    if errRC == .ooSQL~CANTOPEN then do
+    if errRC == dbConn~CANTOPEN then do
       say '  Database file name:' dbName '(Is this the correct database?)'
     end
 
@@ -72,7 +72,7 @@
 
   stepRC = stmt~step
 
-  if stepRC == .ooSQL~row then do
+  if stepRC == stmt~ROW then do
     colCount = stmt~columnCount
 
     header = ''
@@ -82,7 +82,7 @@
     say header
     say '='~copies(80)
 
-    do while stepRC == .ooSQL~row
+    do while stepRC == stmt~ROW
       row = ''
       do i = 1 to colCount
         row ||= stmt~columnText(i)~left(20)
