@@ -42,6 +42,9 @@
  *
  *  Opens the ooFoods database, creates a prepared statement that queries the
  *  database and steps through the result set printing the rows returned.
+ *
+ *  This program does the error checking that is missing in some of the other
+ *  test programs.
  */
 
   dbName = 'ooFoods.rdbx'
@@ -64,9 +67,19 @@
 
   -- The third argument to oosqlPrepare() can be a mutable buffer in which any
   -- unused portion of the sql sting is returned.
+  --
+  -- The string to initialize the mutable buffer is meaningless.  It is used to
+  -- see what SQLite does with the buffer when there is text in it.  Both under
+  -- normal conditions and under an error.  Stick a syntax error in the SQL to
+  -- see an error condition.
+  --
+  -- Note also that first implementation of ooSQLite uses the dreaded "Objects"
+  -- of ooRexx in only a few places, like here.  These uses are likely to be
+  -- changed to use stems instead.
   buf = .MutableBuffer~new('There is no help, for you.' , 100)
 
-  stmt = oosqlPrepare(dbConn, 'SELECT * FROM foods ORDER BY name; ', buf)
+  -- Note the added space at the end of the SQL.  This space will be returned.
+  stmt = oosqlPrepare(dbConn, 'SELECT * FROM my foods ORDER BY name; ', buf)
   if stmt~isNull then do
     say 'Prepared statment initialization error:'
     say '  Error code:' oosqlErrCode(dbConn) '('oosqlErrMsg(dbConn)')'
