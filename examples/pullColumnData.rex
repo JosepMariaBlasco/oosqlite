@@ -1,3 +1,4 @@
+#!/usr/bin/rexx
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /* Copyright (c) 2012-2012 Rexx Language Association. All rights reserved.    */
@@ -56,6 +57,7 @@
   do while stmt~step == stmt~ROW
     say stmt~columnText(index)
   end
+  say
 
 
 ::requires 'ooSQLite.cls'
