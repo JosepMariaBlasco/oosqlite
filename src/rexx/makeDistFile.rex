@@ -86,6 +86,7 @@ use arg cmdLine
   mdCmd outDir'bin'
   mdCmd outDir'doc'
   mdCmd outDir'examples'sl'classic.rexx'
+  mdCmd outDir'examples'sl'user.extensions'
   mdCmd outDir'misc'
   mdCmd outDir'testing'
 
@@ -101,6 +102,18 @@ use arg cmdLine
   cpCmd 'examples'sl'classic.rexx'sl'*' outDir'examples'sl'classic.rexx'
   cpCmd 'misc'sl'*'                     outDir'misc'
   cpCmd 'testing'sl'*'                  outDir'testing'
+
+  cpCmd 'examples'sl'user.extensions'sl'simpleExtension.cpp' outDir'examples'sl'user.externsions'
+
+  if os == "WINDOWS" then do
+    cpCmd 'examples'sl'user.extensions'sl'MakeFile.win' outDir'examples'sl'user.externsions'
+    cpCmd 'examples'sl'user.extensions'sl'simpleExtension.dll' outDir'examples'sl'user.externsions'
+    cpCmd 'examples'sl'user.extensions'sl'simpleExtension.def' outDir'examples'sl'user.externsions'
+  end
+  else do
+    cpCmd 'examples'sl'user.extensions'sl'MakeFile.lin' outDir'examples'sl'user.externsions'
+    cpCmd 'examples'sl'user.extensions'sl'libsimpleExtension.so' outDir'examples'sl'user.externsions'
+  end
 
   zipCmd outFile outDir
 
