@@ -46,8 +46,6 @@
 #ifndef SysLibrary_DEFINED
 #define SysLibrary_DEFINED
 
-#include "winOS.hpp"
-
 class SysLibrary
 {
 public:
@@ -55,10 +53,17 @@ public:
      void *getProcedure(const char *name);
      bool load(const char *name);
      bool unload();
-     void reset() { libraryHandle = NULL; }
+     void resetLastErr();
+     void reset();
+     inline char *getLastErrMsg() { return lastErrMsg; }
+     inline unsigned long getLastErrCode() { return lastErrCode; }
 
 protected:
-    HMODULE  libraryHandle;              // Windows dll handle
+    void setLastErr(const char *api, const char *name);
+
+    HMODULE        libraryHandle;
+    char          *lastErrMsg;
+    unsigned long  lastErrCode;
 };
 
 #endif

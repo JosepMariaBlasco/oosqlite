@@ -148,7 +148,7 @@ static unsigned char ebcdicToAscii[256] =
  * The half() SQL function returns half of its input value.  This is an example
  * from the SQLite website.
  */
-void halfFunc(sqlite3_context *context, int argc, sqlite3_value **argv)
+void half(sqlite3_context *context, int argc, sqlite3_value **argv)
 {
   sqlite3_result_double(context, 0.5*sqlite3_value_double(argv[0]));
 }
@@ -242,7 +242,7 @@ SQLiteCollationEntry examplePackage_collations[] = {
 SQLiteFunctionEntry examplePackage_functions[] = {
     // Only 1 function. Only the function callback is used, the other callbacks
     // are NULL.  The function callback takes 1 arg.
-    OOSQL_FUNCTION(halfFunc, halfFunc, NULL, NULL, NULL, NULL, NULL, 1),
+    OOSQL_FUNCTION(half, half, NULL, NULL, NULL, NULL, NULL, 1),
 
     OOSQL_LAST_FUNCTION()
 };
@@ -255,6 +255,7 @@ ooSQLitePackageEntry examplePackage_package_entry =
 {
     OOSQL_STANDARD_PACKAGE_HEADER
     OOSQLITE_1_0_0,               // needs at least the 1.0.0 ooSQLite
+    SQLITE_VERSION_NUMBER,
     "examplePackage",             // name of the package
     "0.0.1",                      // package information
     examplePackage_collations,    // the exported collations
