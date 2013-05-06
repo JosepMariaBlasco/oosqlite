@@ -46,13 +46,22 @@
  *
  */
 
+  os = getOSName()
+
+  if os == 'WINDOWS' then do
+    packageFile = 'user.extensions\examplePackage.dll'
+  end
+  else do
+    packageFile = 'user.extensions/libexamplePackage.so'
+  end
+
   -- Set the result set format to an array of arrays:
   .ooSQLite~recordFormat = .ooSQLite~OO_ARRAY_OF_ARRAYS
 
 	dbName = 'ooFoods.rdbx'
   dbConn = .ooSQLiteConnection~new(dbName, .ooSQLite~OPEN_READWRITE)
 
-  success = .ooSQLExtensions~loadPackage('user.extensions\examplePackage.dll', dbConn)
+  success = .ooSQLExtensions~loadPackage(packageFile, dbConn)
   if \ success then do
     say 'Failed to load package'
     say '  Error code:   ' .ooSQLExtensions~lastErrCode
