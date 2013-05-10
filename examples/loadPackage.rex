@@ -70,6 +70,18 @@
     return .ooSQLExtensions~lastErrCode
   end
 
+  sql = "SELECT season, strAggregate(name) from episodes group by season;"
+  resultSet = dbConn~exec(sql, .true)
+
+  say 'SQL:             ' sql
+  say 'Result Set:      ' resultSet
+  say 'Result Set Class:' resultSet~class
+  say
+  say 'Hit enter to continue'
+  pull
+  z = printStrAgg(resultSet)
+  say
+
   sql = "SELECT * FROM foods where name like 'J%' ORDER BY name COLLATE REVERSE;"
   resultSet = dbConn~exec(sql, .true)
 
@@ -116,6 +128,45 @@
 
   ret = dbConn~close
 
+  -- Open a new database connection to the same database.
+  dbConn2 = .ooSQLiteConnection~new(dbName, .ooSQLite~OPEN_READWRITE)
+  package = .ooSQLExtensions~getPackage('examplePackage')
+
+  package~register(dbConn2)
+
+  sql = "SELECT half(11);"
+  resultSet = dbConn2~exec(sql, .true)
+
+  say 'SQL:             ' sql
+  say 'Result Set:      ' resultSet
+  say 'Result Set Class:' resultSet~class
+  say
+  say 'Hit enter to continue'
+  pull
+  z = printResultSet(resultSet)
+
+  dbConn2~close
+
+
+  dbConn3 = .ooSQLiteConnection~new(dbName, .ooSQLite~OPEN_READWRITE)
+  package = .ooSQLExtensions~getPackage('examplePackage')
+
+  collation = package~getCollation('reverse')
+  dbConn3~createCollation('reverse', collation)
+
+  sql = "SELECT * FROM foods where name like 'J%' ORDER BY name COLLATE REVERSE;"
+  resultSet = dbConn3~exec(sql, .true)
+
+  say 'SQL:             ' sql
+  say 'Result Set:      ' resultSet
+  say 'Result Set Class:' resultSet~class
+  say
+  say 'Hit enter to continue'
+  pull
+  z = printResultSet(resultSet)
+
+  dbConn3~close
+
   return ret
 
 ::requires 'ooSQLite.cls'
@@ -143,6 +194,43 @@
     end
 
     say line
+  end
+  say
+
+  return 0
+
+-- strAggregate specific utility routine used to print the strAggregate result
+-- set.
+::routine printStrAgg
+  use arg rs
+
+  colCount = 2
+  rowCount = rs~items
+
+  headers = rs[1]
+  line = headers[1]~left(9) || headers[2]
+
+  say line
+  say '='~copies(80)
+
+  do i = 2 to rowCount
+    record = rs[i]
+    if record[1] == .nil then line = 'NULL'~left(9) || record[2]
+    else line = record[1]~left(9) || record[2]
+
+    if line~length > 80 then do
+      say line~left(80)
+
+      line = ' '~copies(9) || line~substr(81)
+      do while line~length > 80
+        say line~left(80)
+        line = ' '~copies(9) || line~substr(81)
+      end
+    end
+    else do
+      say line
+    end
+    say
   end
   say
 
