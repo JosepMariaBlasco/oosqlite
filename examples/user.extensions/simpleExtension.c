@@ -69,6 +69,10 @@
  *   halfFunc           ->   half
  *   reverseCollation   ->   reverse
  *   ebcdicCollation    ->   ebcdic
+ *
+ *   Aggregate Name                    Registered Name
+ *   =================================================
+ *   strAggStep / strAggFinalize  ->   strAggregate
  */
 
 
