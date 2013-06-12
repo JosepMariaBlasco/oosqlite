@@ -39,22 +39,11 @@
  * testLibrary.cpp
  *
  * This library is used for testing, but it can also be used as an example of
- * how to write a shared library file for ooSQLite that contains user define
- * collations, functions, or modules.
+ * how to write a shared library file for ooSQLite that contains user defined
+ * collations and functions.
  *
- * This file does not contain any user defined modules, but if you know how to
- * write a module, you could use this example as a template to include it.
- *
- * The shared library can be loaded through the loadLibrary() class method of
- * the ooSQLExtension class.  You then use the ooSQLLibrary class to gain access
- * to the function pointers in the library.
- *
- * Note these points:
- *
- *
- *
- *
- *
+ * There are only 2 distinct collations here.  For testing purposes, these
+ * collations are copied to give a larger number of collations.
  *
  */
 
@@ -179,6 +168,10 @@ int reverse(void* data, int len1, const void* str1, int len2, const void* str2)
     return - sqlite3_strnicmp((char *)str1, (char *)str2, len1 < len2 ? len1 : len2);
 }
 
+int reverseTwo(void* data, int len1, const void* str1, int len2, const void* str2)
+{
+    return - sqlite3_strnicmp((char *)str1, (char *)str2, len1 < len2 ? len1 : len2);
+}
 /**
  * An example collation, it allows ascii data to be ordered as if it were
  * ebcdic.
@@ -213,8 +206,30 @@ int ebcdic(void* data, int len1, const void* str1, int len2, const void* str2)
     return (i == min) ? len1 - len2 : asciiToEbcdic[*a] - asciiToEbcdic[*b];
 }
 
+int halfEbcdic(void* data, int len1, const void* str1, int len2, const void* str2)
+{
+    register unsigned char *a = (unsigned char *)str1;
+    register unsigned char *b = (unsigned char *)str2;
 
-/* struct for use in the strAggregate aggregate function below. */
+    int min = len1 < len2 ? len1 : len2;
+    int i;
+
+    if ( min == 0 )
+    {
+        // I don't think this is possible, but just to make sure
+        return len1 - len2;
+    }
+    for ( i = 0; i < min, asciiToEbcdic[*a] == asciiToEbcdic[*b]; i++ )
+    {
+        a++;
+        b++;
+    }
+
+    return (i == min) ? len1 - len2 : asciiToEbcdic[*a] - asciiToEbcdic[*b];
+}
+
+/* struct
+   for use in the strAggregate aggregate function below. */
 typedef struct _StrAggCntx
 {
     size_t   count;
@@ -309,6 +324,26 @@ void strAggFinalize(sqlite3_context* sqlCntx)
     }
 
     sqlite3_result_text(sqlCntx, psac->result, (int)psac->count, sqlite3_free);
+}
+
+void collationNeeded(void *userData, sqlite3 *db, int txtRep, const char *collation)
+{
+    if ( sqlite3_stricmp(collation, "reverse") == 0 )
+    {
+        sqlite3_create_collation_v2(db, "reverse", SQLITE_UTF8, userData, reverse, NULL);
+    }
+    else if ( sqlite3_stricmp(collation, "reverseTwo") == 0 )
+    {
+        sqlite3_create_collation_v2(db, "reverseTwo", SQLITE_UTF8, userData, reverseTwo, NULL);
+    }
+    else if ( sqlite3_stricmp(collation, "ebcdic") == 0 )
+    {
+        sqlite3_create_collation_v2(db, "ebcdic", SQLITE_UTF8, userData, ebcdic, NULL);
+    }
+    else if ( sqlite3_stricmp(collation, "halfEbcdic") == 0 )
+    {
+        sqlite3_create_collation_v2(db, "halfEbcdic", SQLITE_UTF8,  userData, halfEbcdic, NULL);
+    }
 }
 
 END_EXTERN_C()
