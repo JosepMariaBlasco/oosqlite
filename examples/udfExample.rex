@@ -145,10 +145,19 @@
 -- functions.
 ::class 'FunctionImpl' inherit ooSQLiteConstants
 
+-- The argument I'm calling the collectrObj, is an object that is used to
+-- aggregate, to keep track of, the result.
+--
+-- In the first invocation of the step callback, this will always be the .nil
+-- object.  It is sent to us as the .nil object by ooSQLite.  In the first
+-- invocation, only, we must return the Rexx object we are going to use for our
+-- own purpose.  Whateve that purpose may be.  On each succesive invocation of
+-- our step callback, that same object is sent back to us.  On all other
+-- invocations we must return a SQLite result code.
 ::method strAggStep
-  use arg dbConn, cntx, values, collecterObj, userData
+  use arg dbConn, cntx, collecterObj, userData, txtToAggregate
 
-  str = .ooSQLValue~text(values[1])
+  str = .ooSQLValue~text(txtToAggregate)
 
   if collecterObj == .nil then do
     collObj = .strCollecter~new(str)
@@ -171,9 +180,9 @@
 -- Our registered helloWorld() callback method.  SQLite invokes this method when
 -- it encounters a SQL function named helloWord
 ::method helloWorld
-  use arg dbConn, cntx, values, userData
+  use arg dbConn, cntx, userData, sayHelloToPerson
 
-  name = .ooSQLValue~text(values[1])
+  name = .ooSQLValue~text(sayHelloToPerson)
   txt  = 'Hello' name'|'
 
   .ooSQLResult~text(cntx, txt)
@@ -185,9 +194,9 @@
 -- Our registered half() callback method.  SQLite invokes this method when it
 -- encounters a SQL function named half
 ::method half
-  use arg dbConn, cntx, values, userData
+  use arg dbConn, cntx, userData, number
 
-  d = .ooSQLValue~double(values[1])
+  d = .ooSQLValue~double(number)
   d = d / 2
 
   .ooSQLResult~double(cntx, d)
@@ -199,9 +208,9 @@
 -- Our registered echo() callback method.  SQLite invokes this method when it
 -- encounters a SQL function named ehco
 ::method echo
-  use arg dbConn, cntx, values, userData
+  use arg dbConn, cntx, userData, txtToEcho
 
-  .ooSQLResult~value(cntx, values[1])
+  .ooSQLResult~value(cntx, txtToEcho)
 
   -- Must return a result code. You do not return an .ooSQLResult.
   return self~OK
