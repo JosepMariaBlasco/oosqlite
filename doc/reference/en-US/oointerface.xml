@@ -86,7 +86,7 @@
 <entry>Each ooSQLiteConnection object represents an open connection to a SQLite database. Mulitple connections to the same database are allowed by instantiating multiple ooSQLiteConnection objects.</entry>
 </row>
 <row>
-<entry><link linkend="clsOOSQLiteConstants">The ooSQLiteConstants Class</link></entry>
+<entry><link linkend="chpOOSQLiteConstants">The ooSQLiteConstants Class</link></entry>
 <entry>The ooSQLiteConstants class provides a CONSTANT value for each SQLite defined constant, and a small number of ooSQLite specific constants.</entry>
 </row>
 <row>
@@ -99,30 +99,5 @@
 </row>
 </tbody></tgroup>
 </table>
-
-<!-- <section id="clsOOSQLite"><title>The ooSQLite Class</title>  START -->
-<xi:include href="oosqliteClass.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
-<!-- <section id="clsOOSQLite"><title>The ooSQLite Class</title>  END   -->
-
-<!-- <section id="clsOOSQLiteConnection"><title>The ooSQLiteConnection Class</title>  START -->
-<xi:include href="oosqliteConnection.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
-<!-- <section id="clsOOSQLiteConnection"><title>The ooSQLiteConnection Class</title>  END   -->
-
-<!-- <section id="clsOOSQLiteStmt"><title>The ooSQLiteStmt Class</title>  START -->
-<xi:include href="oosqliteStmt.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
-<!-- <section id="clsOOSQLiteStmt"><title>The ooSQLiteStmt Class</title>  END   -->
-
-<!-- <section id="clsOOSQLiteBackup"><title>The ooSQLiteBackup Class</title>  START -->
-<xi:include href="oosqliteBackup.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
-<!-- <section id="clsOOSQLiteBackup"><title>The ooSQLiteBackup Class</title>  END   -->
-
-<!-- <section id="clsOOSQLiteMutex"><title>The ooSQLiteMutex Class</title>  START -->
-<xi:include href="oosqliteMutex.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
-<!-- <section id="clsOOSQLiteMutex"><title>The ooSQLiteMutex Class</title>  END   -->
-
-<!-- <section id="clsOOSQLiteConstants"><title>The ooSQLiteConstants Class</title>  START -->
-<xi:include href="oosqliteConstants.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
-<!-- <section id="clsOOSQLiteConstants"><title>The ooSQLiteConstants Class</title>  END   -->
-
 
 </chapter>
