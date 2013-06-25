@@ -37,7 +37,7 @@
 /*----------------------------------------------------------------------------*/
 
 /**
- *  pragmaTriggerTest.rex
+ *  pragmaTrigger.rex
  *
  *  One of the non-standard SQL features of SQLitet is the PRAGMA statement.
  *
@@ -74,12 +74,17 @@
     return 99
   end
 
+  -- Since we are only going to be printing values in the database to the
+  -- screen, set the value for SQL null to a string.  Then we do not need to
+  -- check for .nil
+  db~null = '(NULL)'
+
   names = getPragmaNames()
 
   -- Here we invoke the pragma method for each pragma listed in names using the
-  -- 3 different formats for returning a result set:
+  -- 4 different formats for returning a result set:
 
-  do i = 1 to 3
+  do i = 1 to 4
     if i == 1 then do
       say 'Result set format is an array of arrays.'
       say
@@ -93,6 +98,11 @@
       say 'Result set format is a stem of stems.'
       say
       db~recordFormat = db~OO_STEM_OF_STEMS
+    end
+    else if i == 4 then do
+      say 'Result set format is a classic stem.'
+      say
+      db~recordFormat = db~OO_CLASSIC_STEM
     end
 
     do n over names
@@ -113,13 +123,15 @@
           when db~recordFormat == db~OO_STEM_OF_STEMS then do
             z = printResultSetS(n, ret)
           end
+          when db~recordFormat == db~OO_CLASSIC_STEM then do
+            z = printResultSetCS(n, ret)
+          end
         end
         -- End select
       end
 
     end
   end
-
 
   db~close
 
@@ -240,3 +252,55 @@
 
   return 0
 
+
+::routine printResultSetCS
+  use arg n, rs.
+
+  say 'Pragma:' n
+  if rs.0 == 0 then do
+    say 'Result: No data'
+    say
+    return 0
+  end
+
+  say 'Result:'
+
+  -- We know now there is at least one record at rs.1.
+  indexes = getIndexes(rs.)
+  line    = ''
+  do index over indexes
+    line ||= index~left(25)
+  end
+  say line
+  say '='~copies(80)
+
+  do i = 1 to rs.0
+    line    = ''
+    do index over indexes
+      line ||= rs.i.index~left(25)
+    end
+    say line
+  end
+  say; say; say
+
+  return 0
+
+-- There is no good way to get the column names from the 'classic Rexx'
+-- format.  Normally in a program the column names would be known.  But for
+-- a generic routine to print a result set in the classic Rexx format, the
+-- column names aren't known.  Here we just brute force it, look at every index,
+-- if the index starts with '1.' then consider everything after the '1.' the
+-- column name, collect them in a .Set.
+--
+-- This assumes there is a record 1.
+::routine getIndexes
+  use strict arg rs.
+
+  indexes = .set~new
+
+  idxs = rs.~allIndexes
+  do i over idxs
+    if i~left(2) == '1.' then indexes~put(i~substr(3))
+  end
+
+  return indexes
