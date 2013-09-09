@@ -65,6 +65,10 @@
  *
  * backupWithTimeLimit() is a local function.  All functions beginning with
  * 'oosql' are functions from the ooSQLite package.
+ *
+ * Note that this example is exactly the same as the backupDB.rex example in the
+ * examples directory, but implemented using the classic Rexx interface rather
+ * than the object-orientated interface.
  */
 
   ret1 = oosqlOpen('ooFoods.rdbx', 'srcDB')
