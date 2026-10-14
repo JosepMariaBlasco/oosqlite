@@ -12,7 +12,7 @@
 /* and accumulates information about invocations so that the test methods     */
 /* can verify correct behavior.                                               */
 /*                                                                            */
-/* Copyright (c) 2024-2026 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2026 Rexx Language Association. All rights reserved.         */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */

@@ -20,4 +20,7 @@ REXX_PATH=$PWD/framework:$PWD/../src/rexx rexx ooSQLite.testGroup
 
 On Windows, use `;` as the separator and `%CD%` instead of `$PWD`.
 
-The tests currently create their temporary databases under `/tmp`.
+Temporary databases and files are created with the framework's
+`.TemporaryTestFile` class in the platform's temporary directory
+(`.File~temporaryPath`: `TMPDIR` or `/tmp` on Unix-like systems, `%TEMP%`
+on Windows), as the ooRexx test suite does, and are deleted afterwards.

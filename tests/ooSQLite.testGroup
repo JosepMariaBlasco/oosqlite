@@ -7,7 +7,7 @@
 /* v1.0: Tier 4 — Classic result/value routines.                              */
 /*       See version history below.                                           */
 /*                                                                            */
-/* Copyright (c) 2024-2026 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2026 Rexx Language Association. All rights reserved.         */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -457,7 +457,8 @@ Return testResult
 --------------------------------------------------------------------------------
 
 ::Method testConnectionFile
-  dbFile = "/tmp/oosqlite_test_conn.db"
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_conn.db")
+  dbFile = tempFile~fullName
   Signal On Syntax Name TestConnectionFileCleanup
   db = .ooSQLiteConnection~new(dbFile)
   self~assertEquals(db~OK, db~initCode, "File DB initCode should be OK")
@@ -535,7 +536,8 @@ TestConnectionFileCleanup:
 --------------------------------------------------------------------------------
 
 ::Method testOpenReadOnly
-  dbFile = "/tmp/oosqlite_test_ro.db"
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_ro.db")
+  dbFile = tempFile~fullName
   Signal On Syntax Name TestOpenReadOnlyCleanup
 
   -- First create the database
@@ -993,7 +995,8 @@ TestOpenReadOnlyCleanup:
 /******************************************************************************/
 
 ::Method testBackupMemoryToFile
-  dbFile = "/tmp/oosqlite_test_backup.db"
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_backup.db")
+  dbFile = tempFile~fullName
   Signal On Syntax Name TestBackupCleanup
 
   -- Create source in memory
@@ -1306,7 +1309,8 @@ RecFmtExecCleanup:
 --------------------------------------------------------------------------------
 
 ::Method testDbFileName
-  dbFile = "/tmp/oosqlite_test_dbfn.db"
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_dbfn.db")
+  dbFile = tempFile~fullName
   Signal On Syntax Name TestDbFileNameCleanup
   db = self~openFileDB(dbFile)
   fn = db~dbFileName("main")
@@ -1837,7 +1841,8 @@ TestDbFileNameCleanup:
   srcDB = self~openMemoryDB
   self~createTestTable(srcDB)
   -- Do a multi-step backup to observe pageCount/remaining
-  dbFile = "/tmp/oosqlite_test_bu_pc.db"
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_bu_pc.db")
+  dbFile = tempFile~fullName
   Signal On Syntax Name TestBuPCCleanup
 
   bu = .ooSQLiteBackup~new(srcDB, dbFile)
@@ -1869,7 +1874,8 @@ TestBuPCCleanup:
 ::Method testBackupFinishExplicit
   srcDB = self~openMemoryDB
   self~createTestTable(srcDB)
-  dbFile = "/tmp/oosqlite_test_bu_fin.db"
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_bu_fin.db")
+  dbFile = tempFile~fullName
   Signal On Syntax Name TestBuFinCleanup
 
   bu = .ooSQLiteBackup~new(srcDB, dbFile)
@@ -1893,7 +1899,8 @@ TestBuFinCleanup:
 ::Method testBackupGetDestConn
   srcDB = self~openMemoryDB
   self~createTestTable(srcDB)
-  dbFile = "/tmp/oosqlite_test_bu_gdc.db"
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_bu_gdc.db")
+  dbFile = tempFile~fullName
   Signal On Syntax Name TestBuGDCCleanup
 
   bu = .ooSQLiteBackup~new(srcDB, dbFile)
@@ -1923,7 +1930,8 @@ TestBuGDCCleanup:
 ::Method testBackupLastErrCode
   srcDB = self~openMemoryDB
   self~createTestTable(srcDB)
-  dbFile = "/tmp/oosqlite_test_bu_ec.db"
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_bu_ec.db")
+  dbFile = tempFile~fullName
   Signal On Syntax Name TestBuECCleanup
 
   bu = .ooSQLiteBackup~new(srcDB, dbFile)
@@ -1941,7 +1949,8 @@ TestBuECCleanup:
 ::Method testBackupLastErrMsg
   srcDB = self~openMemoryDB
   self~createTestTable(srcDB)
-  dbFile = "/tmp/oosqlite_test_bu_em.db"
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_bu_em.db")
+  dbFile = tempFile~fullName
   Signal On Syntax Name TestBuEMCleanup
 
   bu = .ooSQLiteBackup~new(srcDB, dbFile)
@@ -2412,7 +2421,8 @@ TestBuEMCleanup:
 --------------------------------------------------------------------------------
 
 ::Method testBusyHandler
-  dbFile = "/tmp/oosqlite_test_busy.db"
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_busy.db")
+  dbFile = tempFile~fullName
   Signal On Syntax Name TestBusyCleanup
   Call SysFileDelete dbFile
   -- Create the database and a table
@@ -2451,7 +2461,8 @@ TestBusyCleanup:
 --------------------------------------------------------------------------------
 
 ::Method testBusyHandlerUserData
-  dbFile = "/tmp/oosqlite_test_busy_ud.db"
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_busy_ud.db")
+  dbFile = tempFile~fullName
   Signal On Syntax Name TestBusyUDCleanup
   Call SysFileDelete dbFile
   db1 = .ooSQLiteConnection~new(dbFile)
@@ -2484,7 +2495,8 @@ TestBusyUDCleanup:
 --------------------------------------------------------------------------------
 
 ::Method testBusyHandlerDeregister
-  dbFile = "/tmp/oosqlite_test_busy_dereg.db"
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_busy_dereg.db")
+  dbFile = tempFile~fullName
   Signal On Syntax Name TestBusyDeregCleanup
   Call SysFileDelete dbFile
   db1 = .ooSQLiteConnection~new(dbFile)
@@ -3780,7 +3792,8 @@ TestResetCleanup:
   db = self~openMemoryDB
   .ooSQLExtensions~registerBuiltin(db, "csv")
   -- Create a CSV file
-  csvFile = "/tmp/oosqlite-test.csv"
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite-test.csv")
+  csvFile = tempFile~fullName
   stream = .Stream~new(csvFile)
   stream~open("WRITE REPLACE")
   stream~lineOut("name,age,city")
@@ -4236,7 +4249,8 @@ TestResetCleanup:
 --------------------------------------------------------------------------------
 
 ::Method testClassicOpenCloseFile
-  tmpFile = "/tmp/test_classic_open.db"
+  tempFile = .TemporaryTestFile~new(.nil, "test_classic_open.db")
+  tmpFile = tempFile~fullName
   ret = oosqlOpen(tmpFile, "db")
   self~assertEquals(0, ret, -
     "oosqlOpen with file should return OK")
@@ -4946,7 +4960,8 @@ TestResetCleanup:
   Call oosqlExec srcDb, "INSERT INTO t VALUES(1, 'Alice');"
   Call oosqlExec srcDb, "INSERT INTO t VALUES(2, 'Bob');"
   -- Create destination
-  tmpFile = "/tmp/test_classic_backup.db"
+  tempFile = .TemporaryTestFile~new(.nil, "test_classic_backup.db")
+  tmpFile = tempFile~fullName
   ret = oosqlOpen(tmpFile, "dstDb")
   -- Init backup: dst, src
   buH = oosqlBackupInit(dstDb, srcDb)
@@ -4984,7 +4999,8 @@ TestResetCleanup:
   ret = oosqlOpen(":memory:", "srcDb")
   Call oosqlExec srcDb, "CREATE TABLE t(id INTEGER PRIMARY KEY);"
   Call oosqlExec srcDb, "INSERT INTO t VALUES(1);"
-  tmpFile = "/tmp/test_classic_backup_pc.db"
+  tempFile = .TemporaryTestFile~new(.nil, "test_classic_backup_pc.db")
+  tmpFile = tempFile~fullName
   ret = oosqlOpen(tmpFile, "dstDb")
   buH = oosqlBackupInit(dstDb, srcDb)
   -- Before step, both should be 0
@@ -5483,7 +5499,8 @@ TestResetCleanup:
 --------------------------------------------------------------------------------
 
 ::Method testClassicCallbackBusyHandler
-  dbFile = "/tmp/test_classic_busy.db"
+  tempFile = .TemporaryTestFile~new(.nil, "test_classic_busy.db")
+  dbFile = tempFile~fullName
   Call SysFileDelete dbFile
   ret = oosqlOpen(dbFile, "db1")
   self~assertEquals(0, ret, "Open db1 should succeed")
@@ -5510,7 +5527,8 @@ TestResetCleanup:
 --------------------------------------------------------------------------------
 
 ::Method testClassicCallbackBusyHandlerUserData
-  dbFile = "/tmp/test_classic_busy_ud.db"
+  tempFile = .TemporaryTestFile~new(.nil, "test_classic_busy_ud.db")
+  dbFile = tempFile~fullName
   Call SysFileDelete dbFile
   ret = oosqlOpen(dbFile, "db1")
   Call oosqlExec db1, "CREATE TABLE t(x INTEGER);"
@@ -5532,7 +5550,8 @@ TestResetCleanup:
 --------------------------------------------------------------------------------
 
 ::Method testClassicCallbackBusyHandlerDeregister
-  dbFile = "/tmp/test_classic_busy_dereg.db"
+  tempFile = .TemporaryTestFile~new(.nil, "test_classic_busy_dereg.db")
+  dbFile = tempFile~fullName
   Call SysFileDelete dbFile
   ret = oosqlOpen(dbFile, "db1")
   Call oosqlExec db1, "CREATE TABLE t(x INTEGER);"
