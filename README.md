@@ -2,8 +2,8 @@
 
 ooSQLite is the interface between [Open Object Rexx](https://www.oorexx.org/)
 (ooRexx) and [SQLite](https://sqlite.org/), the embedded SQL database
-engine. It was developed within the ooRexx project, and its reference is
-part of the ooRexx documentation
+engine. It was written by Mark Miesfeld within the ooRexx project, and its
+reference is part of the ooRexx documentation
 ([*ooSQLite Reference*](https://www.oorexx.org/docs/pdf/oosqlite.pdf)).
 
 ## Goal
