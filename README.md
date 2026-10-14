@@ -18,7 +18,13 @@ This project aims to **update and finish ooSQLite**:
 
 ## Status
 
-The project is just starting; nothing has been imported yet.
+The full history of ooSQLite has been imported from the ooRexx Subversion
+repository on SourceForge (`oorexx/code-0`, path `incubator/ooSQLite`):
+174 revisions, from r7815 (May 2012) to r13111 (March 2026). Each imported
+commit keeps its original author and date, and a `git-svn-id` line that
+points to its SVN revision. The tag `svn-r13111` marks the import point.
+
+Work on the goals above starts from there.
 
 ## License
 
