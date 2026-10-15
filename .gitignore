@@ -1,0 +1,4 @@
+# Build output (Makefile.lin creates these directories on demand)
+/build/
+/bin/
+/bin.dbg/
