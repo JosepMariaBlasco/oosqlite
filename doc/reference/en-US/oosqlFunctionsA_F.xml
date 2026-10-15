@@ -2921,7 +2921,7 @@ Remove a SQL function or aggregate implemented in Rexx:
       </para>
       <para revisionflag="changed">
         &changed11;When removing a function, this is the number of arguments of the function to remove. If it is
-        omitted, the number of arguments the function was defined with is used.
+        omitted, all the functions with this name are removed, whatever their number of arguments.
       </para>
       </listitem></varlistentry>
       <varlistentry><term>funcRtn [required for a function]</term>
@@ -2978,9 +2978,10 @@ Remove a SQL function or aggregate implemented in Rexx:
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para revisionflag="changed">
-    &changed11;To remove a function, omit the routine names. The function removed is the one defined with the number of
-    arguments given as <emphasis role="italic">countArgs</emphasis>, or, if that argument is omitted, the one with the
-    number of arguments it was defined with. Removing a function that does not exist is not an error.
+    &changed11;To remove a function, omit the routine names. Functions with the same name and a different number of
+    arguments are different functions, and can be defined side by side. When <emphasis role="italic">countArgs</emphasis>
+    is given, only the function with that number of arguments is removed; when it is omitted, all the functions with this
+    name defined in Rexx are removed. Removing a function that does not exist is not an error.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>

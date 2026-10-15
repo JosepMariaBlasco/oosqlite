@@ -950,6 +950,14 @@
 
   return dbObj~getCallback(callbackID, zName)
 
+::method getDbCallbackNames
+  use strict arg db, callbackID
+
+  dbObj = self~dbCallbacks[db~string]
+  if dbObj == .nil then return .nil
+
+  return dbObj~getCallbackNames(callbackID)
+
 ::method delDbCallback
   use strict arg db, callbackID, zName = .nil
 
@@ -1032,6 +1040,15 @@
     when zName == .nil then return self~callbackBuffers[callbackID]
     when callBackID == "__rxCollation" then return self~collationBuffers[zName]
     otherwise return self~functionBuffers[zName]
+  end
+  -- End select
+
+::method getCallbackNames
+  use strict arg callbackID
+
+  select
+    when callBackID == "__rxCollation" then return self~collationBuffers~allIndexes
+    otherwise return self~functionBuffers~allIndexes
   end
   -- End select
 

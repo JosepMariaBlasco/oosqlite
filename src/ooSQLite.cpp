@@ -4469,23 +4469,61 @@ static RexxObjectPtr doCallbackSetup(RexxMethodContext *c, pCooSQLiteConn pConn,
  * @assumes  The caller has ensured that if rxFunc is null, rxStep and rxFinal
  *           are not null.
  */
+/**
+ * SQLite identifies a function by its name *and* its number of arguments:
+ * f() with 1 argument and f() with 2 arguments are two different functions.
+ * So the callback buffers of functions implemented in Rexx are kept under a key
+ * made of both, NAME/nArg.  The name is upper cased because SQLite function
+ * names are case insensitive.
+ *
+ * @return  The key, which the caller must free with sqlite3_free(), or NULL if
+ *          out of memory.
+ */
+static char *functionKey(CSTRING zName, int32_t nArg)
+{
+    char *key = sqlite3_mprintf("%s/%d", zName, (int)nArg);
+    if ( key != NULL )
+    {
+        for ( char *p = key; *p != '\0'; p++ )
+        {
+            *p = toupper((unsigned char)*p);
+        }
+    }
+    return key;
+}
+
+/**
+ * Returns true if key is a function key (see functionKey()) for the function
+ * named zName, whatever its number of arguments.
+ */
+static bool isKeyOfFunction(CSTRING key, CSTRING zName)
+{
+    size_t len = strlen(zName);
+    return strlen(key) > len && key[len] == '/' && sqlite3_strnicmp(key, zName, (int)len) == 0;
+}
+
 static RexxObjectPtr rexxFunctionCallbacks(RexxMethodContext *c, pCooSQLiteConn pConn, CSTRING zName, RexxObjectPtr callbackObj,
                                            int countArgs, RexxObjectPtr rxFunc, RexxObjectPtr rxStep, RexxObjectPtr rxFinal,
                                            RexxObjectPtr userData)
 {
-    RexxBufferObject  oldCallback = getCallbackVar(c, function, zName);
     RexxObjectPtr     result      = c->WholeNumber(SQLITE_MISUSE);
     sqlite3          *db          = pConn->db;
     int               rc          = SQLITE_MISUSE;
+    char             *key         = functionKey(zName, countArgs);
     RexxBufferObject fncBuffer    = c->NewBuffer(sizeof(CFunctionCallback));
 
-    if ( fncBuffer == NULLOBJECT )
+    if ( fncBuffer == NULLOBJECT || key == NULL )
     {
+        sqlite3_free(key);
         outOfMemoryException(c->threadContext);
         return result;
     }
 
-    setCallbackVar(c, fncBuffer, function, zName);
+    // Registering the same name with the same number of arguments replaces the
+    // function, in SQLite and here.
+    RexxBufferObject oldCallback = getCallbackVar(c, function, key);
+    setCallbackVar(c, fncBuffer, function, key);
+    sqlite3_free(key);
 
     pCFunctionCallback cfcb = (pCFunctionCallback)c->BufferData(fncBuffer);
     memset(cfcb, 0, sizeof(CFunctionCallback));
@@ -6130,9 +6168,9 @@ RexxMethod5(RexxObjectPtr, oosqlconn_createCollation, CSTRING, collationName, Re
  *                        4.) If this is the .nil object, then the Rexx function
  *                        named by functionName is removed.  countArgs, if
  *                        given, is the number of arguments of the function to
- *                        remove; if omitted, the number of arguments the
- *                        function was registered with is used.  All other
- *                        arguments are ignored.
+ *                        remove; if omitted, all the Rexx functions with that
+ *                        name are removed, whatever their number of arguments.
+ *                        All other arguments are ignored.
  *
  *
  *  @param  countArgs     [optional] The number of arguments that the SQL
@@ -6259,36 +6297,66 @@ RexxMethod8(RexxObjectPtr, oosqlconn_createFunction, CSTRING, functionName, Rexx
     }
     else if ( callbackObj == TheNilObj )
     {
-        // For a function implemented in Rexx, the number of arguments it was
-        // registered with is known.  The callback buffer can only be released
-        // if that is the function being removed: otherwise SQLite still uses
-        // it, so it is put back.
-        RexxBufferObject oldCallback = getCallbackVar(context, function, functionName);
-        int32_t          nArg        = argumentExists(3) ? countArgs : 0;
-        bool             release     = true;
+        // With argument 3, the function with that number of arguments is
+        // removed.  Without it, every function implemented in Rexx with this
+        // name is removed, whatever its number of arguments.  A callback buffer
+        // is only released when SQLite has removed its function.
+        rc = SQLITE_OK;
 
-        if ( oldCallback != NULLOBJECT )
+        if ( argumentExists(3) )
         {
-            int32_t registered = ((pCFunctionCallback)context->BufferData(oldCallback))->countArgs;
-
-            if ( argumentOmitted(3) )
+            char *key = functionKey(functionName, countArgs);
+            if ( key == NULL )
             {
-                nArg = registered;
+                outOfMemoryException(context->threadContext);
+                return result;
             }
-            release = (nArg == registered);
+
+            RexxBufferObject oldCallback = getCallbackVar(context, function, key);
+
+            rc = sqlite3_create_function_v2(pConn->db, functionName, countArgs, SQLITE_UTF8, NULL, NULL, NULL, NULL, NULL);
+            if ( oldCallback != NULLOBJECT )
+            {
+                if ( rc == SQLITE_OK )
+                {
+                    releaseThisFunctionCbBuf(context->threadContext, oldCallback);
+                }
+                else
+                {
+                    setCallbackVar(context, oldCallback, function, key);
+                }
+            }
+            sqlite3_free(key);
+            return context->Int32(rc);
         }
 
-        rc = sqlite3_create_function_v2(pConn->db, functionName, nArg, SQLITE_UTF8, NULL, NULL, NULL, NULL, NULL);
-
-        if ( oldCallback != NULLOBJECT )
+        RexxObjectPtr table = context->GetObjectVariable(getCallbackVarName(function));
+        if ( table != NULLOBJECT )
         {
-            if ( rc == SQLITE_OK && release )
+            RexxArrayObject indexes = (RexxArrayObject)context->SendMessage0(table, "ALLINDEXES");
+            size_t          count   = indexes == NULLOBJECT ? 0 : context->ArrayItems(indexes);
+
+            for ( size_t i = 1; i <= count; i++ )
             {
-                releaseThisFunctionCbBuf(context->threadContext, oldCallback);
-            }
-            else
-            {
-                setCallbackVar(context, oldCallback, function, functionName);
+                RexxObjectPtr index = context->ArrayAt(indexes, i);
+                if ( ! isKeyOfFunction(context->ObjectToStringValue(index), functionName) )
+                {
+                    continue;
+                }
+
+                RexxBufferObject buf  = (RexxBufferObject)context->SendMessage1(table, "REMOVE", index);
+                int32_t          nArg = ((pCFunctionCallback)context->BufferData(buf))->countArgs;
+
+                int thisRC = sqlite3_create_function_v2(pConn->db, functionName, nArg, SQLITE_UTF8, NULL, NULL, NULL, NULL, NULL);
+                if ( thisRC == SQLITE_OK )
+                {
+                    releaseThisFunctionCbBuf(context->threadContext, buf);
+                }
+                else
+                {
+                    context->SendMessage2(table, "PUT", buf, index);
+                    rc = thisRC;
+                }
             }
         }
         return context->Int32(rc);
@@ -12464,6 +12532,33 @@ static RexxBufferObject helperGetCallback(RexxCallContext *c, sqlite3 *db, Callb
     return (RexxBufferObject)buf;
 }
 
+static RexxArrayObject helperFunctionKeys(RexxCallContext *c, sqlite3 *db, CSTRING zName)
+{
+    if ( TheHiddenHelper == NULLOBJECT )
+    {
+        return NULLOBJECT;
+    }
+
+    RexxArrayObject args = c->ArrayOfTwo(c->NewPointer(db), c->String(getCallbackVarName(function)));
+    RexxObjectPtr   keys = c->SendMessage(TheHiddenHelper, "GETDBCALLBACKNAMES", args);
+    if ( keys == NULLOBJECT || keys == TheNilObj )
+    {
+        return NULLOBJECT;
+    }
+
+    RexxArrayObject matching = c->NewArray(0);
+    size_t          count    = c->ArrayItems((RexxArrayObject)keys);
+    for ( size_t i = 1; i <= count; i++ )
+    {
+        RexxObjectPtr key = c->ArrayAt((RexxArrayObject)keys, i);
+        if ( isKeyOfFunction(c->ObjectToStringValue(key), zName) )
+        {
+            c->ArrayAppend(matching, key);
+        }
+    }
+    return matching;
+}
+
 static void  helperDelCallback(RexxCallContext *c, sqlite3 *db, CallbackType cbt, CSTRING zName)
 {
     if ( TheHiddenHelper != NULLOBJECT )
@@ -14073,26 +14168,52 @@ RexxRoutine7(RexxObjectPtr, oosqlCreateFunction_rtn, POINTER, _db, CSTRING, func
     // function being removed; otherwise SQLite still uses it.
     if ( argumentOmitted(4) && argumentOmitted(5) && argumentOmitted(6) )
     {
-        RexxBufferObject oldBuffer = helperGetCallback(context, db, function, funcSqlName);
-        int32_t          nArg      = argumentExists(3) ? countArgs : 0;
-        bool             release   = true;
+        // With argument 3, the function with that number of arguments is
+        // removed.  Without it, every function implemented in Rexx with this
+        // name is removed, whatever its number of arguments.  A callback buffer
+        // is only released when SQLite has removed its function.
+        rc = SQLITE_OK;
 
-        if ( oldBuffer != NULLOBJECT )
+        if ( argumentExists(3) )
         {
-            int32_t registered = ((pCFunctionCallback)context->BufferData(oldBuffer))->countArgs;
-
-            if ( argumentOmitted(3) )
+            char *key = functionKey(funcSqlName, countArgs);
+            if ( key == NULL )
             {
-                nArg = registered;
+                outOfMemoryException(context->threadContext);
+                return result;
             }
-            release = (nArg == registered);
+
+            rc = sqlite3_create_function_v2(db, funcSqlName, countArgs, SQLITE_UTF8, NULL, NULL, NULL, NULL, NULL);
+            if ( rc == SQLITE_OK )
+            {
+                helperDelCallback(context, db, function, key);
+            }
+            sqlite3_free(key);
+            return context->Int32(rc);
         }
 
-        rc = sqlite3_create_function_v2(db, funcSqlName, nArg, SQLITE_UTF8, NULL, NULL, NULL, NULL, NULL);
+        RexxArrayObject keys  = helperFunctionKeys(context, db, funcSqlName);
+        size_t          count = keys == NULLOBJECT ? 0 : context->ArrayItems(keys);
 
-        if ( rc == SQLITE_OK && release )
+        for ( size_t i = 1; i <= count; i++ )
         {
-            helperDelCallback(context, db, function, funcSqlName);
+            CSTRING          key  = context->ObjectToStringValue(context->ArrayAt(keys, i));
+            RexxBufferObject buf  = helperGetCallback(context, db, function, key);
+            if ( buf == NULLOBJECT )
+            {
+                continue;
+            }
+            int32_t nArg = ((pCFunctionCallback)context->BufferData(buf))->countArgs;
+
+            int thisRC = sqlite3_create_function_v2(db, funcSqlName, nArg, SQLITE_UTF8, NULL, NULL, NULL, NULL, NULL);
+            if ( thisRC == SQLITE_OK )
+            {
+                helperDelCallback(context, db, function, key);
+            }
+            else
+            {
+                rc = thisRC;
+            }
         }
         return context->Int32(rc);
     }
@@ -14136,7 +14257,17 @@ RexxRoutine7(RexxObjectPtr, oosqlCreateFunction_rtn, POINTER, _db, CSTRING, func
         return result;
     }
 
-    RexxBufferObject oldBuffer = helperPutCallback(context, db, fncBuffer, function, funcSqlName);
+    // Registering the same name with the same number of arguments replaces the
+    // function, in SQLite and here.
+    char *key = functionKey(funcSqlName, countArgs);
+    if ( key == NULL )
+    {
+        outOfMemoryException(context->threadContext);
+        return result;
+    }
+
+    RexxBufferObject oldBuffer = helperPutCallback(context, db, fncBuffer, function, key);
+    sqlite3_free(key);
     if ( oldBuffer != TheNilObj )
     {
         releaseThisFunctionCbBuf(context->threadContext, oldBuffer);
