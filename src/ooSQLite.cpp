@@ -1370,11 +1370,13 @@ static int authorizerCallback(void *data, int op, const char *str1, const char *
         }
     }
 
+    // SQLite passes NULL for the strings that do not apply to an action; the
+    // callback receives the empty string for those, as documented.
     RexxObjectPtr rxOp   = c->WholeNumber(op);
-    RexxObjectPtr rxStr1 = c->String(str1);
-    RexxObjectPtr rxStr2 = c->String(str2);
-    RexxObjectPtr rxStr3 = c->String(str3);
-    RexxObjectPtr rxStr4 = c->String(str4);
+    RexxObjectPtr rxStr1 = c->String(str1 == NULL ? "" : str1);
+    RexxObjectPtr rxStr2 = c->String(str2 == NULL ? "" : str2);
+    RexxObjectPtr rxStr3 = c->String(str3 == NULL ? "" : str3);
+    RexxObjectPtr rxStr4 = c->String(str4 == NULL ? "" : str4);
 
     args = c->ArrayOfFour(rxOp, rxStr1, rxStr2, rxStr3);
 
