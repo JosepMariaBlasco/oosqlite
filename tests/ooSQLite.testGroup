@@ -2530,17 +2530,15 @@ TestBusyDeregCleanup:
 /*                                                                            */
 /* Section 28: Tier 2 — setAuthorizer                                         */
 /*                                                                            */
-/* NOTE: setAuthorizer causes a segfault (SIGSEGV) in the C++ layer when     */
-/* any SQL is executed after registration. This is likely caused by NULL      */
-/* pointer dereference in authorizerCallback() when SQLite passes NULL for   */
-/* str3/str4 arguments. This is a known bug in ooSQLite's C++ binding.       */
-/* The test below documents this; no functional tests are possible until     */
-/* the C++ code is fixed.                                                     */
+/* setAuthorizer used to cause SIGSEGV as soon as any SQL was compiled:     */
+/* authorizerCallback() converted the four detail strings without checking   */
+/* for NULL, which SQLite passes when a string does not apply (technical     */
+/* note #16). Those arguments are now the empty string, as documented.       */
 /*                                                                            */
 /******************************************************************************/
 
 --------------------------------------------------------------------------------
--- setAuthorizer: registration succeeds (but callback crashes — known bug)    --
+-- setAuthorizer: registration and deregistration                             --
 --------------------------------------------------------------------------------
 
 ::Method testSetAuthorizerRegistration
@@ -2549,8 +2547,58 @@ TestBusyDeregCleanup:
   rc = db~setAuthorizer(handler)
   self~assertEquals(db~OK, rc, -
     "setAuthorizer registration should return OK")
-  -- Deregister immediately to avoid crash when any SQL is executed
+  rc = db~setAuthorizer(.nil)
+  self~assertEquals(db~OK, rc, -
+    "setAuthorizer(.nil) deregistration should return OK")
+  db~close
+
+--------------------------------------------------------------------------------
+-- setAuthorizer: the callback runs and gets its arguments (note #16)         --
+--------------------------------------------------------------------------------
+
+::Method testSetAuthorizerCallback
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE t(x TEXT);")
+  handler = .AuthorizerHandler~new
+  db~setAuthorizer(handler)
+  db~exec("SELECT x FROM t;", .true)
   db~setAuthorizer(.nil)
+  self~assertEquals(2, handler~callCount, -
+    "SELECT x FROM t should be authorized twice: SELECT and READ")
+  -- SELECT: SQLite passes NULL for all four strings
+  e = handler~events[1]
+  self~assertEquals(db~SELECT, e~code, "First action should be SELECT")
+  self~assertEquals("", e~str1, "SELECT: str1 should be the empty string")
+  self~assertEquals("", e~str2, "SELECT: str2 should be the empty string")
+  self~assertEquals("", e~str3, "SELECT: str3 should be the empty string")
+  self~assertEquals("", e~str4, "SELECT: str4 should be the empty string")
+  -- READ: table, column, database; no trigger or view
+  e = handler~events[2]
+  self~assertEquals(db~READ, e~code, "Second action should be READ")
+  self~assertEquals("t", e~str1, "READ: str1 should be the table name")
+  self~assertEquals("x", e~str2, "READ: str2 should be the column name")
+  self~assertEquals("main", e~str3, "READ: str3 should be the database name")
+  self~assertEquals("", e~str4, "READ: str4 should be the empty string")
+  db~close
+
+--------------------------------------------------------------------------------
+-- setAuthorizer: DENY rejects the statement                                  --
+--------------------------------------------------------------------------------
+
+::Method testSetAuthorizerDeny
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE t(x TEXT);")
+  handler = .AuthorizerHandler~new
+  handler~denyAction = db~INSERT
+  db~setAuthorizer(handler)
+  rc = db~exec("INSERT INTO t VALUES('a');")
+  self~assertEquals(db~AUTH, rc, -
+    "A denied INSERT should fail with AUTH")
+  self~assertEquals("not authorized", db~errMsg, -
+    "A denied INSERT should report 'not authorized'")
+  db~setAuthorizer(.nil)
+  rows = db~exec("SELECT x FROM t;", .true)
+  self~assertEquals(0, rows~items, "The denied INSERT should not add a row")
   db~close
 
 /******************************************************************************/
@@ -5112,8 +5160,8 @@ TestResetCleanup:
 /* Deregistration uses an empty string ("") as the routine name, except       */
 /* for oosqlProgressHandler which also needs instructions = 0.               */
 /*                                                                            */
-/* oosqlSetAuthorizer is tested for registration/deregistration only —        */
-/* callback execution causes SIGSEGV (note #16).                             */
+/* oosqlSetAuthorizer used to cause SIGSEGV when the callback ran (note #16, */
+/* fixed); it is now tested with execution too.                              */
 /*                                                                            */
 /******************************************************************************/
 
@@ -5597,8 +5645,7 @@ TestResetCleanup:
   Call SysFileDelete dbFile
 
 --------------------------------------------------------------------------------
--- oosqlSetAuthorizer: registration and deregistration only (no execution)    --
--- Callback execution causes SIGSEGV (note #16).                             --
+-- oosqlSetAuthorizer: registration and deregistration                        --
 --------------------------------------------------------------------------------
 
 ::Method testClassicCallbackSetAuthorizerRegisterOnly
@@ -5606,10 +5653,30 @@ TestResetCleanup:
   ret = oosqlSetAuthorizer(db, "classicAuthorizerCB")
   self~assertEquals(0, ret, -
     "oosqlSetAuthorizer registration should return OK")
-  -- Deregister immediately to avoid SIGSEGV
   ret = oosqlSetAuthorizer(db, "")
   self~assertEquals(0, ret, -
     "oosqlSetAuthorizer deregistration should return OK")
+  Call oosqlClose db
+
+--------------------------------------------------------------------------------
+-- oosqlSetAuthorizer: the callback runs and gets its arguments (note #16)    --
+--------------------------------------------------------------------------------
+
+::Method testClassicCallbackSetAuthorizerExecution
+  db = self~classicOpenMemory
+  Call oosqlExec db, "CREATE TABLE t(x TEXT);"
+  events = .Array~new
+  ret = oosqlSetAuthorizer(db, "classicAuthorizerRecordCB", events)
+  self~assertEquals(0, ret, -
+    "oosqlSetAuthorizer registration should return OK")
+  Call oosqlExec db, "SELECT x FROM t;", .true
+  Call oosqlSetAuthorizer db, ""
+  self~assertEquals(2, events~items, -
+    "SELECT x FROM t should be authorized twice: SELECT and READ")
+  self~assertEquals(.ooSQLiteConstants~SELECT "|||", events[1], -
+    "SELECT: all four strings should be empty")
+  self~assertEquals(.ooSQLiteConstants~READ "t|x|main|", events[2], -
+    "READ: table, column, database, and an empty string")
   Call oosqlClose db
 
 --------------------------------------------------------------------------------
@@ -6552,10 +6619,15 @@ ResetAutoExtNoRot13:
   .environment~classicBusyLastUD = userData
   Return 0
 
-/* --- setAuthorizer callback (registration only — execution causes SIGSEGV) --- */
+/* --- setAuthorizer callbacks --- */
 
 ::Routine classicAuthorizerCB Public
   Use Arg code, str1, str2, str3, str4, userData
+  Return 0
+
+::Routine classicAuthorizerRecordCB Public
+  Use Arg code, str1, str2, str3, str4, events
+  events~append(code str1"|"str2"|"str3"|"str4)
   Return 0
 
 /* --- createCollation callbacks --- */
