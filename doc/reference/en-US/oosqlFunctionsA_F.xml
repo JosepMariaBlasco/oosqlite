@@ -2868,18 +2868,32 @@
 </variablelist>
 </section>  <!-- End oosqlCreateCollation() -->
 
-<section id="rtn-oosqlCreateFunction"><title>oosqlCreateFunction</title>
+<section id="rtn-oosqlCreateFunction" revisionflag="changed"><title>&changed11;oosqlCreateFunction</title>
 <indexterm><primary>oosqlCreateFunction</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlCreateFunction</secondary></indexterm>
 <programlisting>
 <![CDATA[
->>--oosqlCreateFunction(--+--------+--)---------------------------------------------><
-                 +--type--+
+Define a SQL function implemented in Rexx:
+
+>>--oosqlCreateFunction(--db--,--name--,--countArgs--,--funcRtn--+--------------------+--)--><
+                                                                 +-,--,--,--userData--+
+
+Define a SQL aggregate implemented in Rexx:
+
+>>--oosqlCreateFunction(--db--,--name--,--countArgs--,--,--stepRtn--,--finalRtn--+--------------+--)--><
+                                                                                 +-,--userData--+
+
+Remove a SQL function or aggregate implemented in Rexx:
+
+>>--oosqlCreateFunction(--db--,--name--+--------------+--)--------------------------------------><
+                                       +-,-countArgs--+
 ]]>
 </programlisting>
 
 <para>
-  xx
+  Adds or removes a user defined SQL function or aggregate on a database connection. This is the classic interface
+  equivalent of the <link linkend="mthCreateFunction">createFunction</link> method of the ooSQLiteConnection class, which
+  explains functions and aggregates in more detail. Here the callbacks are routines instead of methods.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2887,10 +2901,54 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to the database connection.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>name [required]</term>
+      <listitem>
+      <para>
+        The name of the function, the name that is used for it in SQL statements.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>countArgs [required when defining, optional when removing]</term>
+      <listitem>
+      <para>
+        The number of arguments the function takes, or -1 if it takes any number of arguments. SQLite identifies a
+        function by its name and its number of arguments.
+      </para>
+      <para revisionflag="changed">
+        &changed11;When removing a function, this is the number of arguments of the function to remove. If it is
+        omitted, the number of arguments the function was defined with is used.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>funcRtn [required for a function]</term>
+      <listitem>
+      <para>
+        The name of the routine that implements the function. When it is given, <emphasis
+        role="italic">stepRtn</emphasis> and <emphasis role="italic">finalRtn</emphasis> must be omitted.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>stepRtn [required for an aggregate]</term>
+      <listitem>
+      <para>
+        The name of the routine that is invoked for each row of the aggregate.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>finalRtn [required for an aggregate]</term>
+      <listitem>
+      <para>
+        The name of the routine that is invoked once all the rows have been processed, to produce the result of the
+        aggregate.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>userData [optional]</term>
+      <listitem>
+      <para>
+        Any Rexx object. It is sent to every invocation of the callback routines. If it is omitted, the routines get the
+        .nil object instead.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2899,28 +2957,71 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns a SQLite result <link linkend="sctResultCode">code</link>.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Callback routines:</emphasis></term>
+  <listitem>
+  <para>
+    The routines must be public routines (<computeroutput>::routine name public</computeroutput>) of the package that
+    invokes <emphasis role="italic">oosqlCreateFunction</emphasis>. They get the same arguments as the callback methods
+    of <link linkend="mthCreateFunction">createFunction</link>, except that the first one is the database connection
+    handle. The values are read with the <emphasis role="italic">oosqlValue</emphasis> routines, like <link
+    linkend="rtn-oosqlValueInt">oosqlValueInt</link>, and the result is set with the <emphasis
+    role="italic">oosqlResult</emphasis> routines, like <link linkend="rtn-oosqlResultInt">oosqlResultInt</link>.
+  </para>
+  <para revisionflag="changed">
+    &changed11;When an aggregate runs over no rows, the step routine is never invoked, and the final routine gets .nil
+    as the aggregate object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
-  <para>
-    Additional comments.
+  <para revisionflag="changed">
+    &changed11;To remove a function, omit the routine names. The function removed is the one defined with the number of
+    arguments given as <emphasis role="italic">countArgs</emphasis>, or, if that argument is omitted, the one with the
+    number of arguments it was defined with. Removing a function that does not exist is not an error.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlCreateFunction</emphasis> routine is similar to that of the
+    SQLite <ulink url="https://www.sqlite.org/c3ref/create_function.html">sqlite3_create_function_v2</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
+    This example defines a <computeroutput>double</computeroutput> function and a <computeroutput>my_sum</computeroutput>
+    aggregate, uses them, and then removes the function:
 <programlisting>
 <![CDATA[
+call oosqlOpen ":memory:", "db"
 
+call oosqlCreateFunction db, "double", 1, "doubleRtn"
+call oosqlCreateFunction db, "my_sum", 1, , "sumStep", "sumFinal"
+
+rows = oosqlExec(db, "SELECT double(21) AS d, my_sum(x) AS s FROM t;", .true)
+
+call oosqlCreateFunction db, "double"
+
+::routine doubleRtn public
+  use arg db, context, userData, value
+  call oosqlResultInt context, oosqlValueInt(value) * 2
+  return 0
+
+::routine sumStep public
+  use arg db, context, sum, userData, value
+  if sum == .nil then sum = .Directory~new~~put(0, "TOTAL")
+  sum["TOTAL"] += oosqlValueInt(value)
+  return sum
+
+::routine sumFinal public
+  use arg db, context, sum, userData
+  if sum == .nil then call oosqlResultNull context
+  else call oosqlResultInt context, sum["TOTAL"]
+  return 0
 ]]>
 </programlisting>
   </para>

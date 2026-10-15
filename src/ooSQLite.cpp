@@ -6128,8 +6128,11 @@ RexxMethod5(RexxObjectPtr, oosqlconn_createCollation, CSTRING, collationName, Re
  *                        object.
  *
  *                        4.) If this is the .nil object, then the Rexx function
- *                        named by functionName is removed.  All other arguments
- *                        are ignored.
+ *                        named by functionName is removed.  countArgs, if
+ *                        given, is the number of arguments of the function to
+ *                        remove; if omitted, the number of arguments the
+ *                        function was registered with is used.  All other
+ *                        arguments are ignored.
  *
  *
  *  @param  countArgs     [optional] The number of arguments that the SQL
