@@ -1,5 +1,7 @@
 # ooSQLite
 
+[![CI](https://github.com/JosepMariaBlasco/oosqlite/actions/workflows/ci.yml/badge.svg)](https://github.com/JosepMariaBlasco/oosqlite/actions/workflows/ci.yml)
+
 ooSQLite is the interface between [Open Object Rexx](https://www.oorexx.org/)
 (ooRexx) and [SQLite](https://sqlite.org/), the embedded SQL database
 engine. It was written by Mark Miesfeld within the ooRexx project, and its
