@@ -3415,6 +3415,26 @@ TestResetCleanup:
     "Already-registered collation should not trigger collationNeeded again")
   db~close
 
+--------------------------------------------------------------------------------
+-- collationNeeded: deregistration with .nil (technical note #22)              --
+--------------------------------------------------------------------------------
+
+::Method testCollationNeededDeregister
+  db = self~openMemoryDB
+  cnHandler = .CollationNeededHandler~new
+  db~collationNeeded(cnHandler)
+  rc = db~collationNeeded(.nil)
+  self~assertEquals(0, rc, -
+    "collationNeeded(.nil) should return SQLITE_OK")
+  db~exec("CREATE TABLE t(x TEXT);")
+  db~exec("INSERT INTO t VALUES('a');")
+  db~exec("SELECT x FROM t ORDER BY x COLLATE NOT_REGISTERED;", .true)
+  self~assertEquals(0, cnHandler~callCount, -
+    "A deregistered collationNeeded handler should not be invoked")
+  self~assertTrue(db~errMsg~caselessPos("no such collation sequence") > 0, -
+    "An unknown collation should fail once the handler is removed")
+  db~close
+
 /******************************************************************************/
 /*                                                                            */
 /* Tier 5 — SQLite 3.52.0 new features                                       */
