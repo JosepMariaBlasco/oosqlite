@@ -5148,12 +5148,6 @@ TestResetCleanup:
 /*                                                                            */
 /* Section C4: Backup routines                                                */
 /*                                                                            */
-/* NOTE: oosqlBackupPageCount and oosqlBackupRemaining have swapped           */
-/* mappings in ooSQLite.cls (line 388-389). oosqlBackupPageCount maps         */
-/* to oosqlBackupRemaining_rtn and vice versa. The tests document this        */
-/* bug by testing the ACTUAL behavior (what the routines really return),      */
-/* not the expected behavior (what the names suggest).                         */
-/*                                                                            */
 /******************************************************************************/
 
 --------------------------------------------------------------------------------
@@ -5196,10 +5190,6 @@ TestResetCleanup:
 
 --------------------------------------------------------------------------------
 -- oosqlBackupPageCount / oosqlBackupRemaining                                --
--- NOTE: The .cls and C++ registration table both have swapped mappings       --
--- (lines 388-389 in ooSQLite.cls and lines 15999-16000 in ooSQLite.cpp).    --
--- The two crossovers cancel out, so the final results are correct.           --
--- See technical note #24 in the handoff document.                            --
 --------------------------------------------------------------------------------
 
 ::Method testClassicBackupPageCountRemaining
@@ -5219,7 +5209,6 @@ TestResetCleanup:
   Call oosqlBackupStep buH, -1
   -- After complete backup:
   -- pageCount = total pages (> 0), remaining = 0
-  -- Results are correct despite double-crossover in .cls + C++ reg table
   pcActual = oosqlBackupPageCount(buH)
   remActual = oosqlBackupRemaining(buH)
   self~assertTrue(pcActual > 0, -
