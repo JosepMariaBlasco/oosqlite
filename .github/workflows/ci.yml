@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    name: Linux (Ubuntu 24.04)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ooRexx
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/oorexx.deb" https://rexx.epbcn.com/oorexx-latest.deb
+          sudo apt-get install -y "$RUNNER_TEMP/oorexx.deb"
+          rexx -v
+
+      - name: Build
+        run: make -f Makefile.lin lib -j"$(nproc)"
+
+      - name: Test
+        working-directory: tests
+        run: |
+          export LD_LIBRARY_PATH="$PWD/../bin/linux"
+          export REXX_PATH="$PWD/framework:$PWD/../bin/linux"
+          rexx ooSQLite.testGroup 2>&1 | tee test-output.txt
+          # The test group exits with 0 even when tests fail, so the summary
+          # decides.  If the process crashes there is no summary and this fails.
+          grep -Eq '^Tests ran: +[1-9]' test-output.txt
+          grep -Eq '^Failures: +0$' test-output.txt
+          grep -Eq '^Errors: +0$' test-output.txt
