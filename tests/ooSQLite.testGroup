@@ -172,6 +172,13 @@ Return testResult
 -- Helper: open an in-memory database, check initCode                         --
 --------------------------------------------------------------------------------
 
+::Method churnMemory
+  -- Makes the garbage collector run, so that memory that is no longer
+  -- referenced gets reused.  Callback buffers released too early show up then.
+  Do 100
+    junk = .Array~new(10000)~fill(Copies("x", 100))
+  End
+
 ::Method openMemoryDB
   db = .ooSQLiteConnection~new(":memory:")
   self~assertEquals(db~OK, db~initCode, "openMemoryDB: initCode should be OK")
@@ -2996,6 +3003,50 @@ TestResetCleanup:
   db~close
 
 --------------------------------------------------------------------------------
+-- createFunction: two functions with the same name and a different number   --
+-- of arguments                                                               --
+--------------------------------------------------------------------------------
+
+::Method testCreateFunctionSameNameTwoCounts
+  db = self~openMemoryDB
+  -- The handlers are not referenced anywhere else on purpose
+  db~createFunction("f", .ScalarIntDoubleHandler~new, 1, "xFunc")
+  db~createFunction("f", .ScalarConcatHandler~new, 2, "xFunc")
+  self~churnMemory
+  rows = db~exec("SELECT f(21) AS a, f('x', 'y') AS b;", .true)
+  self~assertEquals(42, rows[1]["A"], "f with 1 argument should still work")
+  self~assertEquals("xy", rows[1]["B"], "f with 2 arguments should work")
+  -- Removing one of them leaves the other one alone
+  rc = db~createFunction("f", .nil, 2)
+  self~assertEquals(0, rc, "createFunction(f, .nil, 2) should return OK")
+  self~churnMemory
+  rows = db~exec("SELECT f(21) AS a;", .true)
+  self~assertEquals(42, rows[1]["A"], -
+    "f with 1 argument should survive the removal of f with 2")
+  db~exec("SELECT f('x', 'y') AS b;", .true)
+  self~assertTrue(db~errMsg~caselessPos("wrong number of arguments") > 0, -
+    "f with 2 arguments should be gone:" db~errMsg)
+  db~close
+
+--------------------------------------------------------------------------------
+-- createFunction: removal without a number of arguments removes them all     --
+--------------------------------------------------------------------------------
+
+::Method testCreateFunctionSameNameRemoveAll
+  db = self~openMemoryDB
+  db~createFunction("f", .ScalarIntDoubleHandler~new, 1, "xFunc")
+  db~createFunction("F", .ScalarConcatHandler~new, 2, "xFunc")
+  rc = db~createFunction("f", .nil)
+  self~assertEquals(0, rc, "createFunction(f, .nil) should return OK")
+  db~exec("SELECT f(21) AS a;", .true)
+  self~assertTrue(db~errMsg~caselessPos("no such function") > 0, -
+    "f with 1 argument should be gone:" db~errMsg)
+  db~exec("SELECT f('x', 'y') AS b;", .true)
+  self~assertTrue(db~errMsg~caselessPos("no such function") > 0, -
+    "f with 2 arguments should be gone:" db~errMsg)
+  db~close
+
+--------------------------------------------------------------------------------
 -- createFunction: scalar UDF returning integer                               --
 --------------------------------------------------------------------------------
 
@@ -4211,6 +4262,13 @@ TestResetCleanup:
 --------------------------------------------------------------------------------
 -- Helper: open an in-memory database via classic routine                     --
 --------------------------------------------------------------------------------
+
+::Method churnMemory
+  -- Makes the garbage collector run, so that memory that is no longer
+  -- referenced gets reused.  Callback buffers released too early show up then.
+  Do 100
+    junk = .Array~new(10000)~fill(Copies("x", 100))
+  End
 
 ::Method classicOpenMemory
   ret = oosqlOpen(":memory:", "db")
@@ -5938,6 +5996,32 @@ TestResetCleanup:
   Call oosqlExec db, "SELECT cl_double(21) AS dbl;", .true, 2
   self~assertTrue(oosqlErrMsg(db)~caselessPos("no such function") > 0, -
     "A removed function should no longer exist:" oosqlErrMsg(db))
+  Call oosqlClose db
+
+--------------------------------------------------------------------------------
+-- oosqlCreateFunction: two functions with the same name and a different      --
+-- number of arguments                                                        --
+--------------------------------------------------------------------------------
+
+::Method testClassicCallbackCreateFunctionSameNameTwoCounts
+  db = self~classicOpenMemory
+  Call oosqlCreateFunction db, "f", 1, "classicScalarDoubleCB"
+  Call oosqlCreateFunction db, "f", 2, "classicScalarConcatCB"
+  self~churnMemory
+  rs = oosqlExec(db, "SELECT f(21) AS a, f('x', 'y') AS b;", .true, 2)
+  self~assertEquals(42, rs[1]["A"], "f with 1 argument should still work")
+  self~assertEquals("x y", rs[1]["B"], "f with 2 arguments should work")
+  ret = oosqlCreateFunction(db, "f", 2)
+  self~assertEquals(0, ret, "oosqlCreateFunction(db, f, 2) should return OK")
+  self~churnMemory
+  rs = oosqlExec(db, "SELECT f(21) AS a;", .true, 2)
+  self~assertEquals(42, rs[1]["A"], -
+    "f with 1 argument should survive the removal of f with 2")
+  ret = oosqlCreateFunction(db, "f")
+  self~assertEquals(0, ret, "oosqlCreateFunction(db, f) should return OK")
+  Call oosqlExec db, "SELECT f(21) AS a;", .true, 2
+  self~assertTrue(oosqlErrMsg(db)~caselessPos("no such function") > 0, -
+    "f should be gone:" oosqlErrMsg(db))
   Call oosqlClose db
 
 --------------------------------------------------------------------------------
