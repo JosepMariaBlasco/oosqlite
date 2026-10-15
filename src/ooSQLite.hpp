@@ -431,6 +431,7 @@ typedef struct _functionCallback {
     CSTRING              funcName;        // The name of the Rexx routine, needed for exception messages.
     CSTRING              stepName;        // The name of the Rexx routine, needed for exception messages.
     CSTRING              finalName;       // The name of the Rexx routine, needed for exception messages.
+    int32_t              countArgs;       // The number of arguments the function was registered with.
     thread_id_t          initialThreadID;
 } CFunctionCallback;
 typedef CFunctionCallback *pCFunctionCallback;
