@@ -2530,10 +2530,10 @@ TestBusyDeregCleanup:
 /*                                                                            */
 /* Section 28: Tier 2 — setAuthorizer                                         */
 /*                                                                            */
-/* setAuthorizer used to cause SIGSEGV as soon as any SQL was compiled:     */
-/* authorizerCallback() converted the four detail strings without checking   */
-/* for NULL, which SQLite passes when a string does not apply (technical     */
-/* note #16). Those arguments are now the empty string, as documented.       */
+/* setAuthorizer used to cause SIGSEGV as soon as any SQL was compiled:       */
+/* authorizerCallback() converted the four detail strings without checking    */
+/* for NULL, which SQLite passes when a string does not apply (technical      */
+/* note #16). Those arguments are now the empty string, as documented.        */
 /*                                                                            */
 /******************************************************************************/
 
@@ -2921,16 +2921,79 @@ TestResetCleanup:
 /* bytes), and deregistration. Handler classes are in                         */
 /* ooSQLite-TestSuite-Callbacks.cls.                                          */
 /*                                                                            */
-/* NOTE: Aggregate UDFs on empty result sets cause SIGSEGV — this is a bug    */
-/* in the C++ finalCallback (pcacb->pcfcb is NULL when xStep was never        */
-/* called). Tests avoid this case.                                            */
+/* Aggregate UDFs over no rows used to cause SIGSEGV (technical note #20);    */
+/* fixed, see testCreateFunctionAggregateEmpty.                               */
 /*                                                                            */
-/* NOTE: Deregistration of Rexx UDFs via createFunction(.nil) does not        */
-/* actually remove the function — the C++ passes nArg=0 to                    */
-/* sqlite3_create_function_v2 but the function was registered with a           */
-/* different nArg. This is a known bug.                                        */
+/* Deregistration with createFunction(name, .nil) used to leave the function  */
+/* in place: SQLite only removes a function when the number of arguments      */
+/* matches, and the C++ passed 0 (technical note #21). Fixed; see the         */
+/* testCreateFunctionDeregister tests.                                        */
 /*                                                                            */
 /******************************************************************************/
+
+--------------------------------------------------------------------------------
+-- createFunction: deregistration with .nil (technical note #21)              --
+--------------------------------------------------------------------------------
+
+::Method testCreateFunctionDeregister
+  db = self~openMemoryDB
+  handler = .ScalarIntDoubleHandler~new
+  db~createFunction("my_double", handler, 1, "xFunc")
+  rows = db~exec("SELECT my_double(21) AS val;", .true)
+  self~assertEquals(42, rows[1]["VAL"], -
+    "my_double should work before it is removed")
+  -- The number of arguments is the one the function was registered with
+  rc = db~createFunction("my_double", .nil)
+  self~assertEquals(0, rc, -
+    "createFunction(name, .nil) should return SQLITE_OK")
+  db~exec("SELECT my_double(21) AS val;", .true)
+  self~assertTrue(db~errMsg~caselessPos("no such function") > 0, -
+    "A removed function should no longer exist:" db~errMsg)
+  -- It can be registered again
+  rc = db~createFunction("my_double", handler, 1, "xFunc")
+  self~assertEquals(0, rc, "A removed function can be registered again")
+  rows = db~exec("SELECT my_double(5) AS val;", .true)
+  self~assertEquals(10, rows[1]["VAL"], -
+    "my_double should work again after registering it again")
+  db~close
+
+--------------------------------------------------------------------------------
+-- createFunction: deregistration with an explicit number of arguments        --
+--------------------------------------------------------------------------------
+
+::Method testCreateFunctionDeregisterCountArgs
+  db = self~openMemoryDB
+  handler = .ScalarIntDoubleHandler~new
+  db~createFunction("my_double", handler, 1, "xFunc")
+  rc = db~createFunction("my_double", .nil, 1)
+  self~assertEquals(0, rc, -
+    "createFunction(name, .nil, 1) should return SQLITE_OK")
+  db~exec("SELECT my_double(21) AS val;", .true)
+  self~assertTrue(db~errMsg~caselessPos("no such function") > 0, -
+    "A removed function should no longer exist:" db~errMsg)
+  db~close
+
+--------------------------------------------------------------------------------
+-- createFunction: deregistration with a number of arguments that does not    --
+-- match leaves the registered function alone                                 --
+--------------------------------------------------------------------------------
+
+::Method testCreateFunctionDeregisterOtherCountArgs
+  db = self~openMemoryDB
+  handler = .ScalarIntDoubleHandler~new
+  db~createFunction("my_double", handler, 1, "xFunc")
+  -- There is no my_double with 2 arguments: the one with 1 must survive
+  rc = db~createFunction("my_double", .nil, 2)
+  self~assertEquals(0, rc, -
+    "Removing a function that does not exist still returns SQLITE_OK")
+  rows = db~exec("SELECT my_double(21) AS val;", .true)
+  self~assertEquals(42, rows[1]["VAL"], -
+    "my_double with 1 argument should still work")
+  rc = db~createFunction("my_double", .nil)
+  db~exec("SELECT my_double(21) AS val;", .true)
+  self~assertTrue(db~errMsg~caselessPos("no such function") > 0, -
+    "my_double should be gone once removed with its own count:" db~errMsg)
+  db~close
 
 --------------------------------------------------------------------------------
 -- createFunction: scalar UDF returning integer                               --
@@ -3115,7 +3178,7 @@ TestResetCleanup:
   db~close
 
 --------------------------------------------------------------------------------
--- createFunction: aggregate UDF over no rows (technical note #20)             --
+-- createFunction: aggregate UDF over no rows (technical note #20)            --
 --------------------------------------------------------------------------------
 
 ::Method testCreateFunctionAggregateEmpty
@@ -3482,7 +3545,7 @@ TestResetCleanup:
   db~close
 
 --------------------------------------------------------------------------------
--- collationNeeded: deregistration with .nil (technical note #22)              --
+-- collationNeeded: deregistration with .nil (technical note #22)             --
 --------------------------------------------------------------------------------
 
 ::Method testCollationNeededDeregister
@@ -5178,8 +5241,8 @@ TestResetCleanup:
 /* Deregistration uses an empty string ("") as the routine name, except       */
 /* for oosqlProgressHandler which also needs instructions = 0.               */
 /*                                                                            */
-/* oosqlSetAuthorizer used to cause SIGSEGV when the callback ran (note #16, */
-/* fixed); it is now tested with execution too.                              */
+/* oosqlSetAuthorizer used to cause SIGSEGV when the callback ran (note #16,  */
+/* fixed); it is now tested with execution too.                               */
 /*                                                                            */
 /******************************************************************************/
 
@@ -5841,6 +5904,40 @@ TestResetCleanup:
   ret = oosqlCollationNeeded(db, "")
   self~assertEquals(0, ret, -
     "Deregistration with empty string should return OK (no SIGSEGV)")
+  Call oosqlClose db
+
+--------------------------------------------------------------------------------
+-- oosqlCreateFunction: deregistration (technical note #21)                   --
+--------------------------------------------------------------------------------
+
+::Method testClassicCallbackCreateFunctionDeregister
+  db = self~classicOpenMemory
+  Call oosqlCreateFunction db, "cl_double", 1, "classicScalarDoubleCB"
+  rs = oosqlExec(db, "SELECT cl_double(21) AS dbl;", .true, 2)
+  self~assertEquals(42, rs[1]["DBL"], -
+    "cl_double should work before it is removed")
+  -- The number of arguments is the one the function was registered with
+  ret = oosqlCreateFunction(db, "cl_double")
+  self~assertEquals(0, ret, -
+    "oosqlCreateFunction(db, name) should return OK")
+  Call oosqlExec db, "SELECT cl_double(21) AS dbl;", .true, 2
+  self~assertTrue(oosqlErrMsg(db)~caselessPos("no such function") > 0, -
+    "A removed function should no longer exist:" oosqlErrMsg(db))
+  Call oosqlClose db
+
+--------------------------------------------------------------------------------
+-- oosqlCreateFunction: deregistration with an explicit number of arguments   --
+--------------------------------------------------------------------------------
+
+::Method testClassicCallbackCreateFunctionDeregisterCountArgs
+  db = self~classicOpenMemory
+  Call oosqlCreateFunction db, "cl_double", 1, "classicScalarDoubleCB"
+  ret = oosqlCreateFunction(db, "cl_double", 1)
+  self~assertEquals(0, ret, -
+    "oosqlCreateFunction(db, name, 1) should return OK")
+  Call oosqlExec db, "SELECT cl_double(21) AS dbl;", .true, 2
+  self~assertTrue(oosqlErrMsg(db)~caselessPos("no such function") > 0, -
+    "A removed function should no longer exist:" oosqlErrMsg(db))
   Call oosqlClose db
 
 --------------------------------------------------------------------------------
