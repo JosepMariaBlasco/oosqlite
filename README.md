@@ -26,6 +26,28 @@ points to its SVN revision. The tag `svn-r13111` marks the import point.
 
 Work on the goals above starts from there.
 
+## Building on Linux
+
+You need gcc and an installed ooRexx 5.x (its headers and `librexx`,
+`librexxapi`). From the top of the repository:
+
+```sh
+make -f Makefile.lin lib
+```
+
+This builds `liboosqlite.so` and copies it, together with `ooSQLite.cls`,
+to `bin/linux`. SQLite (3.52.0) is compiled into the library. Then run
+the tests from `tests/` (see [`tests/README.md`](tests/README.md)):
+
+```sh
+cd tests
+LD_LIBRARY_PATH=$PWD/../bin/linux REXX_PATH=$PWD/framework:$PWD/../bin/linux \
+  rexx ooSQLite.testGroup
+```
+
+`make -f Makefile.lin` (target `all`) also builds the `oosqlite3` shell,
+which needs readline, and the example extensions.
+
 ## License
 
 ooSQLite is distributed under the Common Public License, version 1.0

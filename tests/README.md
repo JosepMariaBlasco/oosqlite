@@ -12,10 +12,12 @@ the ooRexx test suite uses.
 ## Running the tests
 
 You need ooRexx 5.x and a built `liboosqlite` that the dynamic linker can
-find. From this directory:
+find. After `make -f Makefile.lin lib` at the top of the repository, from
+this directory:
 
 ```sh
-REXX_PATH=$PWD/framework:$PWD/../src/rexx rexx ooSQLite.testGroup
+LD_LIBRARY_PATH=$PWD/../bin/linux REXX_PATH=$PWD/framework:$PWD/../bin/linux \
+  rexx ooSQLite.testGroup
 ```
 
 On Windows, use `;` as the separator and `%CD%` instead of `$PWD`.
