@@ -3115,6 +3115,24 @@ TestResetCleanup:
   db~close
 
 --------------------------------------------------------------------------------
+-- createFunction: aggregate UDF over no rows (technical note #20)             --
+--------------------------------------------------------------------------------
+
+::Method testCreateFunctionAggregateEmpty
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE nums(x INTEGER);")
+  db~exec("INSERT INTO nums VALUES(1);")
+  handler = .AggregateSumHandler~new
+  db~createFunction("my_sum", handler, 1,, "xStep", "xFinal")
+  -- xStep never runs, so xFinal gets .nil as the aggregate object
+  rows = db~exec("SELECT my_sum(x) AS val FROM nums WHERE 0;", .true)
+  self~assertEquals(1, rows~items, -
+    "An aggregate over no rows should still return one row")
+  self~assertEquals(0, rows[1]["VAL"], -
+    "my_sum over no rows should return what xFinal sets for .nil")
+  db~close
+
+--------------------------------------------------------------------------------
 -- createFunction: aggregate UDF (average, double result)                     --
 --------------------------------------------------------------------------------
 
@@ -5898,6 +5916,24 @@ TestResetCleanup:
     "SELECT cl_sum(x) AS total FROM t;", .true, 2)
   self~assertEquals(60, rs[1]["TOTAL"], -
     "cl_sum(10,20,30) should return 60")
+  Call oosqlClose db
+
+--------------------------------------------------------------------------------
+-- oosqlCreateFunction: aggregate UDF over no rows (technical note #20)       --
+--------------------------------------------------------------------------------
+
+::Method testClassicCallbackCreateFunctionAggregateEmpty
+  db = self~classicOpenMemory
+  Call oosqlExec db, "CREATE TABLE t(x INTEGER);"
+  Call oosqlExec db, "INSERT INTO t VALUES(10);"
+  Call oosqlCreateFunction db, "cl_sum", 1,, -
+    "classicAggregateSumStepCB", "classicAggregateSumFinalCB"
+  rs = oosqlExec(db, -
+    "SELECT cl_sum(x) AS total FROM t WHERE 0;", .true, 2)
+  self~assertEquals(1, rs~items, -
+    "An aggregate over no rows should still return one row")
+  self~assertEquals(0, rs[1]["TOTAL"], -
+    "cl_sum over no rows should return what the final routine sets for .nil")
   Call oosqlClose db
 
 --------------------------------------------------------------------------------
