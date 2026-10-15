@@ -2301,6 +2301,17 @@ static void finalCallback(sqlite3_context *sqlContext)
         return;
     }
 
+    // When the aggregate runs over no rows, SQLite calls xFinal without ever
+    // calling xStep, so the aggregate context has not been set up.  Set it up
+    // here the way stepCallback() does on its first invocation: the Rexx
+    // final callback then gets .nil as the aggregate object and decides what
+    // the result of an empty aggregate is.
+    if ( pcacb->pcfcb == NULL )
+    {
+        pcacb->aggregateObj = TheNilObj;
+        pcacb->pcfcb        = (pCFunctionCallback)sqlite3_user_data(sqlContext);
+    }
+
     pCFunctionCallback  pcf      = pcacb->pcfcb;
     RexxThreadContext  *c        = pcf->callbackContext;
     bool                isMethod = (pcf->callbackObj == NULLOBJECT) ? false : true;
@@ -2345,7 +2356,12 @@ static void finalCallback(sqlite3_context *sqlContext)
     // We just check for errors, we do not actually use rc.
     replyIsGood(c, reply, &rc, pcf->stepMethod, pcf->finalName, isMethod);
 
-    c->ReleaseGlobalReference(pcacb->aggregateObj);
+    // There is only a global reference to release if a step invocation
+    // produced an aggregate object.
+    if ( pcacb->aggregateObj != TheNilObj )
+    {
+        c->ReleaseGlobalReference(pcacb->aggregateObj);
+    }
 
     if ( c == pcf->callbackContext )
     {
