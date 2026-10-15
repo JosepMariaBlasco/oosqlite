@@ -5857,7 +5857,7 @@ RexxMethod4(RexxObjectPtr, oosqlconn_collationNeeded, RexxObjectPtr, callbackObj
     }
     else if ( callbackObj == TheNilObj )
     {
-        return doCallbackSetup(context, pConn, TheNilObj, NULL, NULL, collation, 0, NULL);
+        return doCallbackSetup(context, pConn, TheNilObj, NULL, NULL, collationNeeded, 0, NULL);
     }
 
     return doCallbackSetup(context, pConn, callbackObj, mthName, userData, collationNeeded, 0, NULL);

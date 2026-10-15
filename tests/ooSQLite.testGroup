@@ -3111,9 +3111,9 @@ TestResetCleanup:
 /* custom method name, collation replacement, deregistration, and             */
 /* collationNeeded for on-demand dynamic registration.                        */
 /*                                                                            */
-/* NOTE: collationNeeded(.nil) deregistration causes SIGSEGV — this is a bug  */
-/* in the C++ layer (passes callback type 'collation' instead of              */
-/* 'collationNeeded' in the .nil branch). See technical note #22.             */
+/* collationNeeded(.nil) deregistration used to cause SIGSEGV: the C++ layer  */
+/* passed callback type 'collation' instead of 'collationNeeded' in the .nil  */
+/* branch (technical note #22). Fixed; see testCollationNeededDeregister.     */
 /*                                                                            */
 /* NOTE: Collation names are case-insensitive in SQLite. Registering          */
 /* 'MyColl' and 'MYCOLL' refers to the same collation (see note #23).         */
