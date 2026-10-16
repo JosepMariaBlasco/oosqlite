@@ -1,0 +1,13 @@
+/* oosqliteBackup.xml */
+backup_new ::= 'new(' srcDB ',' dstDB ( ',' save )? ( ',' srcName )? ( ',' dstName )? ')'
+backup_finished_get ::= 'finished'
+backup_initcode_get ::= 'initCode'
+backup_lasterrcode_get ::= 'lastErrCode'
+backup_lasterrmsg_get ::= 'lastErrMsg'
+backup_pagecount_get ::= 'pageCount'
+backup_remaining_get ::= 'remaining'
+backup_savedestconn_get ::= 'saveDestConn'
+backup_savedestconn_set ::= 'saveDestConn=' save
+backup_finish ::= 'finish'
+backup_getdestconn ::= 'getDestConn'
+backup_step ::= 'step(' count? ')'

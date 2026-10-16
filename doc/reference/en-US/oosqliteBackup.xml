@@ -189,12 +189,11 @@
 <section id="mthNewClsOOSQLiteBackup"><title>new (Class method)</title>
 <indexterm><primary>new</primary><secondary>ooSQLiteBackup class</secondary></indexterm>
 <indexterm><primary>ooSQLiteBackup class</primary><secondary>new</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--new(--srcDB-,-dstDB--+---------+-+-----------+-+-----------+--)------------><
-                         +-,-save--+ +-,-srcName-+ +-,-dstName-+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/backup_new.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Instantiates and initializes a new backup object.
@@ -362,14 +361,11 @@
 <section id="atrFinished"><title>finished (Attribute)</title>
 <indexterm><primary>finished</primary></indexterm>
 <indexterm><primary>ooSQLiteBackup class</primary><secondary>finished</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--finished-------------------------------------><
-
->>--finished-=-varName---------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/backup_finished_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   This attribute can be used to determine if <link linkend="mthFinish">finish</link> has been invoked on the backup
@@ -409,14 +405,11 @@
 <section id="atrInitCodeClsBackup"><title>initCode (Attribute)</title>
 <indexterm><primary>initCode</primary></indexterm>
 <indexterm><primary>ooSQLiteBackup class</primary><secondary>initCode</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--initCode-------------------------------------><
-
->>--initCode-=-varName---------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/backup_initcode_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">initCode</emphasis> attribute is used to check if the backup object is initialized
@@ -484,14 +477,11 @@
 <section id="atrLastErrCodeClsBackup"><title>lastErrCode (Attribute)</title>
 <indexterm><primary>lastErrCode</primary><secondary>ooSQLiteBackup class</secondary></indexterm>
 <indexterm><primary>ooSQLiteBackup class</primary><secondary>lastErrCode</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--lastErrCode----------------------------------><
-
->>--lastErrCode-=-varName------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/backup_lasterrcode_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">lastErrCode</emphasis> reflects the value of the last recorded SQLite <link
@@ -544,14 +534,11 @@
 <section id="atrLastErrMsgClsBackup"><title>lastErrMsg (Attribute)</title>
 <indexterm><primary>lastErrMsg</primary><secondary>ooSQLiteBackup class</secondary></indexterm>
 <indexterm><primary>ooSQLiteBackup class</primary><secondary>lastErrMsg</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--lastErrMsg-----------------------------------><
-
->>--lastErrMsg-=-varName-------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/backup_lasterrmsg_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">lastErrMsg</emphasis> attribute contains an English text message describing, to a degree,
@@ -604,14 +591,11 @@
 <section id="atrPageCount"><title>pageCount (Attribute)</title>
 <indexterm><primary>pageCount</primary></indexterm>
 <indexterm><primary>ooSQLiteBackup class</primary><secondary>pageCount</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--pageCount------------------------------------><
-
->>--pageCount-=-varName--------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/backup_pagecount_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">pageCount</emphasis> attribute reflects the total number of pages in the source database
@@ -675,14 +659,11 @@ Completion = 100% * (buObj~pagecount - buObj~remaining) / buObj~pagecount
 <section id="atrRemaining"><title>remaining (Attribute)</title>
 <indexterm><primary>remaining</primary></indexterm>
 <indexterm><primary>ooSQLiteBackup class</primary><secondary>remaining</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--remaining------------------------------------><
-
->>--remaining-=-varName--------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/backup_remaining_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">remaining</emphasis> attribute reflects the number of pages still to be backed up
@@ -745,14 +726,16 @@ Completion = 100% * (buObj~pagecount - buObj~remaining) / buObj~pagecount
 <section id="atrSaveDestConn"><title>saveDestConn (Attribute)</title>
 <indexterm><primary>saveDestConn</primary></indexterm>
 <indexterm><primary>ooSQLiteBackup class</primary><secondary>saveDestConn</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--saveDestConn---------------------------------><
-
->>--saveDestConn-=-varName-----------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/backup_savedestconn_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/backup_savedestconn_set.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">saveDestConn</emphasis> attribute allows the programmer to change the default behavior of
@@ -822,12 +805,11 @@ Completion = 100% * (buObj~pagecount - buObj~remaining) / buObj~pagecount
 <section id="mthFinish"><title>finish</title>
 <indexterm><primary>finish</primary></indexterm>
 <indexterm><primary>ooSQLiteBackup class</primary><secondary>finish</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--finish---------------------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/backup_finish.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Releases all resources associated with the backup operation.
@@ -903,12 +885,11 @@ Completion = 100% * (buObj~pagecount - buObj~remaining) / buObj~pagecount
 <section id="mthGetDestConn"><title>getDestConn</title>
 <indexterm><primary>getDestConn</primary></indexterm>
 <indexterm><primary>ooSQLiteBackup class</primary><secondary>getDestConn</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--getDestConn----------------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/backup_getdestconn.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">getDestConn</emphasis> method can be used to obtain the destination database <link
@@ -982,12 +963,11 @@ Completion = 100% * (buObj~pagecount - buObj~remaining) / buObj~pagecount
 <section id="mthStepClsBackup"><title>step</title>
 <indexterm><primary>step</primary></indexterm>
 <indexterm><primary>ooSQLiteBackup class</primary><secondary>step</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--step(--+---------+--)------------------------><
-           +--count--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/backup_step.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Copies up to <emphasis role="italic">count</emphasis> pages between the source and destination databases of this
