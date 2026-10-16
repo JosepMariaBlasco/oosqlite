@@ -5004,6 +5004,165 @@ AggregateErrorTrapped:
 
 /******************************************************************************/
 /*                                                                            */
+/* Section 35: SQLite constants added after SQLite 3.8.4.3                    */
+/*                                                                            */
+/* ooSQLite.cls had all the constants of the groups it covers as of SQLite    */
+/* 3.8.4.3; the constants added to those groups by later versions of SQLite   */
+/* were missing. The values are those of sqlite3.h 3.52.0.                    */
+/*                                                                            */
+/******************************************************************************/
+
+::Method testConstantsSince3843
+  list = .array~new
+  list~append(.array~of("SCM_BRANCH", 'trunk'))
+  list~append(.array~of("SCM_TAGS", 'release major-release version-3.52.0'))
+  list~append(.array~of("SCM_DATETIME", '2026-03-06T16:01:44.367Z'))
+  list~append(.array~of("ERROR_MISSING_COLLSEQ", 257))
+  list~append(.array~of("ERROR_RETRY", 513))
+  list~append(.array~of("ERROR_SNAPSHOT", 769))
+  list~append(.array~of("ERROR_RESERVESIZE", 1025))
+  list~append(.array~of("ERROR_KEY", 1281))
+  list~append(.array~of("ERROR_UNABLE", 1537))
+  list~append(.array~of("IOERR_VNODE", 6922))
+  list~append(.array~of("IOERR_AUTH", 7178))
+  list~append(.array~of("IOERR_BEGIN_ATOMIC", 7434))
+  list~append(.array~of("IOERR_COMMIT_ATOMIC", 7690))
+  list~append(.array~of("IOERR_ROLLBACK_ATOMIC", 7946))
+  list~append(.array~of("IOERR_DATA", 8202))
+  list~append(.array~of("IOERR_CORRUPTFS", 8458))
+  list~append(.array~of("IOERR_IN_PAGE", 8714))
+  list~append(.array~of("IOERR_BADKEY", 8970))
+  list~append(.array~of("IOERR_CODEC", 9226))
+  list~append(.array~of("LOCKED_VTAB", 518))
+  list~append(.array~of("BUSY_TIMEOUT", 773))
+  list~append(.array~of("CANTOPEN_SYMLINK", 1550))
+  list~append(.array~of("CORRUPT_SEQUENCE", 523))
+  list~append(.array~of("CORRUPT_INDEX", 779))
+  list~append(.array~of("READONLY_CANTINIT", 1288))
+  list~append(.array~of("READONLY_DIRECTORY", 1544))
+  list~append(.array~of("CONSTRAINT_ROWID", 2579))
+  list~append(.array~of("CONSTRAINT_PINNED", 2835))
+  list~append(.array~of("CONSTRAINT_DATATYPE", 3091))
+  list~append(.array~of("NOTICE_RBU", 795))
+  list~append(.array~of("AUTH_USER", 279))
+  list~append(.array~of("OK_LOAD_PERMANENTLY", 256))
+  list~append(.array~of("OPEN_MEMORY", 128))
+  list~append(.array~of("OPEN_SUPER_JOURNAL", 16384))
+  list~append(.array~of("OPEN_NOFOLLOW", 16777216))
+  list~append(.array~of("OPEN_EXRESCODE", 33554432))
+  list~append(.array~of("IOCAP_IMMUTABLE", 8192))
+  list~append(.array~of("IOCAP_BATCH_ATOMIC", 16384))
+  list~append(.array~of("IOCAP_SUBPAGE_READ", 32768))
+  list~append(.array~of("FCNTL_GET_LOCKPROXYFILE", 2))
+  list~append(.array~of("FCNTL_SET_LOCKPROXYFILE", 3))
+  list~append(.array~of("FCNTL_LAST_ERRNO", 4))
+  list~append(.array~of("FCNTL_WIN32_SET_HANDLE", 23))
+  list~append(.array~of("FCNTL_WAL_BLOCK", 24))
+  list~append(.array~of("FCNTL_ZIPVFS", 25))
+  list~append(.array~of("FCNTL_RBU", 26))
+  list~append(.array~of("FCNTL_VFS_POINTER", 27))
+  list~append(.array~of("FCNTL_JOURNAL_POINTER", 28))
+  list~append(.array~of("FCNTL_WIN32_GET_HANDLE", 29))
+  list~append(.array~of("FCNTL_PDB", 30))
+  list~append(.array~of("FCNTL_BEGIN_ATOMIC_WRITE", 31))
+  list~append(.array~of("FCNTL_COMMIT_ATOMIC_WRITE", 32))
+  list~append(.array~of("FCNTL_ROLLBACK_ATOMIC_WRITE", 33))
+  list~append(.array~of("FCNTL_LOCK_TIMEOUT", 34))
+  list~append(.array~of("FCNTL_DATA_VERSION", 35))
+  list~append(.array~of("FCNTL_SIZE_LIMIT", 36))
+  list~append(.array~of("FCNTL_CKPT_DONE", 37))
+  list~append(.array~of("FCNTL_RESERVE_BYTES", 38))
+  list~append(.array~of("FCNTL_CKPT_START", 39))
+  list~append(.array~of("FCNTL_EXTERNAL_READER", 40))
+  list~append(.array~of("FCNTL_CKSM_FILE", 41))
+  list~append(.array~of("FCNTL_RESET_CACHE", 42))
+  list~append(.array~of("FCNTL_NULL_IO", 43))
+  list~append(.array~of("FCNTL_BLOCK_ON_CONNECT", 44))
+  list~append(.array~of("FCNTL_FILESTAT", 45))
+  list~append(.array~of("CONFIG_PCACHE_HDRSZ", 24))
+  list~append(.array~of("CONFIG_PMASZ", 25))
+  list~append(.array~of("CONFIG_STMTJRNL_SPILL", 26))
+  list~append(.array~of("CONFIG_SMALL_MALLOC", 27))
+  list~append(.array~of("CONFIG_SORTERREF_SIZE", 28))
+  list~append(.array~of("CONFIG_MEMDB_MAXSIZE", 29))
+  list~append(.array~of("CONFIG_ROWID_IN_VIEW", 30))
+  list~append(.array~of("DBCONFIG_MAINDBNAME", 1000))
+  list~append(.array~of("DBCONFIG_ENABLE_FTS3_TOKENIZER", 1004))
+  list~append(.array~of("DBCONFIG_ENABLE_LOAD_EXTENSION", 1005))
+  list~append(.array~of("DBCONFIG_NO_CKPT_ON_CLOSE", 1006))
+  list~append(.array~of("DBCONFIG_ENABLE_QPSG", 1007))
+  list~append(.array~of("DBCONFIG_TRIGGER_EQP", 1008))
+  list~append(.array~of("DBCONFIG_RESET_DATABASE", 1009))
+  list~append(.array~of("DBCONFIG_DEFENSIVE", 1010))
+  list~append(.array~of("DBCONFIG_WRITABLE_SCHEMA", 1011))
+  list~append(.array~of("DBCONFIG_LEGACY_ALTER_TABLE", 1012))
+  list~append(.array~of("DBCONFIG_DQS_DML", 1013))
+  list~append(.array~of("DBCONFIG_DQS_DDL", 1014))
+  list~append(.array~of("DBCONFIG_ENABLE_VIEW", 1015))
+  list~append(.array~of("DBCONFIG_LEGACY_FILE_FORMAT", 1016))
+  list~append(.array~of("DBCONFIG_TRUSTED_SCHEMA", 1017))
+  list~append(.array~of("DBCONFIG_STMT_SCANSTATUS", 1018))
+  list~append(.array~of("DBCONFIG_REVERSE_SCANORDER", 1019))
+  list~append(.array~of("DBCONFIG_ENABLE_ATTACH_CREATE", 1020))
+  list~append(.array~of("DBCONFIG_ENABLE_ATTACH_WRITE", 1021))
+  list~append(.array~of("DBCONFIG_ENABLE_COMMENTS", 1022))
+  list~append(.array~of("DBCONFIG_FP_DIGITS", 1023))
+  list~append(.array~of("DBCONFIG_MAX", 1023))
+  list~append(.array~of("LIMIT_WORKER_THREADS", 11))
+  list~append(.array~of("LIMIT_PARSER_DEPTH", 12))
+  list~append(.array~of("UTF8_ZT", 16))
+  list~append(.array~of("DIRECTONLY", 524288))
+  list~append(.array~of("SUBTYPE", 1048576))
+  list~append(.array~of("INNOCUOUS", 2097152))
+  list~append(.array~of("RESULT_SUBTYPE", 16777216))
+  list~append(.array~of("SELFORDER1", 33554432))
+  list~append(.array~of("MUTEX_STATIC_MAIN", 2))
+  list~append(.array~of("MUTEX_STATIC_APP1", 8))
+  list~append(.array~of("MUTEX_STATIC_APP2", 9))
+  list~append(.array~of("MUTEX_STATIC_APP3", 10))
+  list~append(.array~of("MUTEX_STATIC_VFS1", 11))
+  list~append(.array~of("MUTEX_STATIC_VFS2", 12))
+  list~append(.array~of("MUTEX_STATIC_VFS3", 13))
+  list~append(.array~of("DBSTATUS_CACHE_USED_SHARED", 11))
+  list~append(.array~of("DBSTATUS_CACHE_SPILL", 12))
+  list~append(.array~of("DBSTATUS_TEMPBUF_SPILL", 13))
+  list~append(.array~of("STMTSTATUS_REPREPARE", 5))
+  list~append(.array~of("STMTSTATUS_RUN", 6))
+  list~append(.array~of("STMTSTATUS_FILTER_MISS", 7))
+  list~append(.array~of("STMTSTATUS_FILTER_HIT", 8))
+  list~append(.array~of("STMTSTATUS_MEMUSED", 99))
+  list~append(.array~of("CHECKPOINT_NOOP", -1))
+  list~append(.array~of("CHECKPOINT_TRUNCATE", 3))
+  list~append(.array~of("VTAB_INNOCUOUS", 2))
+  list~append(.array~of("VTAB_DIRECTONLY", 3))
+  list~append(.array~of("VTAB_USES_ALL_SCHEMAS", 4))
+  list~append(.array~of("DBSTATUS_MAX", 13))
+  missing = ""
+  Do pair Over list
+    name = pair[1]
+    value = self~constantValue(name)
+    If value == .nil Then missing = missing name
+    Else self~assertEquals(pair[2], value, "Constant" name)
+  End
+  self~assertEquals("", missing~strip, "Constants missing from ooSQLite.cls")
+
+::Method constantValue
+  Use Strict Arg name
+  Signal On Syntax Name ConstantMissing
+  Return .ooSQLite~send(name)
+ConstantMissing:
+  Return .nil
+
+::Method testConstantsKeptOldNames
+  -- SQLite renamed these; the names of SQLite 3.8.4.3 are still valid
+  self~assertEquals(.ooSQLite~MUTEX_STATIC_MAIN, .ooSQLite~MUTEX_STATIC_MASTER)
+  self~assertEquals(.ooSQLite~OPEN_SUPER_JOURNAL, .ooSQLite~OPEN_MASTER_JOURNAL)
+  self~assertEquals(.ooSQLite~FCNTL_GET_LOCKPROXYFILE, .ooSQLite~GET_LOCKPROXYFILE)
+  self~assertEquals(.ooSQLite~FCNTL_SET_LOCKPROXYFILE, .ooSQLite~SET_LOCKPROXYFILE)
+  self~assertEquals(.ooSQLite~FCNTL_LAST_ERRNO, .ooSQLite~LAST_ERRNO)
+
+/******************************************************************************/
+/*                                                                            */
 /* ooSQLiteClassic.testGroup — Tier 4: Classic Rexx routines (oosqlXxx)       */
 /* ====================================================================       */
 /*                                                                            */
