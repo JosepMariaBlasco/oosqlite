@@ -255,6 +255,18 @@
 
 <section id="sctWhatsChangedOther"><title>Other Fixes</title>
 <variablelist>
+  <varlistentry><term><emphasis role="bold">stmtStatus and oosqlStmtStatus with an invalid op</emphasis></term>
+  <listitem>
+  <para>
+    <link linkend="mthStmtStatus">stmtStatus</link> of the ooSQLiteStmt class and the classic <link
+    linkend="rtn-oosqlStmtStatus">oosqlStmtStatus</link> passed their <emphasis role="italic">op</emphasis> argument to
+    SQLite unchecked, and SQLite uses it as an index into the array of counters of the statement. An <emphasis
+    role="italic">op</emphasis> that was not one of the <link linkend="sctStatusParameterStmt">Status Parameter
+    (stmt)</link> constants returned whatever was in memory past the counters, and with <emphasis
+    role="italic">reset</emphasis> true wrote a 0 there, which could corrupt the statement. Such an <emphasis
+    role="italic">op</emphasis> now returns 0, and nothing is reset.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Memory leak in columnIndex and oosqlColumnIndex</emphasis></term>
   <listitem>
   <para>

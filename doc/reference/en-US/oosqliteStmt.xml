@@ -3051,7 +3051,7 @@
 </section>  <!-- End ooSQLiteStmt::stmtReadonly() -->
 
 
-<section id="mthStmtStatus"><title>stmtStatus</title>
+<section id="mthStmtStatus" revisionflag="changed"><title>&changed11;stmtStatus</title>
 <indexterm><primary>stmtStatus</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>stmtStatus</secondary></indexterm>
 <mediaobject>
@@ -3088,7 +3088,8 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    The value of the counter. For an <emphasis role="italic">op</emphasis> that SQLite does not know, 0 is returned.
+    The value of the counter. For an <emphasis role="italic">op</emphasis> that is not one of the constants, 0 is
+    returned, and nothing is reset.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>

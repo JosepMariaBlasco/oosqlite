@@ -2861,7 +2861,8 @@
   do while oosqlStep(stmt) == .ooSQLite~ROW
     select
       when oosqlColumnType(stmt, 2) == .ooSQLite~SQLNULL then price = 'n/a'
-      when oosqlColumnType(stmt, 2) == .ooSQLite~FLOAT then price = oosqlColumnDouble(stmt, 2)~format(, 2)
+      when oosqlColumnType(stmt, 2) == .ooSQLite~FLOAT then
+        price = oosqlColumnDouble(stmt, 2)~format(, 2)
       otherwise price = '?'
     end
     say oosqlColumnText(stmt, 1)~left(20) price

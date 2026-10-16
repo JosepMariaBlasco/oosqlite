@@ -587,7 +587,7 @@
 </section>  <!-- End oosqlStmtReadonly() -->
 
 
-<section id="rtn-oosqlStmtStatus"><title>oosqlStmtStatus</title>
+<section id="rtn-oosqlStmtStatus" revisionflag="changed"><title>&changed11;oosqlStmtStatus</title>
 <indexterm><primary>oosqlStmtStatus</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlStmtStatus</secondary></indexterm>
 <mediaobject>
@@ -634,7 +634,7 @@
   <listitem>
   <para>
     The value of the counter. For an <emphasis role="italic">op</emphasis> that is not one of the constants, 0 is
-    returned.
+    returned, and nothing is reset.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
