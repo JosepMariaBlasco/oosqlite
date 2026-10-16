@@ -238,6 +238,7 @@
 ::method dbHandle external "LIBRARY oosqlite oosqlstmt_dbHandle"
 ::method finalize external "LIBRARY oosqlite oosqlstmt_finalize"
 ::method reset external "LIBRARY oosqlite oosqlstmt_reset"
+::method sql external "LIBRARY oosqlite oosqlstmt_sql"
 ::method step external "LIBRARY oosqlite oosqlstmt_step"
 ::method stmtBusy external "LIBRARY oosqlite oosqlstmt_stmtBusy"
 ::method stmtReadonly external "LIBRARY oosqlite oosqlstmt_stmtReadonly"
