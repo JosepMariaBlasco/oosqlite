@@ -183,8 +183,8 @@ int reverseOrder(void* data, int len1, const void* str1, int len2, const void* s
  */
 static int ebcdic(void* data, int len1, const void* str1, int len2, const void* str2)
 {
-    register unsigned char *a = (unsigned char *)str1;
-    register unsigned char *b = (unsigned char *)str2;
+    unsigned char *a = (unsigned char *)str1;
+    unsigned char *b = (unsigned char *)str2;
 
     int min = len1 < len2 ? len1 : len2;
     int i;
@@ -204,8 +204,8 @@ static int ebcdic(void* data, int len1, const void* str1, int len2, const void* 
 }
 static int fullEbcdic(void* data, int len1, const void* str1, int len2, const void* str2)
 {
-    register unsigned char *a = (unsigned char *)str1;
-    register unsigned char *b = (unsigned char *)str2;
+    unsigned char *a = (unsigned char *)str1;
+    unsigned char *b = (unsigned char *)str2;
 
     int min = len1 < len2 ? len1 : len2;
     int i;

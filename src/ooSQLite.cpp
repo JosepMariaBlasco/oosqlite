@@ -10443,7 +10443,7 @@ bool validPackageVersion(RexxMethodContext *c, pCooSQLPackage pcp)
  */
 inline size_t builtinName2index(CSTRING name)
 {
-    for ( register size_t i = 0; i < BUILTINS_COUNT; i++ )
+    for ( size_t i = 0; i < BUILTINS_COUNT; i++ )
     {
         if ( strcasecmp(name, builtinNames[i]) == 0 )
         {
