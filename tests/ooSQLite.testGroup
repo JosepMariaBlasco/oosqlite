@@ -4674,6 +4674,41 @@ AggregateErrorTrapped:
   End
 
 --------------------------------------------------------------------------------
+-- The collations and the aggregate of the example libraries                  --
+--                                                                            --
+-- ebcdic: "i < min, ..." in its loop discarded the bound, so equal strings   --
+-- ran past their end (SIGSEGV). reverse: compared only the common prefix, so --
+-- "ab" and "abc" were equal. strAggregate over no rows: "out of memory".     --
+--------------------------------------------------------------------------------
+
+::Method checkExampleCollations
+  Use Strict Arg db, what
+  self~assertEquals(1, self~queryValue(db, "SELECT 'ab' = 'ab' COLLATE ebcdic AS v;"), -
+    what": ebcdic, equal strings")
+  self~assertEquals(1, self~queryValue(db, "SELECT 'ab' < 'abc' COLLATE ebcdic AS v;"), -
+    what": ebcdic, a prefix sorts first")
+  self~assertEquals(0, self~queryValue(db, "SELECT 'ab' = 'abc' COLLATE reverse AS v;"), -
+    what": reverse, a prefix is not equal")
+  self~assertEquals(1, self~queryValue(db, "SELECT 'abc' < 'ab' COLLATE reverse AS v;"), -
+    what": reverse, a prefix sorts last")
+  self~assertEquals(1, self~queryValue(db, -
+    "SELECT strAggregate(x) IS NULL AS v FROM (SELECT 'a' AS x) WHERE 0;"), -
+    what": strAggregate over no rows is NULL")
+
+::Method testExamplePackageCollations
+  db = self~openMemoryDB
+  .ooSQLExtensions~loadPackage(userExtLib("testpackage"), db)
+  self~checkExampleCollations(db, "testPackage")
+  db~close
+
+::Method testExampleExtensionCollations
+  db = self~openMemoryDB
+  db~enableLoadExtension(.true)
+  db~loadExtension(userExtLib("simpleextension"))
+  self~checkExampleCollations(db, "simpleExtension")
+  db~close
+
+--------------------------------------------------------------------------------
 -- A name that is not in the package sets lastErrCode and lastErrMsg          --
 --------------------------------------------------------------------------------
 
