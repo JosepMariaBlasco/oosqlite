@@ -8886,7 +8886,7 @@ RexxMethod2(int, oosqlstmt_columnIndex, CSTRING, _colName, CSELF, pCSelf)
             goto err_out;
         }
 
-        char *currentName = strdupupr(_currentName);
+        currentName = strdupupr(_currentName);
         if ( currentName == NULL )
         {
             goto err_out;
@@ -8899,6 +8899,7 @@ RexxMethod2(int, oosqlstmt_columnIndex, CSTRING, _colName, CSELF, pCSelf)
         }
 
         sqlite3_free(currentName);
+        currentName = NULL;
     }
 
     goto done_out;
@@ -13849,7 +13850,7 @@ RexxRoutine2(int, oosqlColumnIndex_rtn, POINTER, _stmt, CSTRING, _colName)
             goto err_out;
         }
 
-        char *currentName = strdupupr(_currentName);
+        currentName = strdupupr(_currentName);
         if ( currentName == NULL )
         {
             goto err_out;
@@ -13862,6 +13863,7 @@ RexxRoutine2(int, oosqlColumnIndex_rtn, POINTER, _stmt, CSTRING, _colName)
         }
 
         sqlite3_free(currentName);
+        currentName = NULL;
     }
 
     goto done_out;
