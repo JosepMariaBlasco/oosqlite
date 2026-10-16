@@ -9294,6 +9294,26 @@ RexxMethod1(logical_t, oosqlstmt_stmtReadonly, CSELF, pCSelf)
  *
  *
  */
+/**
+ * Checks the op argument of sqlite3_stmt_status().
+ *
+ * SQLite uses op as an index into an array of counters, and it only checks it
+ * when it is built with SQLITE_ENABLE_API_ARMOR, which ooSQLite is not.  Any
+ * other value would read, and with resetFlg write, out of bounds.
+ *
+ * @param op  The op argument.
+ *
+ * @return  True if op can be passed to sqlite3_stmt_status().
+ *
+ * @note  The valid values are 0 to SQLITE_STMTSTATUS_FILTER_HIT, and
+ *        SQLITE_STMTSTATUS_MEMUSED, which is not an index.  This must be
+ *        reviewed when SQLite adds a STMTSTATUS counter.
+ */
+static inline bool validStmtStatusOp(int op)
+{
+    return (op >= 0 && op <= SQLITE_STMTSTATUS_FILTER_HIT) || op == SQLITE_STMTSTATUS_MEMUSED;
+}
+
 RexxMethod3(int, oosqlstmt_stmtStatus, int, param, OPTIONAL_logical_t, reset, CSELF, pCSelf)
 {
     pCooSQLiteStmt pCstmt = requiredStmt(context, pCSelf);
@@ -9302,6 +9322,10 @@ RexxMethod3(int, oosqlstmt_stmtStatus, int, param, OPTIONAL_logical_t, reset, CS
         return SQLITE_MISUSE;
     }
 
+    if ( ! validStmtStatusOp(param) )
+    {
+        return 0;
+    }
     return sqlite3_stmt_status(pCstmt->stmt, param, (int)reset);
 }
 
@@ -12575,7 +12599,7 @@ static inline sqlite3_stmt *routineStmt(RexxCallContext *c, void *_stmt)
     sqlite3_stmt *stmt = (sqlite3_stmt *)_stmt;
     if ( stmt == NULL )
     {
-        nullObjectException(c->threadContext, "prepared statment", 1);
+        nullObjectException(c->threadContext, "prepared statement", 1);
     }
     return stmt;
 }
@@ -15826,6 +15850,10 @@ RexxRoutine3(int, oosqlStmtStatus_rtn, POINTER, _stmt, int, param, OPTIONAL_logi
         return SQLITE_MISUSE;
     }
 
+    if ( ! validStmtStatusOp(param) )
+    {
+        return 0;
+    }
     return sqlite3_stmt_status(stmt, param, (int)reset);
 }
 
