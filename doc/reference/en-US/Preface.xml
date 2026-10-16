@@ -80,6 +80,10 @@
   role="italic">Brief Overview</emphasis>. They contain a small amount of overall information. A detailed index follows
   the classic Rexx section.
 </para>
+<para revisionflag="added">
+  &added11;The first chapter, <link linkend="chpWhatsChanged">What's Changed in ooSQLite 1.1</link>, lists the changes
+  made in this release, starting with those that can affect existing programs.
+</para>
 <para>
   The object-orientated section contains a reference for each class in ooSQLite. Each class reference contains a single
   section for every class, instance, and attribute method of the class. The first section in a class reference is a

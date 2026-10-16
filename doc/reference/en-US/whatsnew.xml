@@ -1,0 +1,279 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % BOOK_ENTITIES SYSTEM "oosqlite.ent">
+%BOOK_ENTITIES;
+]>
+<!--#########################################################################
+    #
+    # Description: Open Object Rexx: ooSqlite XML file.
+    #
+    # Copyright (c) 2026, Rexx Language Association. All rights reserved.
+    #
+    # This program and the accompanying materials are made available under
+    # the terms of the Common Public License v1.0 which accompanies this
+    # distribution. A copy is also available at the following address:
+    # http://www.oorexx.org/license.html
+    #
+    # Redistribution and use in source and binary forms, with or
+    # without modification, are permitted provided that the following
+    # conditions are met:
+    #
+    # Redistributions of source code must retain the above copyright
+    # notice, this list of conditions and the following disclaimer.
+    # Redistributions in binary form must reproduce the above copyright
+    # notice, this list of conditions and the following disclaimer in
+    # the documentation and/or other materials provided with the distribution.
+    #
+    # Neither the name of Rexx Language Association nor the names
+    # of its contributors may be used to endorse or promote products
+    # derived from this software without specific prior written permission.
+    #
+    # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    # FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+    # OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+    # SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+    # TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+    # OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+    # OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+    # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+    # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    #
+    #########################################################################
+-->
+<chapter id="chpWhatsChanged"><title>What's Changed in ooSQLite 1.1</title>
+<indexterm><primary>What's changed in ooSQLite 1.1</primary></indexterm>
+<para>
+  This chapter lists the changes made in ooSQLite 1.1, compared with ooSQLite 1.0.2.13107, the last version in the ooRexx
+  Subversion repository on SourceForge (<computeroutput>incubator/ooSQLite</computeroutput>, revision 13111). It is meant
+  both for programmers who use ooSQLite and for the ooRexx community, who may want to review what has been done.
+</para>
+<para>
+  ooSQLite was written by Mark Miesfeld. Its development continues in the GitHub repository <ulink
+  url="https://github.com/JosepMariaBlasco/oosqlite"><citetitle>JosepMariaBlasco/oosqlite</citetitle></ulink>, which
+  contains the complete history imported from Subversion, so that every change described here can be traced to the
+  commit that made it. Each change was made together with a test in the ooSQLite test suite; most bugs were first
+  reproduced by a failing test, and then fixed.
+</para>
+<para>
+  In the rest of the book, the sections that are new in this release are marked &added11; and the sections that changed
+  are marked &changed11;, as the ooRexx reference does. The embedded SQLite is version 3.52.0, as in ooSQLite 1.0.2.13107.
+</para>
+
+<section id="sctWhatsChangedCompat"><title>Changes That Can Affect Existing Programs</title>
+<para>
+  The changes in this section alter the behavior of ooSQLite in a way that an existing program could notice. In every
+  case the old behavior was a bug: it either crashed the process, contradicted the documentation, or silently did
+  something other than what was asked. They are listed first so that they can be reviewed before upgrading.
+</para>
+<variablelist>
+  <varlistentry><term><emphasis role="bold">Package functions and collations are registered under the name given</emphasis></term>
+  <listitem>
+  <para>
+    When <link linkend="mthCreateFunction">createFunction</link> was given an ooSQLFunction object from a package, or
+    <link linkend="mthCreateCollation">createCollation</link> an ooSQLCollation object, the <emphasis
+    role="italic">name</emphasis> argument was ignored: the function or collation was registered under the name it has in
+    the package, and the method still returned OK. SQL that used the given name then failed with "no such function" or
+    "no such collation sequence". For Rexx methods and for library handles the given name was always used.
+  </para>
+  <para>
+    Now the given name is used in every case. For createFunction, the <emphasis role="italic">countArgs</emphasis>
+    argument is also used when it is given; when it is omitted, the number of arguments defined in the package is used,
+    as before. Programs that passed the package name as <emphasis role="italic">name</emphasis>, which was the only
+    way for them to work, are not affected. Registering a package with <link linkend="mthRegister">register</link>,
+    <link linkend="mthLoadPackage">loadPackage</link>, or the automatic registration methods still uses the names in
+    the package.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Removing a user defined function</emphasis></term>
+  <listitem>
+  <para>
+    SQLite identifies a function by its name and its number of arguments. Removing a Rexx function with <link
+    linkend="mthCreateFunction">createFunction</link><computeroutput>(name, .nil)</computeroutput> or <link
+    linkend="rtn-oosqlCreateFunction">oosqlCreateFunction</link><computeroutput>(db, name)</computeroutput> always
+    asked SQLite to remove the function with 0 arguments, so a function with any other number of arguments stayed in
+    place, while ooSQLite released the memory it used: SQLite was left with a dangling pointer.
+  </para>
+  <para>
+    Now the number of arguments can be given as the third argument, and then that function is removed. When it is
+    omitted, all the Rexx functions with that name are removed, whatever their number of arguments.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">The authorizer callback gets empty strings, not missing arguments</emphasis></term>
+  <listitem>
+  <para>
+    SQLite passes NULL for the detail strings that do not apply to an action. The authorizer callback of <link
+    linkend="mthSetAuthorizer">setAuthorizer</link> and <link linkend="rtn-oosqlSetAuthorizer">oosqlSetAuthorizer</link>
+    did not check for that, so any SQL compiled with an authorizer in place crashed the process. Those arguments are now
+    the empty string, as the documentation of the <link linkend="mthAuthorizerCallBack">authorizerCallBack</link> method
+    already said. No working program can depend on the old behavior.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">An aggregate over no rows calls the final method with .nil</emphasis></term>
+  <listitem>
+  <para>
+    For an aggregate over no rows, SQLite calls the final callback without ever calling the step callback, and ooSQLite
+    crashed. Now the final method, or routine, gets .nil as the aggregate object, as the step method does on its first
+    invocation, and decides what the result of an empty aggregate is. See <link
+    linkend="mthCreateFunction">createFunction</link>.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">More errors are reported in lastErrCode and lastErrMsg</emphasis></term>
+  <listitem>
+  <para>
+    The <link linkend="mthGetFunction">getFunction</link> and <link linkend="mthGetCollation">getCollation</link>
+    methods of the ooSQLPackage class, and the <link linkend="mthAutoFunction">autoFunction</link> and <link
+    linkend="mthAutoCollation">autoCollation</link> methods of the ooSQLExtensions class, failed for a name the package
+    does not contain without setting the last error: lastErrCode was 0 and lastErrMsg "no error". They now set
+    SQLITE_MISUSE and a message that names the function or collation, like the existing errors for a package that has no
+    functions or collations at all.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Errors from the final method of an aggregate name that method</emphasis></term>
+  <listitem>
+  <para>
+    When the final method of an aggregate implemented in Rexx returned nothing, or returned something that is not a
+    whole number, the error raised named the step method instead. It now names the final method. Aggregates implemented
+    with routines were not affected.
+  </para>
+  </listitem></varlistentry>
+</variablelist>
+</section>
+
+<section id="sctWhatsChangedExtended"><title>Extended Methods and Routines</title>
+<variablelist>
+  <varlistentry><term><emphasis role="bold">ooSQLResult~blob and oosqlResultBlob accept Rexx data</emphasis></term>
+  <listitem>
+  <para>
+    <link linkend="mthBlobClsOOSQLResult">blob</link> of the ooSQLResult class and <link
+    linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> only accepted a Pointer and a size. The classic <link
+    linkend="rtn-oosqlValueBlob">oosqlValueBlob</link> returns a Pointer, so the classic interface could pass a blob
+    argument through, but the <link linkend="mthBlobClsOOSQLValue">blob</link> method of the ooSQLValue class returns a
+    String, and Rexx code has no Pointer to its own data: a user defined function written with the object orientated
+    interface could not return a blob at all.
+  </para>
+  <para>
+    Both now also accept a String, a Buffer, or a MutableBuffer, as <link linkend="mthBindBlob">bindBlob</link> and
+    <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> do, and the size is then optional. A Pointer and a size are
+    still accepted, so existing code keeps working.
+  </para>
+  </listitem></varlistentry>
+</variablelist>
+</section>
+
+<section id="sctWhatsChangedCrashes"><title>Crashes Fixed</title>
+<para>
+  Each of these bugs crashed the process with a segmentation fault (SIGSEGV). Each one is now covered by a test that
+  reproduced the crash before the fix.
+</para>
+<variablelist>
+  <varlistentry><term><emphasis role="bold">Loaded libraries and packages and garbage collection</emphasis></term>
+  <listitem>
+  <para>
+    The tables where the ooSQLExtensions class keeps the libraries and packages it has loaded, and the tables where each
+    ooSQLPackage and ooSQLLibrary object keeps its collations and functions, were referenced only from C structures,
+    which the ooRexx garbage collector does not see. Once a collection had run, the next <link
+    linkend="mthLoadPackage">loadPackage</link>, <link linkend="mthLoadLibrary">loadLibrary</link>, or <link
+    linkend="mthGetPackage">getPackage</link> could crash. Any program that loaded a package or a library and kept
+    running for a while was exposed.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Functions with the same name and a different number of arguments</emphasis></term>
+  <listitem>
+  <para>
+    A function named <computeroutput>f</computeroutput> with 1 argument and one with 2 arguments are two different
+    functions for SQLite, but ooSQLite kept the data of Rexx functions by name only. Defining the second one released the
+    data of the first one while SQLite still used it.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Removing a collation needed handler</emphasis></term>
+  <listitem>
+  <para>
+    Calling the collationNeeded method of the ooSQLiteConnection class with .nil, to remove the handler, crashed. The
+    classic <link linkend="rtn-oosqlCollationNeeded">oosqlCollationNeeded</link> was not affected.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">The authorizer callback</emphasis></term>
+  <listitem>
+  <para>
+    See above: any SQL compiled with an authorizer in place crashed.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Aggregates over no rows</emphasis></term>
+  <listitem>
+  <para>
+    See above: an aggregate implemented in Rexx crashed when it was evaluated over no rows.
+  </para>
+  </listitem></varlistentry>
+</variablelist>
+</section>
+
+<section id="sctWhatsChangedOther"><title>Other Fixes</title>
+<variablelist>
+  <varlistentry><term><emphasis role="bold">oosqlBackupPageCount and oosqlBackupRemaining</emphasis></term>
+  <listitem>
+  <para>
+    The two routines were crossed twice, in ooSQLite.cls and in the table that registers the native routines; the two
+    errors cancelled out, so they returned the right values. Both places are now correct. There is no change in behavior.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Building with a modern C++ compiler</emphasis></term>
+  <listitem>
+  <para>
+    The register storage class, not allowed in C++17, was removed from ooSQLite and from the example extension
+    libraries.
+  </para>
+  </listitem></varlistentry>
+</variablelist>
+</section>
+
+<section id="sctWhatsChangedDoc"><title>Documentation</title>
+<itemizedlist>
+  <listitem><para>
+    The syntax diagrams are now railroad diagrams generated from EBNF, like the ones of the ooRexx reference, instead of
+    text. <link linkend="readsy">How to Read the Syntax Diagrams</link> is the common section of the ooRexx books. The
+    diagrams of the methods and routines that were still templates show their real arguments, taken from the code.
+  </para></listitem>
+  <listitem><para>
+    New or rewritten sections: <link linkend="mthCreateFunction">createFunction</link>, <link
+    linkend="rtn-oosqlCreateFunction">oosqlCreateFunction</link>, <link linkend="mthCreateCollation">createCollation</link>,
+    <link linkend="mthBlobClsOOSQLResult">blob</link> of the ooSQLResult class, and <link
+    linkend="rtn-oosqlResultBlob">oosqlResultBlob</link>.
+  </para></listitem>
+  <listitem><para>
+    Diagrams corrected: the count argument of <link linkend="rtn-oosqlBackupStep">oosqlBackupStep</link> is optional;
+    the user data argument of <link linkend="mthExecCallBack">execCallBack</link> is only present when <emphasis
+    role="italic">exec</emphasis> was given one; <link linkend="mthTraceCallBack">traceCallBack</link> was shown with the
+    name of another method; attributes show a set form only when they can be set.
+  </para></listitem>
+  <listitem><para>
+    The Rexx examples are highlighted, and errors in some of them were fixed, for example in the example of <link
+    linkend="mthBusyHandler">busyHandler</link>.
+  </para></listitem>
+  <listitem><para>
+    Many sections are still templates. They are being written; meanwhile, their syntax diagrams are correct.
+  </para></listitem>
+</itemizedlist>
+</section>
+
+<section id="sctWhatsChangedBuild"><title>Building and Testing</title>
+<itemizedlist>
+  <listitem><para>
+    ooSQLite builds on Linux from a clone of the repository with <computeroutput>make -f Makefile.lin</computeroutput>,
+    which was fixed to work outside the ooRexx build tree. The library needs the variant of APICommon from the ooRexx
+    Subversion repository (<computeroutput>incubator/APICommon</computeroutput>), now included in the source tree.
+  </para></listitem>
+  <listitem><para>
+    The repository contains a test suite of more than 400 tests, written with ooRexxUnit, the framework of the ooRexx test
+    suite. It covers the object orientated and the classic interfaces, the callbacks, the builtin extensions, and the
+    loading of extension libraries and packages, with the test libraries in
+    <computeroutput>examples/user.extensions</computeroutput>.
+  </para></listitem>
+  <listitem><para>
+    Every change is built and tested by continuous integration on Linux.
+  </para></listitem>
+</itemizedlist>
+</section>
+
+</chapter>
