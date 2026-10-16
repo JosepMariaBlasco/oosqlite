@@ -4645,6 +4645,46 @@ AggregateErrorTrapped:
       "loadPackage after garbage collection, round" i)
   End
 
+--------------------------------------------------------------------------------
+-- A name that is not in the package sets lastErrCode and lastErrMsg          --
+--------------------------------------------------------------------------------
+
+::Method testPackageGetFunctionNoSuch
+  package = self~loadTestPackage
+  self~assertNull(package~getFunction("noSuchFunction"), -
+    "getFunction of an unknown name should return .nil")
+  self~assertEquals(.ooSQLite~MISUSE, package~lastErrCode, -
+    "lastErrCode should be MISUSE")
+  self~assertTrue(package~lastErrMsg~pos("noSuchFunction") > 0, -
+    "lastErrMsg should name the function:" package~lastErrMsg)
+
+::Method testPackageGetCollationNoSuch
+  package = self~loadTestPackage
+  self~assertNull(package~getCollation("noSuchCollation"), -
+    "getCollation of an unknown name should return .nil")
+  self~assertEquals(.ooSQLite~MISUSE, package~lastErrCode, -
+    "lastErrCode should be MISUSE")
+  self~assertTrue(package~lastErrMsg~pos("noSuchCollation") > 0, -
+    "lastErrMsg should name the collation:" package~lastErrMsg)
+
+::Method testAutoFunctionNoSuch
+  self~loadTestPackage
+  self~assertFalse(.ooSQLExtensions~autoFunction("testPackage", "noSuchFunction"), -
+    "autoFunction of an unknown name should fail")
+  self~assertEquals(.ooSQLite~MISUSE, .ooSQLExtensions~lastErrCode, -
+    "lastErrCode should be MISUSE")
+  self~assertTrue(.ooSQLExtensions~lastErrMsg~pos("noSuchFunction") > 0, -
+    "lastErrMsg should name the function:" .ooSQLExtensions~lastErrMsg)
+
+::Method testAutoCollationNoSuch
+  self~loadTestPackage
+  self~assertFalse(.ooSQLExtensions~autoCollation("testPackage", "noSuchCollation"), -
+    "autoCollation of an unknown name should fail")
+  self~assertEquals(.ooSQLite~MISUSE, .ooSQLExtensions~lastErrCode, -
+    "lastErrCode should be MISUSE")
+  self~assertTrue(.ooSQLExtensions~lastErrMsg~pos("noSuchCollation") > 0, -
+    "lastErrMsg should name the collation:" .ooSQLExtensions~lastErrMsg)
+
 /******************************************************************************/
 /*                                                                            */
 /* ooSQLiteClassic.testGroup — Tier 4: Classic Rexx routines (oosqlXxx)       */
