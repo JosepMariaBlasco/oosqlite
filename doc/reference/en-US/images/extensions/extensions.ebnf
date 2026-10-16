@@ -6,3 +6,8 @@ collationneeded_new ::= 'new'
 
 /* oosqlFunction.xml */
 function_new ::= 'new'
+
+/* oosqlLibrary.xml */
+library_new ::= 'new'
+library_lasterrcode_get ::= 'lastErrCode'
+library_lasterrmsg_get ::= 'lastErrMsg'

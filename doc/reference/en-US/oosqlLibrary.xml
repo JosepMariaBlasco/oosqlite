@@ -92,12 +92,11 @@
 <section id="mthNewClsOOSQLLibrary"><title>new (Class method)</title>
 <indexterm><primary>new</primary><secondary>ooSQLLibrary class</secondary></indexterm>
 <indexterm><primary>ooSQLLibrary class</primary><secondary>new</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--new(--+--------+--)--------------------------><
-          +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/library_new.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -133,13 +132,11 @@
 <section id="atrLastErrCodeClsLib"><title>lastErrCode (Attribute)</title>
 <indexterm><primary>lastErrCode</primary><secondary>ooSQLLibrary class</secondary></indexterm>
 <indexterm><primary>ooSQLLibrary class</primary><secondary>lastErrCode</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--lastErrCode----------------------------------><
-
->>--lastErrCode = varName------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/library_lasterrcode_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Reflects the last error code set by for the <computeroutput>ooSQLLibrary</computeroutput> object.
@@ -214,13 +211,11 @@
 <section id="atrLastErrMsgClsLib"><title>lastErrMsg (Attribute)</title>
 <indexterm><primary>lastErrMsg</primary><secondary>ooSQLLibrary class</secondary></indexterm>
 <indexterm><primary>ooSQLLibrary class</primary><secondary>lastErrMsg</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--lastErrMsg-----------------------------------><
-
->>--lastErrMsg = varName-------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/library_lasterrmsg_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Reflects a human readable explanation, a message, of the last error code recorded by the connection object.
