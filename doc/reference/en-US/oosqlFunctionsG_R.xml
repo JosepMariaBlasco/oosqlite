@@ -48,12 +48,11 @@
 <section id="rtn-oosqlGetAutocommit"><title>oosqlGetAutocommit</title>
 <indexterm><primary>oosqlGetAutocommit</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlGetAutocommit</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlGetAutocommit(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlgetautocommit.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -109,12 +108,11 @@
 <section id="rtn-oosqlInterrupt"><title>oosqlInterrupt</title>
 <indexterm><primary>oosqlInterrupt</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlInterrupt</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlInterrupt(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlinterrupt.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -170,12 +168,11 @@
 <section id="rtn-oosqlIsHandleNull"><title>oosqlIsHandleNull</title>
 <indexterm><primary>oosqlIsHandleNull</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlIsHandleNull</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlIsHandleNull(--handle--)----------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlishandlenull.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   This routine provides a way for the programmer to check if a <link linkend="defHandle">handle</link> is null. The
@@ -250,12 +247,11 @@
 <section id="rtn-oosqlLastInsertRowID"><title>oosqlLastInsertRowID</title>
 <indexterm><primary>oosqlLastInsertRowID</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlLastInsertRowID</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlLastInsertRowID(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqllastinsertrowid.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -311,12 +307,11 @@
 <section id="rtn-oosqlLibVersion"><title>oosqlLibVersion</title>
 <indexterm><primary>oosqlLibVersion</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlLibVersion</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlLibVersion(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqllibversion.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -372,12 +367,11 @@
 <section id="rtn-oosqlLibVersionNumber"><title>oosqlLibVersionNumber</title>
 <indexterm><primary>oosqlLibVersionNumber</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlLibVersionNumber</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlLibVersionNumber(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqllibversionnumber.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -433,12 +427,11 @@
 <section id="rtn-oosqlLimit"><title>oosqlLimit</title>
 <indexterm><primary>oosqlLimit</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlLimit</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlLimit(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqllimit.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -493,12 +486,11 @@
 <section id="rtn-oosqlLoadExtension"><title>oosqlLoadExtension</title>
 <indexterm><primary>oosqlLoadExtension</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlLoadExtension</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlLoadExtension(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlloadextension.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -554,12 +546,11 @@
 <section id="rtn-oosqlMemoryHighWater"><title>oosqlMemoryHighWater</title>
 <indexterm><primary>oosqlMemoryHighWater</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlMemoryHighWater</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlMemoryHighWater(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlmemoryhighwater.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -615,12 +606,11 @@
 <section id="rtn-oosqlMemoryUsed"><title>oosqlMemoryUsed</title>
 <indexterm><primary>oosqlMemoryUsed</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlMemoryUsed</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlMemoryUsed(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlmemoryused.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -676,12 +666,11 @@
 <section id="rtn-oosqlMutexAlloc"><title>oosqlMutexAlloc</title>
 <indexterm><primary>oosqlMutexAlloc</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlMutexAlloc</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlMutexAlloc(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlmutexalloc.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -737,12 +726,11 @@
 <section id="rtn-oosqlMutexEnter"><title>oosqlMutexEnter</title>
 <indexterm><primary>oosqlMutexEnter</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlMutexEnter</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlMutexEnter(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlmutexenter.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -798,12 +786,11 @@
 <section id="rtn-oosqlMutexFree"><title>oosqlMutexFree</title>
 <indexterm><primary>oosqlMutexFree</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlMutexFree</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlMutexFree(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlmutexfree.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -859,12 +846,11 @@
 <section id="rtn-oosqlMutexLeave"><title>oosqlMutexLeave</title>
 <indexterm><primary>oosqlMutexLeave</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlMutexLeave</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlMutexLeave(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlmutexleave.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -920,12 +906,11 @@
 <section id="rtn-oosqlMutexTry"><title>oosqlMutexTry</title>
 <indexterm><primary>oosqlMutexTry</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlMutexTry</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlMutexTry(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlmutextry.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -981,12 +966,11 @@
 <section id="rtn-oosqlNextStmt"><title>oosqlNextStmt</title>
 <indexterm><primary>oosqlNextStmt</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlNextStmt</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlNextStmt(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlnextstmt.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1042,12 +1026,11 @@
 <section id="rtn-oosqlOpen"><title>oosqlOpen</title>
 <indexterm><primary>oosqlOpen</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlOpen</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlOpen(--dbFileName--,--'dbConn'--+--------------+--+-------------+--)--><
-                                         +-,-openFlags--+  +-,-reserved--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlopen.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Opens a database connection.
@@ -1173,12 +1156,11 @@
 <section id="rtn-oosqlPrepare"><title>oosqlPrepare</title>
 <indexterm><primary>oosqlPrepare</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlPrepare</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlPrepare(--db--,--sql--,--'_stmt'--+------------+--)-------------------><
-                                           +-,-'_tail'--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlprepare.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Prepares a SQL statement to be executed by the database engine. To execute a SQL statement, SQLite first compiles the
@@ -1297,12 +1279,11 @@
 <section id="rtn-oosqlProfile"><title>oosqlProfile</title>
 <indexterm><primary>oosqlProfile</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlProfile</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlProfile(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlprofile.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1358,12 +1339,11 @@
 <section id="rtn-oosqlProgressHandler"><title>oosqlProgressHandler</title>
 <indexterm><primary>oosqlProgressHandler</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlProgressHandler</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlProgressHandler(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlprogresshandler.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1419,12 +1399,11 @@
 <section id="rtn-oosqlReleaseMemory"><title>oosqlReleaseMemory</title>
 <indexterm><primary>oosqlReleaseMemory</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlReleaseMemory</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlReleaseMemory(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlreleasememory.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1480,12 +1459,11 @@
 <section id="rtn-oosqlReset"><title>oosqlReset</title>
 <indexterm><primary>oosqlReset</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlReset</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlReset(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlreset.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1540,12 +1518,11 @@
 <section id="rtn-oosqlResetAutoExtension"><title>oosqlResetAutoExtension</title>
 <indexterm><primary>oosqlResetAutoExtension</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlResetAutoExtension</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlResetAutoExtension(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlresetautoextension.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1600,12 +1577,11 @@
 <section id="rtn-oosqlResultBlob"><title>oosqlResultBlob</title>
 <indexterm><primary>oosqlResultBlob</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlResultBlob</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlResultBlob(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlresultblob.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1660,12 +1636,11 @@
 <section id="rtn-oosqlResultDouble"><title>oosqlResultDouble</title>
 <indexterm><primary>oosqlResultDouble</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlResultDouble</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlResultDouble(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlresultdouble.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1721,12 +1696,11 @@
 <section id="rtn-oosqlResultError"><title>oosqlResultError</title>
 <indexterm><primary>oosqlResultError</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlResultError</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlResultError(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlresulterror.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1782,12 +1756,11 @@
 <section id="rtn-oosqlResultErrorCode"><title>oosqlResultErrorCode</title>
 <indexterm><primary>oosqlResultErrorCode</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlResultErrorCode</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlResultErrorCode(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlresulterrorcode.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1843,12 +1816,11 @@
 <section id="rtn-oosqlResultErrorNoMem"><title>oosqlResultErrorNoMem</title>
 <indexterm><primary>oosqlResultErrorNoMem</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlResultErrorNoMem</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlResultErrorNoMem(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlresulterrornomem.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1904,12 +1876,11 @@
 <section id="rtn-oosqlResultErrorTooBig"><title>oosqlResultErrorTooBig</title>
 <indexterm><primary>oosqlResultErrorTooBig</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlResultErrorTooBig</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlResultErrorTooBig(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlresulterrortoobig.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1965,12 +1936,11 @@
 <section id="rtn-oosqlResultInt"><title>oosqlResultInt</title>
 <indexterm><primary>oosqlResultInt</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlResultInt</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlResultInt(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlresultint.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2026,12 +1996,11 @@
 <section id="rtn-oosqlResultInt64"><title>oosqlResultInt64</title>
 <indexterm><primary>oosqlResultInt64</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlResultInt64</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlResultInt64(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlresultint64.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2087,12 +2056,11 @@
 <section id="rtn-oosqlResultNull"><title>oosqlResultNull</title>
 <indexterm><primary>oosqlResultNull</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlResultNull</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlResultNull(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlresultnull.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2148,12 +2116,11 @@
 <section id="rtn-oosqlResultText"><title>oosqlResultText</title>
 <indexterm><primary>oosqlResultText</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlResultText</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlResultText(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlresulttext.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2209,12 +2176,11 @@
 <section id="rtn-oosqlResultValue"><title>oosqlResultValue</title>
 <indexterm><primary>oosqlResultValue</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlResultValue</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlResultValue(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlresultvalue.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2270,12 +2236,11 @@
 <section id="rtn-oosqlResultZeroBlob"><title>oosqlResultZeroBlob</title>
 <indexterm><primary>oosqlResultZeroBlob</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlResultZeroBlob</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlResultZeroBlob(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlresultzeroblob.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2331,12 +2296,11 @@
 <section id="rtn-oosqlRollbackHook"><title>oosqlRollbackHook</title>
 <indexterm><primary>oosqlRollbackHook</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlRollbackHook</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlRollbackHook(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlrollbackhook.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
