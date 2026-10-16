@@ -4505,6 +4505,24 @@ AggregateErrorTrapped:
     "the package function should work")
   db~close
 
+::Method testPackageFunctionOwnName
+  -- createFunction registers a package function under the name it is given,
+  -- as it does for Rexx methods and library handles
+  package = self~loadTestPackage
+  function = package~getFunction("half")
+  db = self~openMemoryDB
+  self~assertEquals(0, db~createFunction("mitad", function), -
+    "createFunction with an ooSQLFunction should return OK")
+  self~assertEquals(3.5, self~queryValue(db, "SELECT mitad(7) AS v;"), -
+    "the function should be registered under the name given")
+  self~assertNull(self~queryValue(db, "SELECT mitad(7, 8) AS v;"), -
+    "without countArgs, the number of arguments of the package is used")
+  self~assertEquals(0, db~createFunction("mitadv", function, -1), -
+    "createFunction with an ooSQLFunction and countArgs should return OK")
+  self~assertEquals(2, self~queryValue(db, "SELECT mitadv(4, 5) AS v;"), -
+    "countArgs, when given, is used instead")
+  db~close
+
 ::Method testPackageGetCollation
   package = self~loadTestPackage
   collation = package~getCollation("reverse")
@@ -4515,6 +4533,16 @@ AggregateErrorTrapped:
     "createCollation with an ooSQLCollation should return OK")
   self~assertEquals("cba", self~orderedNames(db, "reverse"), -
     "the package collation should sort in reverse")
+  db~close
+
+::Method testPackageCollationOwnName
+  package = self~loadTestPackage
+  collation = package~getCollation("reverse")
+  db = self~namesDB
+  self~assertEquals(0, db~createCollation("RV", collation), -
+    "createCollation with an ooSQLCollation should return OK")
+  self~assertEquals("cba", self~orderedNames(db, "RV"), -
+    "the collation should be registered under the name given")
   db~close
 
 ::Method testPackageGetCollationNeeded
