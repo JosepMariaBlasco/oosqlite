@@ -43,7 +43,8 @@
     #########################################################################
 -->
 <bookinfo id="book-oorexx-oosqlite">
-	<title>ooSQLite Reference</title>
+	<title>Open Object Rexx</title>
+	<subtitle>ooSQLite Reference</subtitle>
 	<productname>ooRexx Documentation</productname>
 	<productnumber>&VERSION;</productnumber>
 	<edition>&EDITION;</edition>
