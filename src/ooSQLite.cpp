@@ -2896,7 +2896,10 @@ int registerCollationNeeded(pSQLiteCollationNeededEntry e, pCooSQLiteConn pConn)
  *        of collation callbacks, not both.  But, we let the user do whatever
  *        she wants.
  */
-int registerCollation(RexxMethodContext *c, pSQLiteCollationEntry e, pCooSQLiteConn pConn)
+// Used by registerFunction() to mean "use the countArgs of the package entry".
+#define NO_COUNT_ARGS  INT32_MIN
+
+int registerCollation(RexxMethodContext *c, pSQLiteCollationEntry e, pCooSQLiteConn pConn, CSTRING name = NULL)
 {
     if ( e->entryCompare == NULL )
     {
@@ -2913,10 +2916,12 @@ int registerCollation(RexxMethodContext *c, pSQLiteCollationEntry e, pCooSQLiteC
         userData = e->pUserData;
     }
 
-    return sqlite3_create_collation_v2(pConn->db, e->name, SQLITE_UTF8, userData, e->entryCompare, e->entryDestroy);
+    return sqlite3_create_collation_v2(pConn->db, name != NULL ? name : e->name, SQLITE_UTF8, userData,
+                                       e->entryCompare, e->entryDestroy);
 }
 
-int registerFunction(RexxMethodContext *c, pSQLiteFunctionEntry e, pCooSQLiteConn pConn)
+int registerFunction(RexxMethodContext *c, pSQLiteFunctionEntry e, pCooSQLiteConn pConn, CSTRING name = NULL,
+                     int32_t countArgs = NO_COUNT_ARGS)
 {
     void *userData = NULL;
     if ( e->entryGetUserData != NULL )
@@ -2928,8 +2933,9 @@ int registerFunction(RexxMethodContext *c, pSQLiteFunctionEntry e, pCooSQLiteCon
         userData = e->pUserData;
     }
 
-    return sqlite3_create_function_v2(pConn->db, e->name, e->countArgs, SQLITE_UTF8, userData, e->entryFunc,
-                                      e->entryStep, e->entryFinal, e->entryDestroy);
+    return sqlite3_create_function_v2(pConn->db, name != NULL ? name : e->name,
+                                      countArgs != NO_COUNT_ARGS ? countArgs : e->countArgs, SQLITE_UTF8,
+                                      userData, e->entryFunc, e->entryStep, e->entryFinal, e->entryDestroy);
 }
 
 int registerModule(RexxMethodContext *c, pSQLiteModuleEntry e, pCooSQLiteConn pConn)
@@ -6100,7 +6106,8 @@ RexxMethod5(RexxObjectPtr, oosqlconn_createCollation, CSTRING, collationName, Re
     else if ( context->IsOfType(callbackObj, "OOSQLCOLLATION") )
     {
         pSQLiteCollationEntry e = (pSQLiteCollationEntry)context->ObjectToCSelf(callbackObj);
-        rc = registerCollation(context, e, pConn);
+        // Register under the name given, as for the other kinds of callbacks.
+        rc = registerCollation(context, e, pConn, collationName);
         return context->Int32(rc);
     }
     else if ( callbackObj == TheNilObj )
@@ -6432,7 +6439,9 @@ RexxMethod8(RexxObjectPtr, oosqlconn_createFunction, CSTRING, functionName, Rexx
     else if ( context->IsOfType(callbackObj, "OOSQLFUNCTION") )
     {
         pSQLiteFunctionEntry e = (pSQLiteFunctionEntry)context->ObjectToCSelf(callbackObj);
-        rc = registerFunction(context, e, pConn);
+        // Register under the name given, as for the other kinds of callbacks,
+        // and with countArgs when it is given; otherwise with the package's.
+        rc = registerFunction(context, e, pConn, functionName, argumentExists(3) ? countArgs : NO_COUNT_ARGS);
         return context->Int32(rc);
     }
 
