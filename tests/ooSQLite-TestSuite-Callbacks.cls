@@ -710,3 +710,53 @@
   ciHandler = .CollationCaseInsensitiveHandler~new
   db~createCollation(collationName, ciHandler)
   Return 0
+
+/******************************************************************************/
+/*                                                                            */
+/* ResultValueHandler — UDF methods that use the ooSQLResult and ooSQLValue   */
+/* methods not covered by the other handlers (Section 34).                    */
+/*                                                                            */
+/******************************************************************************/
+
+::Class "ResultValueHandler" Public
+
+::Method int64Thru Unguarded
+  Use Arg db, sqlContext, userData, val1
+  .ooSQLResult~int64(sqlContext, .ooSQLValue~int64(val1))
+  Return 0
+
+::Method numericType Unguarded
+  Use Arg db, sqlContext, userData, val1
+  .ooSQLResult~text(sqlContext, .ooSQLValue~type(val1)","||.ooSQLValue~numericType(val1))
+  Return 0
+
+::Method zeroBlob Unguarded
+  Use Arg db, sqlContext, userData, val1
+  .ooSQLResult~zeroBlob(sqlContext, .ooSQLValue~int(val1))
+  Return 0
+
+::Method valueThru Unguarded
+  Use Arg db, sqlContext, userData, val1
+  .ooSQLResult~value(sqlContext, val1)
+  Return 0
+
+::Method error Unguarded
+  Use Arg db, sqlContext, userData
+  .ooSQLResult~error(sqlContext, "Custom OO UDF error")
+  Return 0
+
+::Method errorCode Unguarded
+  Use Arg db, sqlContext, userData
+  .ooSQLResult~errorCode(sqlContext, 13)
+  Return 0
+
+::Method errorNoMem Unguarded
+  Use Arg db, sqlContext, userData
+  .ooSQLResult~errorNoMem(sqlContext)
+  Return 0
+
+::Method errorTooBig Unguarded
+  Use Arg db, sqlContext, userData
+  .ooSQLResult~errorTooBig(sqlContext)
+  Return 0
+

@@ -4687,6 +4687,115 @@ AggregateErrorTrapped:
 
 /******************************************************************************/
 /*                                                                            */
+/* Section 34: ooSQLResult and ooSQLValue — the methods not used elsewhere    */
+/*                                                                            */
+/* The OO counterparts of the classic tests in Section C7, with UDFs from     */
+/* ResultValueHandler: ooSQLResult int64, zeroBlob, value, error, errorCode,  */
+/* errorNoMem, errorTooBig; ooSQLValue int64, numericType.                    */
+/*                                                                            */
+/******************************************************************************/
+
+--------------------------------------------------------------------------------
+-- Helper: register one ResultValueHandler method as a UDF                    --
+--------------------------------------------------------------------------------
+
+::Method resultValueUDF
+  Use Strict Arg db, sqlName, countArgs, mthName
+  rc = db~createFunction(sqlName, .ResultValueHandler~new, countArgs, mthName)
+  self~assertEquals(0, rc, "createFunction for" sqlName "should return OK")
+
+::Method testResultInt64ValueInt64
+  db = self~openMemoryDB
+  self~resultValueUDF(db, "oo_int64", 1, "int64Thru")
+  stmt = .ooSQLiteStmt~new(db, -
+    "SELECT oo_int64(9223372036854775807), oo_int64(-9223372036854775808);")
+  stmt~step
+  self~assertEquals(.ooSQLite~INTEGER, stmt~columnType(1), -
+    "ooSQLResult~int64 should produce an INTEGER")
+  self~assertEquals("9223372036854775807", stmt~columnText(1), -
+    "INT64_MAX should go through ooSQLValue~int64 and ooSQLResult~int64")
+  self~assertEquals("-9223372036854775808", stmt~columnText(2), -
+    "INT64_MIN should go through ooSQLValue~int64 and ooSQLResult~int64")
+  stmt~finalize
+  db~close
+
+::Method testValueNumericType
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE t(val); INSERT INTO t VALUES('42'); INSERT INTO t VALUES('3.14');" -
+    "INSERT INTO t VALUES('hello'); INSERT INTO t VALUES(42); INSERT INTO t VALUES(3.14);")
+  self~resultValueUDF(db, "oo_numtype", 1, "numericType")
+  stmt = .ooSQLiteStmt~new(db, "SELECT oo_numtype(val) FROM t ORDER BY rowid;")
+  expected = .Array~of("3,1", "3,2", "3,3", "1,1", "2,2")
+  Do i = 1 To expected~items
+    stmt~step
+    self~assertEquals(expected[i], stmt~columnText(1), -
+      "type,numericType of row" i)
+  End
+  stmt~finalize
+  db~close
+
+::Method testResultZeroBlob
+  db = self~openMemoryDB
+  self~resultValueUDF(db, "oo_zeroblob", 1, "zeroBlob")
+  stmt = .ooSQLiteStmt~new(db, "SELECT oo_zeroblob(10);")
+  stmt~step
+  self~assertEquals(.ooSQLite~BLOB, stmt~columnType(1), -
+    "ooSQLResult~zeroBlob should produce a BLOB")
+  self~assertEquals(10, stmt~columnBytes(1), "zeroBlob(10) should have 10 bytes")
+  self~assertEquals(Copies("00", 10), stmt~columnText(1)~c2x, -
+    "zeroBlob(10) should be 10 zero bytes")
+  stmt~finalize
+  db~close
+
+::Method testResultValue
+  db = self~openMemoryDB
+  self~resultValueUDF(db, "oo_valthru", 1, "valueThru")
+  stmt = .ooSQLiteStmt~new(db, "SELECT oo_valthru(42), oo_valthru('hello'), oo_valthru(NULL);")
+  stmt~step
+  self~assertEquals(.ooSQLite~INTEGER, stmt~columnType(1), "ooSQLResult~value keeps INTEGER")
+  self~assertEquals(42, stmt~columnInt(1), "ooSQLResult~value keeps 42")
+  self~assertEquals(.ooSQLite~TEXT, stmt~columnType(2), "ooSQLResult~value keeps TEXT")
+  self~assertEquals("hello", stmt~columnText(2), "ooSQLResult~value keeps 'hello'")
+  -- .ooSQLite~NULL is the null object attribute, so use the type value: 5
+  self~assertEquals(5, stmt~columnType(3), "ooSQLResult~value keeps NULL")
+  stmt~finalize
+  db~close
+
+::Method stepErrorUDF
+  Use Strict Arg sqlName, mthName
+  db = self~openMemoryDB
+  self~resultValueUDF(db, sqlName, 0, mthName)
+  stmt = .ooSQLiteStmt~new(db, "SELECT" sqlName"();")
+  rc = stmt~step
+  info = .Directory~new
+  info~rc = rc; info~errCode = db~errCode; info~errMsg = db~errMsg
+  stmt~finalize
+  db~close
+  Return info
+
+::Method testResultError
+  info = self~stepErrorUDF("oo_err", "error")
+  self~assertEquals(.ooSQLite~ERROR, info~rc, "ooSQLResult~error makes step return ERROR")
+  self~assertEquals("Custom OO UDF error", info~errMsg, -
+    "ooSQLResult~error sets the message")
+
+::Method testResultErrorCode
+  info = self~stepErrorUDF("oo_errcode", "errorCode")
+  self~assertEquals(.ooSQLite~FULL, info~rc, "ooSQLResult~errorCode(13) makes step return FULL")
+  self~assertEquals(.ooSQLite~FULL, info~errCode, "errCode should be FULL")
+
+::Method testResultErrorNoMem
+  info = self~stepErrorUDF("oo_errnomem", "errorNoMem")
+  self~assertEquals(.ooSQLite~NOMEM, info~rc, "ooSQLResult~errorNoMem makes step return NOMEM")
+  self~assertEquals(.ooSQLite~NOMEM, info~errCode, "errCode should be NOMEM")
+
+::Method testResultErrorTooBig
+  info = self~stepErrorUDF("oo_errtoobig", "errorTooBig")
+  self~assertEquals(.ooSQLite~TOOBIG, info~rc, "ooSQLResult~errorTooBig makes step return TOOBIG")
+  self~assertEquals(.ooSQLite~TOOBIG, info~errCode, "errCode should be TOOBIG")
+
+/******************************************************************************/
+/*                                                                            */
 /* ooSQLiteClassic.testGroup — Tier 4: Classic Rexx routines (oosqlXxx)       */
 /* ====================================================================       */
 /*                                                                            */
