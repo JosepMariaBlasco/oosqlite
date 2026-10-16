@@ -132,12 +132,11 @@
 <section id="mthNewClsStmt"><title>new (Class method)</title>
 <indexterm><primary>new</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>new</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--new(--dbConn--,--sql--+----------+--)--------><
-                          +-,-format-+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_new.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Instantiates a new <computeroutput>ooSQLiteStmt</computeroutput> object and prepares the statement SQL to be executed.
@@ -213,14 +212,11 @@
 <section id="atrInitCodeClsStmt"><title>initCode (Attribute)</title>
 <indexterm><primary>initCode</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>initCode</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--initCode-----------------------------------------------------><
-
->>--initCode-=-varName-------------------------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_initcode_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -269,14 +265,11 @@
 <section id="atrFinalized"><title>finalized (Attribute)</title>
 <indexterm><primary>finalized</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>finalized</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--finalized-----------------------------------------------------><
-
->>--finalized-=-varName-------------------------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_finalized_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Reflects the finialized state of this statement.
@@ -325,14 +318,11 @@
 <section id="atrLastErrCodeClsStmt"><title>lastErrCode (Attribute)</title>
 <indexterm><primary>lastErrCode</primary><secondary>ooSQLiteStmt class</secondary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>lastErrCode</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--lastErrCode-----------------------------------------------------><
-
->>--lastErrCode-=-varName-------------------------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_lasterrcode_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">lastErrCode</emphasis> attribute reflects the last error code recorded by ooSQLite.
@@ -397,14 +387,11 @@
 <section id="atrLastErrMsgClsStmt"><title>lastErrMsg (Attribute)</title>
 <indexterm><primary>lastErrMsg</primary><secondary>ooSQLiteStmt class</secondary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>lastErrMsg</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--lastErrMsg-----------------------------------><
-
->>--lastErrMsg-=-varName-------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_lasterrmsg_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -480,14 +467,16 @@
 <section id="atrNullClsOOSQLiteStmt" xreflabel="null"><title>null (Attribute)</title>
 <indexterm><primary>null</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>null</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--null-----------------------------------------><
-
->>--null = nullObj-------------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_null_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_null_set.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Reflects the representation for the SQL NULL value that is returned by the interpreter, for this statment, for database
@@ -571,14 +560,16 @@
 <section id="atrRecordFormatClsStmt"><title>recordFormat (Attribute)</title>
 <indexterm><primary>recordFormat</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>recordFormat</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--recordFormat-----------------------------------------------------><
-
->>--recordFormat-=-varName-------------------------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_recordformat_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_recordformat_set.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -627,12 +618,11 @@
 <section id="mthBindBlob"><title>bindBlob</title>
 <indexterm><primary>bindBlob</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>bindBlob</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--bindBlob(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_bindblob.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -688,12 +678,11 @@
 <section id="mthBindDouble"><title>bindDouble</title>
 <indexterm><primary>bindDouble</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>bindDouble</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--bindDouble(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_binddouble.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -749,12 +738,11 @@
 <section id="mthBindInt"><title>bindInt</title>
 <indexterm><primary>bindInt</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>bindInt</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--bindInt(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_bindint.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -810,12 +798,11 @@
 <section id="mthBindInt64"><title>bindInt64</title>
 <indexterm><primary>bindInt64</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>bindInt64</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--bindInt64(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_bindint64.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -871,12 +858,11 @@
 <section id="mthBindNull"><title>bindNull</title>
 <indexterm><primary>bindNull</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>bindNull</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--bindNull(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_bindnull.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -932,12 +918,11 @@
 <section id="mthBindParameterCount"><title>bindParameterCount</title>
 <indexterm><primary>bindParameterCount</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>bindParameterCount</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--bindParameterCount(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_bindparametercount.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -993,12 +978,11 @@
 <section id="mthBindParameterIndex"><title>bindParameterIndex</title>
 <indexterm><primary>bindParameterIndex</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>bindParameterIndex</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--bindParameterIndex(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_bindparameterindex.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1054,12 +1038,11 @@
 <section id="mthBindParameterName"><title>bindParameterName</title>
 <indexterm><primary>bindParameterName</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>bindParameterName</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--bindParameterName(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_bindparametername.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1115,12 +1098,11 @@
 <section id="mthBindText"><title>bindText</title>
 <indexterm><primary>bindText</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>bindText</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--bindText(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_bindtext.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1176,12 +1158,11 @@
 <section id="mthBindValue"><title>bindValue</title>
 <indexterm><primary>bindValue</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>bindValue</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--bindValue(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_bindvalue.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1237,12 +1218,11 @@
 <section id="mthBindZeroBlob"><title>bindZeroBlob</title>
 <indexterm><primary>bindZeroBlob</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>bindZeroBlob</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--bindZeroBlob(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_bindzeroblob.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1298,12 +1278,11 @@
 <section id="mthClearBindings"><title>clearBindings</title>
 <indexterm><primary>clearBindings</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>clearBindings</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--clearBindings(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_clearbindings.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1359,12 +1338,11 @@
 <section id="mthColumnBlob"><title>columnBlob</title>
 <indexterm><primary>columnBlob</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>columnBlob</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--columnBlob(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_columnblob.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1420,12 +1398,11 @@
 <section id="mthColumnBytes"><title>columnBytes</title>
 <indexterm><primary>columnBytes</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>columnBytes</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--columnBytes(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_columnbytes.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1481,12 +1458,11 @@
 <section id="mthColumnCount"><title>columnCount</title>
 <indexterm><primary>columnCount</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>columnCount</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--columnCount(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_columncount.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1542,12 +1518,11 @@
 <section id="mthColumnDataBaseName"><title>columnDataBaseName</title>
 <indexterm><primary>columnDataBaseName</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>columnDataBaseName</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--columnDataBaseName(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_columndatabasename.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1603,12 +1578,11 @@
 <section id="mthColumnDeclType"><title>columnDeclType</title>
 <indexterm><primary>columnDeclType</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>columnDeclType</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--columnDeclType(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_columndecltype.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1664,12 +1638,11 @@
 <section id="mthColumnDouble"><title>columnDouble</title>
 <indexterm><primary>columnDouble</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>columnDouble</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--columnDouble(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_columndouble.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1725,12 +1698,11 @@
 <section id="mthColumnIndex"><title>columnIndex</title>
 <indexterm><primary>columnIndex</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>columnIndex</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--columnIndex(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_columnindex.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1786,12 +1758,11 @@
 <section id="mthColumnInt"><title>columnInt</title>
 <indexterm><primary>columnInt</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>columnInt</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--columnInt(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_columnint.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1847,12 +1818,11 @@
 <section id="mthColumnInt64"><title>columnInt64</title>
 <indexterm><primary>columnInt64</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>columnInt64</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--columnInt64(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_columnint64.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1908,12 +1878,11 @@
 <section id="mthColumnName"><title>columnName</title>
 <indexterm><primary>columnName</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>columnName</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--columnName(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_columnname.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1969,12 +1938,11 @@
 <section id="mthColumnOriginName"><title>columnOriginName</title>
 <indexterm><primary>columnOriginName</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>columnOriginName</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--columnOriginName(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_columnoriginname.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2030,12 +1998,11 @@
 <section id="mthColumnTableName"><title>columnTableName</title>
 <indexterm><primary>columnTableName</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>columnTableName</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--columnTableName(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_columntablename.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2091,12 +2058,11 @@
 <section id="mthColumnText"><title>columnText</title>
 <indexterm><primary>columnText</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>columnText</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--columnText(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_columntext.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2152,12 +2118,11 @@
 <section id="mthColumnType"><title>columnType</title>
 <indexterm><primary>columnType</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>columnType</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--columnType(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_columntype.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2213,12 +2178,11 @@
 <section id="mthColumnValue"><title>columnValue</title>
 <indexterm><primary>columnValue</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>columnValue</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--columnValue(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_columnvalue.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2274,12 +2238,11 @@
 <section id="mthDataCount"><title>dataCount</title>
 <indexterm><primary>dataCount</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>dataCount</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--dataCount(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_datacount.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2335,12 +2298,11 @@
 <section id="mthDbHandle"><title>dbHandle</title>
 <indexterm><primary>dbHandle</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>dbHandle</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--dbHandle(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_dbhandle.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2396,12 +2358,11 @@
 <section id="mthFinalize"><title>finalize</title>
 <indexterm><primary>finalize</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>finalize</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--finalize(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_finalize.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2457,12 +2418,11 @@
 <section id="mthReset"><title>reset</title>
 <indexterm><primary>reset</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>reset</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--reset(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_reset.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2518,12 +2478,11 @@
 <section id="mthStepClsStmt"><title>step</title>
 <indexterm><primary>step</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>step</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--step(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_step.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2579,12 +2538,11 @@
 <section id="mthStmtBusy"><title>stmtBusy</title>
 <indexterm><primary>stmtBusy</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>stmtBusy</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--stmtBusy(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_stmtbusy.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2640,12 +2598,11 @@
 <section id="mthstmtReadonly"><title>stmtReadonly</title>
 <indexterm><primary>stmtReadonly</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>stmtReadonly</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--stmtReadonly(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_stmtreadonly.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2701,12 +2658,11 @@
 <section id="mthStmtStatus"><title>stmtStatus</title>
 <indexterm><primary>stmtStatus</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>stmtStatus</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--stmtStatus(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_stmtstatus.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -2762,12 +2718,11 @@
 <section id="mthValue"><title>value</title>
 <indexterm><primary>value</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>value</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--value(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_value.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
