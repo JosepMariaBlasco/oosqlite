@@ -1447,17 +1447,19 @@
 <![CDATA[
 Define a SQL function implemented in Rexx:
 
->>--createFunction(--name--,--callbackObj--,--countArgs--,--funcMth--+--------------------+--)--><
-                                                                     +-,--,--,--userData--+
+>>--createFunction(--name--,--callbackObj--,--countArgs--,--funcMth------------>
+>--+--------------------+--)--------------------------------------------------><
+   +-,--,--,--userData--+
 
 Define a SQL aggregate implemented in Rexx:
 
->>--createFunction(--name--,--callbackObj--,--countArgs--,--,--stepMth--,--finalMth--+--------------+--)--><
-                                                                                     +-,--userData--+
+>>--createFunction(--name--,--callbackObj--,--countArgs--,--,--stepMth--------->
+>--,--finalMth--+--------------+--)-------------------------------------------><
+                +-,--userData--+
 
 Remove a SQL function or aggregate implemented in Rexx:
 
->>--createFunction(--name--,--.nil--+--------------+--)-----------------------------------------><
+>>--createFunction(--name--,--.nil--+--------------+--)--><
                                     +-,-countArgs--+
 ]]>
 </programlisting>

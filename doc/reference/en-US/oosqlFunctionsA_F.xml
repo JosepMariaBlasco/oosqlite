@@ -2875,17 +2875,19 @@
 <![CDATA[
 Define a SQL function implemented in Rexx:
 
->>--oosqlCreateFunction(--db--,--name--,--countArgs--,--funcRtn--+--------------------+--)--><
-                                                                 +-,--,--,--userData--+
+>>--oosqlCreateFunction(--db--,--name--,--countArgs--,--funcRtn---------------->
+>--+--------------------+--)--------------------------------------------------><
+   +-,--,--,--userData--+
 
 Define a SQL aggregate implemented in Rexx:
 
->>--oosqlCreateFunction(--db--,--name--,--countArgs--,--,--stepRtn--,--finalRtn--+--------------+--)--><
-                                                                                 +-,--userData--+
+>>--oosqlCreateFunction(--db--,--name--,--countArgs--,--,--stepRtn------------->
+>--,--finalRtn--+--------------+--)-------------------------------------------><
+                +-,--userData--+
 
 Remove a SQL function or aggregate implemented in Rexx:
 
->>--oosqlCreateFunction(--db--,--name--+--------------+--)--------------------------------------><
+>>--oosqlCreateFunction(--db--,--name--+--------------+--)--><
                                        +-,-countArgs--+
 ]]>
 </programlisting>
