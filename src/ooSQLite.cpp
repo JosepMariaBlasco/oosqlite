@@ -10166,6 +10166,8 @@ RexxMethod1(int, oosqlmtx_try, CSELF, pCSelf)
 #define OOSQLEXTENSIONS_CLASS     "ooSQLExtensions"
 #define LAST_ERR_MSG_ATTRIBUTE    "extensionsLastErrMsgAttribute"
 #define LAST_ERR_CODE_ATTRIBUTE   "extensionsLastErrCodeAttribute"
+#define LIBRARY_TABLE_ATTRIBUTE   "extensionsLibraryTableAttribute"
+#define PACKAGE_TABLE_ATTRIBUTE   "extensionsPackageTableAttribute"
 
 /**
  * Set the library base name.  ooSQLLibrary objects are stored in a Rexx table
@@ -11054,6 +11056,11 @@ RexxMethod1(RexxObjectPtr, oosqlext_init_cls, OSELF, self)
         pcext->rexxSelf     = self;
         pcext->libraryTable = rxNewBuiltinObject(context->threadContext, "TABLE");
         pcext->packageTable = rxNewBuiltinObject(context->threadContext, "TABLE");
+
+        // The C struct alone does not keep the tables alive: also reference
+        // them from object variables, or the garbage collector frees them.
+        context->SetObjectVariable(LIBRARY_TABLE_ATTRIBUTE, pcext->libraryTable);
+        context->SetObjectVariable(PACKAGE_TABLE_ATTRIBUTE, pcext->packageTable);
         resetExtensionsLastErr(context, pcext);
     }
     return NULLOBJECT;
@@ -11994,6 +12001,9 @@ RexxMethod3(int, oosqlext_registerBuiltin, RexxObjectPtr, dbConn, OPTIONAL_RexxO
 #define OOSQLPACKAGE_CLASS    "ooSQLPackage"
 #define SYSLIB_ATTRIBUTE      "ooSQLPackageSysLibraryAttribute"
 #define COLLNEEDED_ATTRIBUTE  "ooSQLPackageCollationNeededAttribute"
+#define PKG_COLLATIONS_ATTRIBUTE  "ooSQLPackageCollationTableAttribute"
+#define PKG_FUNCTIONS_ATTRIBUTE   "ooSQLPackageFunctionTableAttribute"
+#define PKG_MODULES_ATTRIBUTE     "ooSQLPackageModuleTableAttribute"
 
 
 /** ooSQLPackage::init()
@@ -12054,6 +12064,11 @@ RexxMethod2(RexxObjectPtr, oosqlpack_init, CSTRING, libName, OSELF, self)
     pcp->functionTable  = rxNewBuiltinObject(context->threadContext, "TABLE");
     pcp->moduleTable    = rxNewBuiltinObject(context->threadContext, "TABLE");
     pcp->valid          = true;
+
+    // Keep the tables alive: the C struct alone does not.
+    context->SetObjectVariable(PKG_COLLATIONS_ATTRIBUTE, pcp->collationTable);
+    context->SetObjectVariable(PKG_FUNCTIONS_ATTRIBUTE, pcp->functionTable);
+    context->SetObjectVariable(PKG_MODULES_ATTRIBUTE, pcp->moduleTable);
 
     return NULLOBJECT;
 }
@@ -12241,6 +12256,7 @@ RexxMethod2(int, oosqlpack_register, RexxObjectPtr, dbConn, CSELF, pCSelf)
  */
 #define OOSQLLIBRARY_CLASS              "ooSQLLibrary"
 #define SYSLIB_OOSQLLIBRARY_ATTRIBUTE   "ooSQLLibrarySysLibraryAttribute"
+#define LIB_FUNCTIONS_ATTRIBUTE         "ooSQLLibraryFunctionTableAttribute"
 
 
 /** ooSQLLibrary::init()
@@ -12296,6 +12312,9 @@ RexxMethod2(RexxObjectPtr, oosqllib_init, CSTRING, libName, OSELF, self)
 
     pcl->functionTable = rxNewBuiltinObject(context->threadContext, "TABLE");
     pcl->valid         = true;
+
+    // Keep the table alive: the C struct alone does not.
+    context->SetObjectVariable(LIB_FUNCTIONS_ATTRIBUTE, pcl->functionTable);
 
     setLibBaseName(pcl, libName);
 
