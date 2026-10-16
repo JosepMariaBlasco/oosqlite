@@ -1717,6 +1717,31 @@ StmtRecFmtDone:
   stmt~finalize
   db~close
 
+--------------------------------------------------------------------------------
+-- sql                                                                        --
+--------------------------------------------------------------------------------
+
+::Method testStmtSql
+  db = self~openMemoryDB
+  self~createTestTable(db)
+  sql = "SELECT name FROM foods WHERE id = ?;"
+  stmt = .ooSQLiteStmt~new(db, sql)
+  self~assertEquals(sql, stmt~sql, "Stmt sql should be the prepared SQL text")
+  -- Binding values does not change the text
+  stmt~bindInt(1, 1)
+  self~assertEquals(sql, stmt~sql, "Stmt sql should not change after a bind")
+  stmt~finalize
+  db~close
+
+::Method testStmtSqlFirstOnly
+  db = self~openMemoryDB
+  -- Only the first statement is prepared; sql returns just that one
+  stmt = .ooSQLiteStmt~new(db, "SELECT 1; SELECT 2;")
+  self~assertEquals("SELECT 1;", stmt~sql, -
+    "Stmt sql should be the text of the first statement only")
+  stmt~finalize
+  db~close
+
 /******************************************************************************/
 /*                                                                            */
 /* Section 18B: Tier 1 — ooSQLite: zeroPointer                                */
