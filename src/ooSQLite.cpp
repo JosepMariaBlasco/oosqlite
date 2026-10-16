@@ -5915,6 +5915,11 @@ RexxMethod4(RexxObjectPtr, oosqlconn_collationNeeded, RexxObjectPtr, callbackObj
     {
         pCooSQLPackage pcp  = (pCooSQLPackage)context->ObjectToCSelf(callbackObj);
         pSQLiteCollationNeededEntry e = pcp->packageEntry->collationNeeded;
+        if ( e == NULL )
+        {
+            // The package has no collation needed callback
+            return context->Int32(SQLITE_MISUSE);
+        }
         rc = registerCollationNeeded(e, pConn);
         return context->Int32(rc);
     }
