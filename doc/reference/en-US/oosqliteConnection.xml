@@ -1369,17 +1369,39 @@
 
 </section>  <!-- End ooSQLiteConnection::commitHook() -->
 
-<section id="mthCreateCollation"><title>createCollation</title>
+<section id="mthCreateCollation" revisionflag="changed"><title>&changed11;createCollation</title>
 <indexterm><primary>createCollation</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>createCollation</secondary></indexterm>
+<para>Define a collation implemented in Rexx:</para>
 <mediaobject>
 <imageobject>
-<imagedata fileref="images/primary/connection_createcollation.svg" scale="55" />
+<imagedata fileref="images/primary/connection_createcollation_rexx.svg" scale="55" />
+</imageobject>
+</mediaobject>
+<para>Define a collation implemented in an external library, with handles from an ooSQLLibrary object:</para>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_createcollation_native.svg" scale="55" />
+</imageobject>
+</mediaobject>
+<para>Define a collation from an ooSQLite package, with an ooSQLCollation object:</para>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_createcollation_package.svg" scale="55" />
+</imageobject>
+</mediaobject>
+<para>Remove a collation:</para>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_createcollation_remove.svg" scale="55" />
 </imageobject>
 </mediaobject>
 
 <para>
-  xx
+  Adds or removes a user defined collation on this database connection. A collation is a comparison function that
+  SQLite uses to sort and compare text, for example in <computeroutput>ORDER BY ... COLLATE name</computeroutput> or in
+  the definition of a column. Once defined, the collation can be used in SQL statements like the SQLite built in
+  collations.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1387,43 +1409,120 @@
   <para>
     The arguments are:
   </para>
-  <variablelist>
-    <varlistentry><term>TERM</term>
-    <listitem>
-    <para>
-      xx
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
+    <variablelist>
+      <varlistentry><term>name [required]</term>
+      <listitem>
+      <para>
+        The name of the collation, the name that is used for it in SQL statements. SQLite compares collation names
+        without regard to case.
+      </para>
+      <para revisionflag="changed">
+        &changed11;This is the name used for all the kinds of collation, including a collation from a package, given as
+        an ooSQLCollation object. Before ooSQLite 1.1 the name was ignored in that case, and the collation was registered
+        under the name it has in the package.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>callbackObj [required]</term>
+      <listitem>
+      <para>
+        An instantiated object whose method implements the collation. The method is named by the <emphasis
+        role="italic">mthName</emphasis> argument.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>mthName [optional]</term>
+      <listitem>
+      <para>
+        The name of the method of <emphasis role="italic">callbackObj</emphasis> that compares two strings. If it is
+        omitted, the method is <computeroutput>collationCallBack</computeroutput>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>compareHandle [required]</term>
+      <listitem>
+      <para>
+        The handle, a Pointer object, of a comparison function in an external library, obtained with the <link
+        linkend="clsOOSQLLibrary">ooSQLLibrary</link> class.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>destroyHandle [optional]</term>
+      <listitem>
+      <para>
+        The handle of a function in the same library that SQLite calls when the collation is removed, to release the
+        user data. It is only needed for collations written in C or C++ that need it.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>collationObj [required]</term>
+      <listitem>
+      <para>
+        An <link linkend="clsOOSQLCollation">ooSQLCollation</link> object, obtained with the getCollation method of an
+        ooSQLPackage object. It contains everything needed to register the collation.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>userData [optional]</term>
+      <listitem>
+      <para>
+        For a collation implemented in Rexx, any Rexx object; it is sent to every invocation of the callback method,
+        which gets the .nil object if it is omitted. For a collation from an external library, a Pointer object, the
+        handle of a data block in the library, which SQLite passes to the comparison function.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
+  <para>
+    To remove a collation implemented in Rexx, use .nil as the second argument. To remove a collation from an external
+    library or a package, use the zero pointer, <computeroutput>.ooSQLite~zeroPointer</computeroutput>. All other
+    arguments are then ignored.
+  </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns a SQLite result <link linkend="sctResultCode">code</link>.
   </para>
   </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <varlistentry><term><emphasis role="bold">Callback method:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The <emphasis role="italic">mthName</emphasis> method gets the two strings to compare and the user data, and must
+    return a negative whole number if the first string sorts before the second, 0 if they are equal, and a positive whole
+    number if the first string sorts after the second:
   </para>
+<programlisting language="rexx">
+::method collationCallBack
+  use arg str1, str2, userData
+</programlisting>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">createCollation</emphasis> method is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/create_collation.html"><citetitle>sqlite3_create_collation_v2</citetitle></ulink>
+    API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    This example defines a case insensitive collation in Rexx, uses it to sort a column, and then removes it:
   </para>
+<programlisting language="rexx">
+db = .ooSQLiteConnection~new(":memory:")
+db~exec("CREATE TABLE t(n TEXT); INSERT INTO t VALUES('b');" -
+        "INSERT INTO t VALUES('A'); INSERT INTO t VALUES('c');")
+
+rc = db~createCollation("REXXNOCASE", .CaselessOrder~new)
+rows = db~exec("SELECT n FROM t ORDER BY n COLLATE REXXNOCASE;", .true)
+do row over rows
+  say row["N"]                                   -- A, b, c
+end
+
+rc = db~createCollation("REXXNOCASE", .nil)      -- remove it
+
+::requires "ooSQLite.cls"
+
+::class CaselessOrder
+::method collationCallBack
+  use arg str1, str2, userData
+  return str1~caselessCompareTo(str2)
+</programlisting>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLiteConnection::createCollation() -->
@@ -1443,6 +1542,12 @@
 <imagedata fileref="images/primary/connection_createfunction_aggregate.svg" scale="55" />
 </imageobject>
 </mediaobject>
+<para revisionflag="changed">&changed11;Define a SQL function or aggregate from an ooSQLite package, with an ooSQLFunction object:</para>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_createfunction_package.svg" scale="55" />
+</imageobject>
+</mediaobject>
 <para>Remove a SQL function or aggregate implemented in Rexx:</para>
 <mediaobject>
 <imageobject>
@@ -1456,9 +1561,9 @@
   role="italic">function</emphasis> refers to both functions and aggregates, unless stated otherwise.
 </para>
 <para>
-  This section documents functions implemented in Rexx. A function can also be implemented in native code in an external
-  library and registered with an <link linkend="clsOOSQLFunction">ooSQLFunction</link> object, or with handles obtained
-  through an <link linkend="clsOOSQLLibrary">ooSQLLibrary</link> object.
+  This section documents functions implemented in Rexx, and functions from an ooSQLite package, given as an <link
+  linkend="clsOOSQLFunction">ooSQLFunction</link> object. A function implemented in native code in an external library
+  can also be registered with handles obtained through an <link linkend="clsOOSQLLibrary">ooSQLLibrary</link> object.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1471,6 +1576,11 @@
       <listitem>
       <para>
         The name of the function, the name that is used for it in SQL statements.
+      </para>
+      <para revisionflag="changed">
+        &changed11;This is the name used for all the kinds of function, including a function from a package, given as an
+        ooSQLFunction object. Before ooSQLite 1.1 the name was ignored in that case, and the function was registered
+        under the name it has in the package.
       </para>
       </listitem></varlistentry>
       <varlistentry><term>callbackObj [required]</term>
@@ -1495,6 +1605,17 @@
       <para revisionflag="changed">
         &changed11;When removing a function, this is the number of arguments of the function to remove. If it is
         omitted, all the functions with this name are removed, whatever their number of arguments.
+      </para>
+      <para revisionflag="changed">
+        &changed11;With an ooSQLFunction object this argument is optional: if it is omitted, the number of arguments
+        defined in the package is used. Before ooSQLite 1.1 it was always ignored in that case.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry revisionflag="changed"><term>&changed11;functionObj [required]</term>
+      <listitem>
+      <para>
+        An ooSQLFunction object, obtained with the getFunction method of an ooSQLPackage object. It contains the native
+        code of the function or aggregate.
       </para>
       </listitem></varlistentry>
       <varlistentry><term>funcMth [required for a function]</term>
