@@ -5163,6 +5163,38 @@ ConstantMissing:
 
 /******************************************************************************/
 /*                                                                            */
+/* Section 36: stmtStatus with an op that is not a STMTSTATUS constant        */
+/*                                                                            */
+/* sqlite3_stmt_status() uses op as an index into an array of 9 counters,    */
+/* without checking it (SQLite is not built with SQLITE_ENABLE_API_ARMOR):    */
+/* other values read memory out of bounds, and with reset = .true they wrote */
+/* to it. Only 0 to 8 and STMTSTATUS_MEMUSED (99) are valid; the other       */
+/* values return 0, as SQLite does when it checks its arguments.             */
+/*                                                                            */
+/******************************************************************************/
+
+::Method testStmtStatusInvalidOp
+  db = self~openMemoryDB
+  self~createTestTable(db)
+  stmt = .ooSQLiteStmt~new(db, "SELECT * FROM foods ORDER BY id;")
+  Do While stmt~step = stmt~ROW
+    Nop
+  End
+  Do op Over .array~of(9, 10, 11, 12, 16, 50, 98, 100, 1000, -1, "-2147483648", "2147483647")
+    self~assertEquals(0, stmt~stmtStatus(op), "stmtStatus(" || op || ")")
+  End
+  -- The read checks come first: if they fail, the writes below are not done
+  Do op Over .array~of(9, 10, -1)
+    self~assertEquals(0, stmt~stmtStatus(op, .true), "stmtStatus(" || op || ", .true)")
+  End
+  self~assertTrue(stmt~stmtStatus(.ooSQLite~STMTSTATUS_MEMUSED) > 0, "MEMUSED should be > 0")
+  self~assertTrue(stmt~stmtStatus(.ooSQLite~STMTSTATUS_VM_STEP, .true) > 0, "VM_STEP should be > 0")
+  self~assertEquals(0, stmt~stmtStatus(.ooSQLite~STMTSTATUS_VM_STEP), "VM_STEP after reset")
+  self~assertEquals(.ooSQLite~OK, stmt~finalize)
+  self~assertEquals(.ooSQLite~OK, db~close)
+
+/******************************************************************************/
+/*                                                                            */
 /* ooSQLiteClassic.testGroup — Tier 4: Classic Rexx routines (oosqlXxx)       */
 /* ====================================================================       */
 /*                                                                            */
@@ -6082,6 +6114,42 @@ ConstantMissing:
   self~assertTrue(ret >= 0, -
     "oosqlStmtStatus should return a non-negative value")
   Call oosqlFinalize stmt
+  Call oosqlClose db
+
+::Method testClassicStmtStatusInvalidOp
+  -- See Section 36 of the OO tests: op is checked before it reaches SQLite
+  db = self~classicOpenMemory
+  Call oosqlExec db, "CREATE TABLE t(id INTEGER);"
+  Call oosqlExec db, "INSERT INTO t VALUES(1);"
+  Call oosqlPrepare db, "SELECT * FROM t;", "stmt"
+  Call oosqlStep stmt
+  Do op Over .array~of(9, 10, 11, 12, 16, 50, 98, 100, 1000, -1, "-2147483648", "2147483647")
+    self~assertEquals(0, oosqlStmtStatus(stmt, op), "oosqlStmtStatus(" || op || ")")
+  End
+  Do op Over .array~of(9, 10, -1)
+    self~assertEquals(0, oosqlStmtStatus(stmt, op, .true), "oosqlStmtStatus(" || op || ", .true)")
+  End
+  self~assertTrue(oosqlStmtStatus(stmt, .ooSQLite~STMTSTATUS_MEMUSED) > 0, "MEMUSED should be > 0")
+  self~assertTrue(oosqlStmtStatus(stmt, .ooSQLite~STMTSTATUS_VM_STEP, .true) > 0, "VM_STEP should be > 0")
+  self~assertEquals(0, oosqlStmtStatus(stmt, .ooSQLite~STMTSTATUS_VM_STEP), "VM_STEP after reset")
+  self~assertEquals(0, oosqlFinalize(stmt))
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicNullStmtMessage
+  -- The message of the syntax error for a null statement handle
+  db = self~classicOpenMemory
+  Call oosqlPrepare db, "", "stmt"
+  self~assertTrue(oosqlIsHandleNull(stmt), "Empty SQL gives a null handle")
+  msg = ""
+  Signal On Syntax Name NullStmtRaised
+  Call oosqlStep stmt
+  Signal Off Syntax
+  self~fail("oosqlStep with a null handle should raise a syntax error")
+NullStmtRaised:
+  Signal Off Syntax
+  co = Condition("O")
+  self~assertEquals(88.900, co~code, "Error code")
+  self~assertEquals("Argument 1, the prepared statement object, must not be null.", co~message, "Error message")
   Call oosqlClose db
 
 /******************************************************************************/
