@@ -48,12 +48,11 @@
 <section id="rtn-oosqlSetAuthorizer"><title>oosqlSetAuthorizer</title>
 <indexterm><primary>oosqlSetAuthorizer</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlSetAuthorizer</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlSetAuthorizer(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlsetauthorizer.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -109,12 +108,11 @@
 <section id="rtn-oosqlSoftHeapLimit64"><title>oosqlSoftHeapLimit64</title>
 <indexterm><primary>oosqlSoftHeapLimit64</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlSoftHeapLimit64</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlSoftHeapLimit64(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlsoftheaplimit64.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -170,12 +168,11 @@
 <section id="rtn-oosqlSourceID"><title>oosqlSourceID</title>
 <indexterm><primary>oosqlSourceID</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlSourceID</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlSourceID(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlsourceid.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -231,12 +228,11 @@
 <section id="rtn-oosqlSql"><title>oosqlSql</title>
 <indexterm><primary>oosqlSql</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlSql</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlSql(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlsql.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -292,12 +288,11 @@
 <section id="rtn-oosqlStatus"><title>oosqlStatus</title>
 <indexterm><primary>oosqlStatus</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlStatus</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlStatus(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlstatus.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -353,12 +348,11 @@
 <section id="rtn-oosqlStep"><title>oosqlStep</title>
 <indexterm><primary>oosqlStep</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlStep</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlStep(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlstep.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -414,12 +408,11 @@
 <section id="rtn-oosqlStmtBusy"><title>oosqlStmtBusy</title>
 <indexterm><primary>oosqlStmtBusy</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlStmtBusy</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlStmtBusy(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlstmtbusy.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -475,12 +468,11 @@
 <section id="rtn-oosqlStmtReadonly"><title>oosqlStmtReadonly</title>
 <indexterm><primary>oosqlStmtReadonly</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlStmtReadonly</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlStmtReadonly(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlstmtreadonly.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -536,12 +528,11 @@
 <section id="rtn-oosqlStmtStatus"><title>oosqlStmtStatus</title>
 <indexterm><primary>oosqlStmtStatus</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlStmtStatus</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlStmtStatus(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlstmtstatus.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -597,12 +588,11 @@
 <section id="rtn-oosqlStrGlob"><title>oosqlStrGlob</title>
 <indexterm><primary>oosqlStrGlob</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlStrGlob</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlStrGlob(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlstrglob.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -658,12 +648,11 @@
 <section id="rtn-oosqlTableColumnMetadata"><title>oosqlTableColumnMetadata</title>
 <indexterm><primary>oosqlTableColumnMetadata</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlTableColumnMetadata</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlTableColumnMetadata(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqltablecolumnmetadata.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -719,12 +708,11 @@
 <section id="rtn-oosqlThreadSafe"><title>oosqlThreadSafe</title>
 <indexterm><primary>oosqlThreadSafe</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlThreadSafe</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlThreadSafe(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlthreadsafe.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -780,12 +768,11 @@
 <section id="rtn-oosqlTotalChanges"><title>oosqlTotalChanges</title>
 <indexterm><primary>oosqlTotalChanges</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlTotalChanges</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlTotalChanges(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqltotalchanges.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -841,12 +828,11 @@
 <section id="rtn-oosqlTrace"><title>oosqlTrace</title>
 <indexterm><primary>oosqlTrace</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlTrace</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlTrace(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqltrace.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -902,12 +888,11 @@
 <section id="rtn-oosqlUpdateHook"><title>oosqlUpdateHook</title>
 <indexterm><primary>oosqlUpdateHook</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlUpdateHook</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlUpdateHook(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlupdatehook.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -963,12 +948,11 @@
 <section id="rtn-oosqlValueBlob"><title>oosqlValueBlob</title>
 <indexterm><primary>oosqlValueBlob</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlValueBlob</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlValueBlob(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlvalueblob.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1024,12 +1008,11 @@
 <section id="rtn-oosqlValueBytes"><title>oosqlValueBytes</title>
 <indexterm><primary>oosqlValueBytes</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlValueBytes</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlValueBytes(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlvaluebytes.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1085,12 +1068,11 @@
 <section id="rtn-oosqlValueDouble"><title>oosqlValueDouble</title>
 <indexterm><primary>oosqlValueDouble</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlValueDouble</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlValueDouble(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlvaluedouble.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1146,12 +1128,11 @@
 <section id="rtn-oosqlValueInt"><title>oosqlValueInt</title>
 <indexterm><primary>oosqlValueInt</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlValueInt</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlValueInt(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlvalueint.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1207,12 +1188,11 @@
 <section id="rtn-oosqlValueNumericType"><title>oosqlValueNumericType</title>
 <indexterm><primary>oosqlValueNumericType</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlValueNumericType</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlValueNumericType(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlvaluenumerictype.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1268,12 +1248,11 @@
 <section id="rtn-oosqlValueText"><title>oosqlValueText</title>
 <indexterm><primary>oosqlValueText</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlValueText</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlValueText(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlvaluetext.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1329,12 +1308,11 @@
 <section id="rtn-oosqlValueType"><title>oosqlValueType</title>
 <indexterm><primary>oosqlValueType</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlValueType</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlValueType(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlvaluetype.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1390,12 +1368,11 @@
 <section id="rtn-oosqlVersion"><title>oosqlVersion</title>
 <indexterm><primary>oosqlVersion</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlVersion</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--oosqlVersion(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlversion.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
