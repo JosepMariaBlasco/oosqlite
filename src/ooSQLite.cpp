@@ -7972,12 +7972,83 @@ RexxMethod1(int, oosqlval_type, POINTER, sqlValue)
 #define OOSQLRESULT_CLASS    "ooSQLResult"
 
 
+/**
+ * Gets the data and the length of the blob argument of ooSQLResult::blob() and
+ * oosqlResultBlob().
+ *
+ * The blob can be a Pointer, which then needs the size, or a String, a Buffer,
+ * or a MutableBuffer, like the blob argument of bindBlob().  For those, size is
+ * optional: when it is given it is the number of bytes to use, from the start,
+ * and it can not be greater than the length of the data.
+ *
+ * @return True on success, false if a condition was raised.
+ */
+static bool getResultBlobArg(RexxThreadContext *c, RexxObjectPtr blob, bool sizeGiven, int size, size_t sizePos,
+                             POINTER *data, int *length)
+{
+    size_t len;
+
+    if ( c->IsPointer(blob) )
+    {
+        if ( ! sizeGiven )
+        {
+            missingArgException(c, sizePos);
+            return false;
+        }
+        *data   = c->PointerValue((RexxPointerObject)blob);
+        *length = size;
+        return true;
+    }
+    else if ( c->IsBuffer(blob) )
+    {
+        *data = c->BufferData((RexxBufferObject)blob);
+        len   = c->BufferLength((RexxBufferObject)blob);
+    }
+    else if ( c->IsString(blob) )
+    {
+        *data = (POINTER)c->StringData((RexxStringObject)blob);
+        len   = c->StringLength((RexxStringObject)blob);
+    }
+    else if ( c->IsOfType(blob, "MUTABLEBUFFER") )
+    {
+        RexxStringObject s = (RexxStringObject)c->SendMessage0(blob, "STRING");
+        *data = (POINTER)c->StringData(s);
+        len   = c->StringLength(s);
+    }
+    else
+    {
+        wrongClassListException(c, sizePos - 1, "Pointer, String, Buffer, or MutableBuffer", blob);
+        return false;
+    }
+
+    if ( sizeGiven )
+    {
+        if ( size < 0 || (size_t)size > len )
+        {
+            wrongRangeException(c, sizePos, 0, (int)len, size);
+            return false;
+        }
+        len = (size_t)size;
+    }
+    *length = (int)len;
+    return true;
+}
+
 /** ooSQLResult::blob
  *
+ *  @param  blob  [required]  A Pointer to the data, or a String, Buffer, or
+ *                MutableBuffer object with the data.
+ *  @param  size  [optional]  The number of bytes; required with a Pointer.
  */
-RexxMethod3(int, oosqlrslt_blob, POINTER, sqlCntxt, POINTER, blob, int, size)
+RexxMethod3(int, oosqlrslt_blob, POINTER, sqlCntxt, RexxObjectPtr, blob, OPTIONAL_int, size)
 {
-    sqlite3_result_blob((sqlite3_context*)sqlCntxt, blob, size, SQLITE_TRANSIENT);
+    POINTER data;
+    int     length;
+    if ( ! getResultBlobArg(context->threadContext, blob, argumentExists(3), size, 3, &data, &length) )
+    {
+        return SQLITE_MISUSE;
+    }
+    sqlite3_result_blob((sqlite3_context*)sqlCntxt, data, length, SQLITE_TRANSIENT);
     return 0;
 }
 
@@ -15419,9 +15490,15 @@ RexxRoutine0(int, oosqlResetAutoExtension_rtn)
 /** oosqlResultBlob()
  *
  */
-RexxRoutine3(int, oosqlResultBlob_rtn, POINTER, sqlCntxt, POINTER, blob, int, size)
+RexxRoutine3(int, oosqlResultBlob_rtn, POINTER, sqlCntxt, RexxObjectPtr, blob, OPTIONAL_int, size)
 {
-    sqlite3_result_blob((sqlite3_context*)sqlCntxt, blob, size, SQLITE_TRANSIENT);
+    POINTER data;
+    int     length;
+    if ( ! getResultBlobArg(context->threadContext, blob, argumentExists(3), size, 3, &data, &length) )
+    {
+        return SQLITE_MISUSE;
+    }
+    sqlite3_result_blob((sqlite3_context*)sqlCntxt, data, length, SQLITE_TRANSIENT);
     return 0;
 }
 
