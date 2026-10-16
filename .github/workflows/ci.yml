@@ -22,6 +22,9 @@ jobs:
       - name: Build
         run: make -f Makefile.lin lib -j"$(nproc)"
 
+      - name: Build the extension libraries used by the tests
+        run: make -f Makefile.lin example_dlls
+
       - name: Test
         working-directory: tests
         run: |

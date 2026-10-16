@@ -2,3 +2,7 @@
 /build/
 /bin/
 /bin.dbg/
+
+# Example and test extension libraries (make -f Makefile.lin example_dlls)
+/examples/user.extensions/**/*.o
+/examples/user.extensions/**/*.so
