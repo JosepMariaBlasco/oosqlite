@@ -86,7 +86,7 @@
   table listing every method with a brief description and a link to the detailed documentation for the method.
 </para>
 <para>
-  Each method section starts with a <link linkend="syndia">syntax</link> diagram as a synopsis of how to invoke the
+  Each method section starts with a <link linkend="readsy">syntax</link> diagram as a synopsis of how to invoke the
   method. Text follows describing the method, listing each argument to the method, and the return from the method. Most
   method sections have a <emphasis role="italic">remarks</emphasis> component discussing the method in more detail. Most
   method sections also have a <emphasis role="italic">details</emphasis> component pointing to the SQLite documentation
@@ -129,83 +129,7 @@
 </para>
 </section>
 
-<section id="syndia"><title>How to Read the Syntax Diagrams</title>
-<para>
-  Throughout this book, syntax is described using the structure defined below. This is similar to, but slightly
-  different than, the IBM syntax diagrams used in other ooRexx reference documentation.  The author is calling these
-  diagrams <emphasis role="italic">simplified railroad tracks</emphasis>. It primarily strives to limit all diagrams to
-  2 lines, and does away with much of the complexity of true IBM railroad tracks. The body of text following the
-  syntax diagrams will resolve any ambiguities in the diagram.
-</para>
-<itemizedlist>
-<listitem>
-<para>
-  Read the syntax diagrams from left to right, from top to bottom, following the path of the line.
-</para>
-<para>
-  The <computeroutput>&gt;&gt;---</computeroutput> symbol indicates the beginning of a statement.
-</para>
-<para>
-  The <computeroutput>---&gt;</computeroutput> symbol indicates that the statement syntax is continued on the next
-  line. In most cases statement continuation is avoided.
-</para>
-<para>
-  The <computeroutput>&gt;---</computeroutput> symbol indicates that a statement is continued from the previous line.
-</para>
-<para>
-  The <computeroutput>---&gt;&lt;</computeroutput> symbol indicates the end of a statement.
-</para>
-<para>
-  Diagrams of syntactical units other than complete statements start with the <computeroutput>&gt;---</computeroutput>
-  symbol and end with the  <computeroutput>---&gt;</computeroutput> symbol.
-</para></listitem>
-<listitem>
-<para>
-  Required items appear on the horizontal line (the main path).
-
-<programlisting>
-<![CDATA[
->>-STATEMENT--required_item------------------------------------><
-
-
-]]>
-</programlisting>
-</para></listitem>
-<listitem>
-<para>
-  Optional items appear below the main path.
-
-<programlisting>
-<![CDATA[
->>-STATEMENT--+---------------+--------------------------------><
-              +-optional_item-+
-
-
-]]>
-</programlisting>
-</para></listitem></itemizedlist>
-<para>
-  In this reference, the syntax being presented is the syntax for method invocations and function calls. The diagrams
-  show the method, or function, names and their arguments.  For method invocations, the section the method is included
-  in, and / or the text itself, make it clear as to which class the method belongs to.  The arguments to the method or
-  function are enclosed in parenthesis and separated by commas.  The arguments are represented by appropriate variable
-  names and these variable names are then described in the text for the method.  When arguments are optional, the
-  default value and or behavior if the argument is omitted is also described in the text.  In all cases, the text rather
-  than the syntax diagram should be considered definitive.
-</para>
-<para>
-  The following example shows the described syntax:
-</para>
-<programlisting>
-<![CDATA[
-
->>--rollbackHook(--callBackObj--+------------+--+-------------+--)-------------><
-                                +-,-mthName--+  +-,-userData--+
-
-
-]]>
-</programlisting>
-</section>
+<xi:include href="Common_Content/diagrams.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
 
 <section id="helpGettingHelp"><title>Getting Help and Submitting Feedback</title>
 <para>The Open Object Rexx Project has a number of methods to obtain help and submit feedback for ooRexx and the
