@@ -67,7 +67,10 @@
   </listitem>
   <listitem>
   <para>
-   Execute the SQL by <link linkend="mthStepClsStmt">step</link> one or more times.
+   Execute the SQL by invoking <link linkend="mthStepClsStmt">step</link> one or more times. Each time
+   <emphasis role="italic">step</emphasis> returns <computeroutput>ROW</computeroutput>, the values of the current result
+   row can be retrieved with the <emphasis role="italic">column</emphasis> methods, such as <link
+   linkend="mthColumnText">columnText</link> or <link linkend="mthColumnInt">columnInt</link>.
   </para>
   </listitem>
   <listitem>
@@ -82,6 +85,33 @@
   </para>
   </listitem>
   </itemizedlist>
+</para>
+<para>
+  In SQLite, host parameters and result columns are numbered from 0. In ooSQLite, as is normal in Rexx, they are numbered
+  from 1: the first parameter of a statement and the first column of a result row are number 1.
+</para>
+<para>
+  Once a statement has been finalized, or if it was not prepared without error, invoking any method of the statement other
+  than its attributes, <link linkend="mthFinalize">finalize</link>, and <link linkend="mthStmtBusy">stmtBusy</link> raises
+  a syntax error, 98.900, with the message <computeroutput>The ooSQLite statement is not valid, it has been
+  finalized</computeroutput>, or <computeroutput>The ooSQLite statement is not valid, it was not prepared without
+  error</computeroutput>.
+</para>
+<para>
+  Most of the methods of this class work like an SQLite API with a similar name, and return what that API returns: a
+  result code for the <emphasis role="italic">bind</emphasis> methods, <link linkend="mthStepClsStmt">step</link>,
+  <link linkend="mthReset">reset</link>, and <link linkend="mthFinalize">finalize</link>, or the value asked for. The
+  result codes are the ooSQLite <link linkend="sctResultCode">Result Code</link> constants, which, like all the ooSQLite
+  constants, can be used through the statement object itself, because the class inherits the <link
+  linkend="chpOOSQLiteConstants">ooSQLiteConstants</link> mixin class: <computeroutput>stmt~ROW</computeroutput> is the
+  same as <computeroutput>.ooSQLite~ROW</computeroutput>.
+</para>
+<para>
+  The examples in this chapter use an open <link linkend="clsOOSQLiteConnection">connection</link>,
+  <computeroutput>db</computeroutput>, to a database with this table:
+<programlisting>
+  CREATE TABLE foods(id INTEGER PRIMARY KEY, type_id INTEGER, name TEXT, price REAL, picture BLOB);
+</programlisting>
 </para>
 
 <section id="sctMethodsOOSQLiteStmt"><title>Method Table</title>
@@ -115,15 +145,175 @@
 </row>
 <row>
 <entry><link linkend="atrFinalized">finalized</link></entry>
-<entry>Reflects the finialized state of this statement.</entry>
+<entry>Reflects the finalized state of this statement.</entry>
+</row>
+<row>
+<entry><link linkend="atrInitCodeClsStmt">initCode</link></entry>
+<entry>The result code of preparing this statement: 0 when it was prepared without error.</entry>
+</row>
+<row>
+<entry><link linkend="atrLastErrCodeClsStmt">lastErrCode</link></entry>
+<entry>The last error code recorded by ooSQLite for this statement.</entry>
+</row>
+<row>
+<entry><link linkend="atrLastErrMsgClsStmt">lastErrMsg</link></entry>
+<entry>The last error message recorded by ooSQLite for this statement.</entry>
 </row>
 <row>
 <entry><xref linkend="atrNullClsOOSQLiteStmt"/></entry>
-<entry>Reflects the representation for the SQL NULL value that is returned by the interpreter, for this statment, for database values that are NULL.</entry>
+<entry>Reflects the representation for the SQL NULL value that is returned by the interpreter, for this statement, for database values that are NULL.</entry>
+</row>
+<row>
+<entry><link linkend="atrRecordFormatClsStmt">recordFormat</link></entry>
+<entry>&changed11;The default format of a result set for this statement.</entry>
 </row>
 <row>
 <entry align="center"><emphasis role="bold">Instance Methods</emphasis></entry>
 <entry align="center"><emphasis role="bold"></emphasis></entry>
+</row>
+<row>
+<entry><link linkend="mthBindBlob">bindBlob</link></entry>
+<entry>Binds a BLOB value to a host parameter.</entry>
+</row>
+<row>
+<entry><link linkend="mthBindDouble">bindDouble</link></entry>
+<entry>Binds a floating point value to a host parameter.</entry>
+</row>
+<row>
+<entry><link linkend="mthBindInt">bindInt</link></entry>
+<entry>Binds a 32-bit integer value to a host parameter.</entry>
+</row>
+<row>
+<entry><link linkend="mthBindInt64">bindInt64</link></entry>
+<entry>Binds a 64-bit integer value to a host parameter.</entry>
+</row>
+<row>
+<entry><link linkend="mthBindNull">bindNull</link></entry>
+<entry>Binds the SQL NULL value to a host parameter.</entry>
+</row>
+<row>
+<entry><link linkend="mthBindParameterCount">bindParameterCount</link></entry>
+<entry>Returns the number of host parameters in this statement.</entry>
+</row>
+<row>
+<entry><link linkend="mthBindParameterIndex">bindParameterIndex</link></entry>
+<entry>Returns the index of the host parameter with the given name.</entry>
+</row>
+<row>
+<entry><link linkend="mthBindParameterName">bindParameterName</link></entry>
+<entry>Returns the name of the host parameter with the given index.</entry>
+</row>
+<row>
+<entry><link linkend="mthBindText">bindText</link></entry>
+<entry>Binds a text value to a host parameter.</entry>
+</row>
+<row>
+<entry><link linkend="mthBindValue">bindValue</link></entry>
+<entry>Binds a value taken from a result column of a statement to a host parameter.</entry>
+</row>
+<row>
+<entry><link linkend="mthBindZeroBlob">bindZeroBlob</link></entry>
+<entry>Binds a BLOB filled with zeros to a host parameter.</entry>
+</row>
+<row>
+<entry><link linkend="mthClearBindings">clearBindings</link></entry>
+<entry>Sets all the host parameters of this statement to NULL.</entry>
+</row>
+<row>
+<entry><link linkend="mthColumnBlob">columnBlob</link></entry>
+<entry>Returns the value of a result column as a BLOB.</entry>
+</row>
+<row>
+<entry><link linkend="mthColumnBytes">columnBytes</link></entry>
+<entry>Returns the size in bytes of the value of a result column.</entry>
+</row>
+<row>
+<entry><link linkend="mthColumnCount">columnCount</link></entry>
+<entry>Returns the number of columns in the result set of this statement.</entry>
+</row>
+<row>
+<entry><link linkend="mthColumnDataBaseName">columnDataBaseName</link></entry>
+<entry>Returns the name of the database a result column comes from.</entry>
+</row>
+<row>
+<entry><link linkend="mthColumnDeclType">columnDeclType</link></entry>
+<entry>Returns the declared type of the table column a result column comes from.</entry>
+</row>
+<row>
+<entry><link linkend="mthColumnDouble">columnDouble</link></entry>
+<entry>Returns the value of a result column as a floating point number.</entry>
+</row>
+<row>
+<entry><link linkend="mthColumnIndex">columnIndex</link></entry>
+<entry>Returns the index of the result column with the given name.</entry>
+</row>
+<row>
+<entry><link linkend="mthColumnInt">columnInt</link></entry>
+<entry>Returns the value of a result column as a 32-bit integer.</entry>
+</row>
+<row>
+<entry><link linkend="mthColumnInt64">columnInt64</link></entry>
+<entry>Returns the value of a result column as a 64-bit integer.</entry>
+</row>
+<row>
+<entry><link linkend="mthColumnName">columnName</link></entry>
+<entry>Returns the name of a result column.</entry>
+</row>
+<row>
+<entry><link linkend="mthColumnOriginName">columnOriginName</link></entry>
+<entry>Returns the name of the table column a result column comes from.</entry>
+</row>
+<row>
+<entry><link linkend="mthColumnTableName">columnTableName</link></entry>
+<entry>Returns the name of the table a result column comes from.</entry>
+</row>
+<row>
+<entry><link linkend="mthColumnText">columnText</link></entry>
+<entry>Returns the value of a result column as a string.</entry>
+</row>
+<row>
+<entry><link linkend="mthColumnType">columnType</link></entry>
+<entry>Returns the datatype of the value of a result column.</entry>
+</row>
+<row>
+<entry><link linkend="mthColumnValue">columnValue</link></entry>
+<entry>Returns the value of a result column, to be bound to a host parameter.</entry>
+</row>
+<row>
+<entry><link linkend="mthDataCount">dataCount</link></entry>
+<entry>Returns the number of columns in the current result row.</entry>
+</row>
+<row>
+<entry><link linkend="mthDbHandle">dbHandle</link></entry>
+<entry>Returns the database connection of this statement.</entry>
+</row>
+<row>
+<entry><link linkend="mthFinalize">finalize</link></entry>
+<entry>Deletes the prepared statement and releases its resources.</entry>
+</row>
+<row>
+<entry><link linkend="mthReset">reset</link></entry>
+<entry>Resets this statement, so that it can be executed again.</entry>
+</row>
+<row>
+<entry><link linkend="mthSqlClsStmt">sql</link></entry>
+<entry>&added11;Returns the SQL text of this statement.</entry>
+</row>
+<row>
+<entry><link linkend="mthStepClsStmt">step</link></entry>
+<entry>Executes this statement, or advances it to the next result row.</entry>
+</row>
+<row>
+<entry><link linkend="mthStmtBusy">stmtBusy</link></entry>
+<entry>Tests if this statement has been stepped but not run to completion or reset.</entry>
+</row>
+<row>
+<entry><link linkend="mthstmtReadonly">stmtReadonly</link></entry>
+<entry>Tests if this statement makes no direct changes to the database.</entry>
+</row>
+<row>
+<entry><link linkend="mthStmtStatus">stmtStatus</link></entry>
+<entry>Returns the value of a performance counter of this statement.</entry>
 </row>
 </tbody></tgroup>
 </table>
@@ -151,13 +341,14 @@
       <listitem>
       <para>
         The open <link linkend="clsOOSQLiteConnection">connection</link> to the database that the statement will be executed
-        on.
+        on. The connection must not be the destination of a backup in progress.
       </para>
       </listitem></varlistentry>
-      <varlistentry><term>sql</term>
+      <varlistentry><term>sql [required]</term>
       <listitem>
       <para>
-        The SQL statement to be prepared for execution
+        The SQL statement to be prepared for execution. If <emphasis role="italic">sql</emphasis> contains more than one
+        SQL statement, only the first one is prepared, and the rest of the text is ignored.
       </para>
       </listitem></varlistentry>
       <varlistentry><term>format [optional]</term>
@@ -165,7 +356,7 @@
       <para>
         This argument can be used to specify the default format of the result row(s) coming out of the execution of this
         statement. This argument sets the <link linkend="atrRecordFormatClsStmt">recordFormat</link> attribute. If this
-        argument is omitted the default <link linkend="atrRecordFormatClsConn">format</link> value of the <emphasis
+        argument is omitted the <link linkend="atrRecordFormatClsConn">recordFormat</link> value of the <emphasis
         role="italic">dbConn</emphasis> argument is used to set the attribute.
       </para>
       <para>
@@ -179,87 +370,62 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    Returns a newly instatiated <computeroutput>ooSQLiteConnection</computeroutput>
+    Returns a newly instantiated <computeroutput>ooSQLiteStmt</computeroutput> object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A new statement object is always returned, even if the SQL could not be prepared, for instance because of a syntax
+    error or a table that does not exist. The program must check the <link linkend="atrInitCodeClsStmt">initCode</link>
+    attribute, which is 0 (<computeroutput>OK</computeroutput>) if the statement was prepared without error. Otherwise, the
+    <link linkend="atrLastErrMsgClsStmt">lastErrMsg</link> attribute describes the error, the statement is <link
+    linkend="atrFinalized">finalized</link>, and it can not be used.
+  </para>
+  <para>
+    The new statement takes the value of its <xref linkend="atrNullClsOOSQLiteStmt"/> attribute from the <xref
+    linkend="atrNullClsOOSQLiteConnection"/> attribute of the connection.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Raises syntax errors when incorrect arguments are detected.
+    Raises syntax errors when incorrect arguments are detected: when <emphasis role="italic">dbConn</emphasis> is not an
+    ooSQLiteConnection object, when the connection is closed or is the destination of a backup in progress, or when
+    <emphasis role="italic">format</emphasis> is not a valid format.
+  </para>
+  <para>
+    The functionality of <emphasis role="italic">new</emphasis> is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/prepare.html">sqlite3_prepare_v2</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example prepares a query, displays its result rows, and finalizes the statement:
+<programlisting language="rexx">
+  stmt = .ooSQLiteStmt~new(db, "SELECT id, name FROM foods WHERE type_id = 1 ORDER BY name;")
+  if stmt~initCode &lt;&gt; 0 then do
+    say 'Error preparing the statement:' stmt~lastErrMsg
+    return stmt~initCode
+  end
 
-]]>
+  do while stmt~step == stmt~ROW
+    say stmt~columnInt(1)~right(4) stmt~columnText(2)
+  end
+
+  stmt~finalize
+
+  /* Output:
+
+     1 Bagels
+     2 Bagels, raisin
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLiteStmt::new() -->
-
-
-<section id="atrInitCodeClsStmt"><title>initCode (Attribute)</title>
-<indexterm><primary>initCode</primary></indexterm>
-<indexterm><primary>ooSQLiteStmt class</primary><secondary>initCode</secondary></indexterm>
-<mediaobject>
-<imageobject>
-<imagedata fileref="images/primary/stmt_initcode_get.svg" scale="55" />
-</imageobject>
-</mediaobject>
-
-<para>
-  xx
-</para>
-<variablelist>
-  <varlistentry><term><emphasis role="bold">initCode get:</emphasis></term>
-  <listitem>
-  <para>
-    details about get
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">initCode set:</emphasis></term>
-  <listitem>
-  <para>
-    details about set
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    Additional comments.
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Details</emphasis></term>
-  <listitem>
-  <para>
-    Anything?
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
-  <listitem>
-  <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-
-]]>
-</programlisting>
-  </para>
-  </listitem></varlistentry>
-</variablelist>
-</section>  <!-- End ooSQLiteStmt::initCode() [attribute]  -->
 
 
 <section id="atrFinalized"><title>finalized (Attribute)</title>
@@ -272,47 +438,91 @@
 </mediaobject>
 
 <para>
-  Reflects the finialized state of this statement.
+  Reflects the finalized state of this statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">finalized get:</emphasis></term>
   <listitem>
   <para>
-    Returns true if this statement has been finialized, otherwise false.
+    Returns true if this statement has been finalized, otherwise false.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">finalized set:</emphasis></term>
   <listitem>
   <para>
-    details about set
+    The programmer can not set the value of this attribute. It is set internally by ooSQLite.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A statement is finalized by the <link linkend="mthFinalize">finalize</link> method, and also when it is garbage
+    collected. A statement that could not be prepared, that is, one whose <link
+    linkend="atrInitCodeClsStmt">initCode</link> is not 0, is finalized from the start.
   </para>
   </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Details</emphasis></term>
+</variablelist>
+</section>  <!-- End ooSQLiteStmt::finalized() [attribute]  -->
+
+
+<section id="atrInitCodeClsStmt"><title>initCode (Attribute)</title>
+<indexterm><primary>initCode</primary><secondary>ooSQLiteStmt class</secondary></indexterm>
+<indexterm><primary>ooSQLiteStmt class</primary><secondary>initCode</secondary></indexterm>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_initcode_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
+
+<para>
+  The <emphasis role="italic">initCode</emphasis> attribute reflects the result of preparing the statement when the object
+  was instantiated.
+</para>
+<variablelist>
+  <varlistentry><term><emphasis role="bold">initCode get:</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    Returns the SQLite result code of preparing the statement in <link linkend="mthNewClsStmt">new</link>: 0
+    (<computeroutput>OK</computeroutput>) if the statement was prepared without error, otherwise one of the <link
+    linkend="sctResultCode">Result Code</link> constants.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">initCode set:</emphasis></term>
+  <listitem>
+  <para>
+    The programmer can not set the value of this attribute. It is set internally by ooSQLite, and it never changes.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    Because <emphasis role="italic">new</emphasis> always returns a statement object, even when the SQL could not be
+    prepared, the program should check this attribute before using the statement. When it is not 0, the <link
+    linkend="atrLastErrMsgClsStmt">lastErrMsg</link> attribute describes the error, and the statement is <link
+    linkend="atrFinalized">finalized</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example tries to prepare a query on a table that does not exist:
+<programlisting language="rexx">
+  stmt = .ooSQLiteStmt~new(db, "SELECT * FROM fooods;")
+  say 'initCode:   ' stmt~initCode
+  say 'lastErrMsg: ' stmt~lastErrMsg
+  say 'finalized:  ' stmt~finalized
 
+  /* Output:
 
-]]>
+  initCode:    1
+  lastErrMsg:  no such table: fooods
+  finalized:   1
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
-</section>  <!-- End ooSQLiteStmt::finalized() [attribute]  -->
+</section>  <!-- End ooSQLiteStmt::initCode() [attribute]  -->
 
 
 <section id="atrLastErrCodeClsStmt"><title>lastErrCode (Attribute)</title>
@@ -359,26 +569,10 @@
       The attributes are most useful when the invocation of <emphasis role="italic">new</emphasis> fails to initialize the
       object correctly due to an error. The <emphasis role="italic">lastErrMsg</emphasis> and <emphasis
       role="italic">lastErrCode</emphasis> attributes are always updated during <emphasis role="italic">new</emphasis>.
-      In general, these objects do not update the attributes after every method invocation.
+      For a statement, they are not updated by any other method: they keep the result of preparing it. After the other
+      methods, the error code and message of the <link linkend="clsOOSQLiteConnection">connection</link>, given by its
+      <link linkend="mthErrCode">errCode</link> and <link linkend="mthErrMsg">errMsg</link> methods, describe the error.
     </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Details</emphasis></term>
-  <listitem>
-  <para>
-    Anything?
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
-  <listitem>
-  <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-
-]]>
-</programlisting>
-  </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLiteStmt::lastErrCode() [attribute]  -->
@@ -394,16 +588,17 @@
 </mediaobject>
 
 <para>
-  xx
+  The <emphasis role="italic">lastErrMsg</emphasis> attribute reflects the last error message recorded by ooSQLite.
 </para>
 <variablelist>
-  <varlistentry><term><emphasis role="bold">errMsg get:</emphasis></term>
+  <varlistentry><term><emphasis role="bold">lastErrMsg get:</emphasis></term>
   <listitem>
   <para>
-    This attribute holds the value of the last error message recorded by ooSQLite.
+    This attribute holds the value of the last error message recorded by ooSQLite for this prepared statement. When there
+    was no error, it is <computeroutput>not an error</computeroutput>.
   </para>
   </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">errMsg set:</emphasis></term>
+  <varlistentry><term><emphasis role="bold">lastErrMsg set:</emphasis></term>
   <listitem>
   <para>
     The programmer can not set the value of this attribute. It is set internally by ooSQLite.
@@ -415,47 +610,33 @@
     The last error message attribute is similar to the <link linkend="atrLastErrCodeClsStmt">lastErrCode</link>
     attribute. Its value is the last status message recorded by ooSQLite. The <emphasis
     role="italic">lastErrCode</emphasis> and the <emphasis role="italic">lastErrMsg</emphasis> attributes are always
-    updated together. The error message is always the message that goes with the error code.
-  </para>
-  <para>
-    Each of the three major ooSQLite objects, an <link linkend="clsOOSQLiteConnection">ooSQLiteConnection</link>, an
-    <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link>, and an <link
-    linkend="clsOOSQLiteBackup">ooSQLiteBackup</link> object have a <emphasis role="italic">lastErrMsg</emphasis> and
-    a <emphasis role="italic">lastErrCode</emphasis> attribute. These attributes all serve the same basic purpose, to
-    hold the last error message and code recorded by ooSQLite.
-  </para>
-  <para>
-    The attributes are most useful when the invocation of <emphasis role="italic">new</emphasis> fails to initialize the
-    object correctly due to an error. The <emphasis role="italic">lastErrMsg</emphasis> and <emphasis
-    role="italic">lastErrCode</emphasis> attributes are always updated during <emphasis role="italic">new</emphasis>.
-    In general, these objects do not update the attributes after every method invocation.
+    updated together. The error message is always the message that goes with the error code. See <link
+    linkend="atrLastErrCodeClsStmt">lastErrCode</link> for when they are updated.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    In some circumstances, the error message from the SQLite <ulink
-    url="http://www.sqlite.org/c3ref/errcode.html">sqlite3_errmsg</ulink> API is copied into the <emphasis
-    role="italic">lastErrMsg</emphasis>. At other times the error message is specific to ooSQLite.
+    When the statement could not be prepared, the error message is the one returned by the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/errcode.html">sqlite3_errmsg</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
     This example initializes a new ooSQLiteStmt object. When the <link linkend="atrInitCodeClsStmt">initCode</link>
-    attribute is checked, it is seen that an error ocurred, and the last error message is printed to the screen:
+    attribute is checked, it is seen that an error ocurred, and the last error code and message are printed to the screen:
 <programlisting language="rexx">
-  stmt = .ooSQLiteStmt~new(dbConn, 'SELECT * FROM fooods ORDER BY name;')
-  if stmt~initCode <> 0 then do
+  stmt = .ooSQLiteStmt~new(db, 'SELECT * FROM fooods ORDER BY name;')
+  if stmt~initCode &lt;&gt; 0 then do
     say 'ooSQLiteStmt initialization error:' stmt~initCode
-    say '  Error code:' stmt~initCode '('stmt~lastErrMsg')'
+    say '  Error code:' stmt~lastErrCode '('stmt~lastErrMsg')'
   end
 
-  /*  output would be similar to:
+  /*  Output:
 
   ooSQLiteStmt initialization error: 1
     Error code: 1 (no such table: fooods)
-
   */
 </programlisting>
   </para>
@@ -479,7 +660,7 @@
 </mediaobject>
 
 <para>
-  Reflects the representation for the SQL NULL value that is returned by the interpreter, for this statment, for database
+  Reflects the representation for the SQL NULL value that is returned by the interpreter, for this statement, for database
   values that are NULL.
 </para>
 <variablelist>
@@ -495,34 +676,31 @@
   <listitem>
   <para>
     Set this attribute to either the <computeroutput>.nil</computeroutput> object, or some alternative <emphasis
-    role="italic">string</emphasis> value.
+    role="italic">string</emphasis> value. Any other object is converted to its string value.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    By default, ooSQLite uses the <computeroutput>.nil</computeroutput> object to represent the SQL NULL value. Queries for
-    values stored in the database will return the <computeroutput>.nil</computeroutput> object for any value that is SQL
-    NULL. However, by changing the value of the <emphasis role="italic">null</emphasis> attribute, the Rexx programmer can
-    change the value the interpreter returns for NULL when this statement is executed. Typically this would be done when the
-    returned values are going to be displayed as text and the programmer would prefer to work with a string directly.
-    Perhaps <emphasis role="italic">NULL</emphasis>, or <emphasis role="italic">no value</emphasis>.
+    By default, ooSQLite uses the <computeroutput>.nil</computeroutput> object to represent the SQL NULL value. <link
+    linkend="mthColumnText">columnText</link> returns the <computeroutput>.nil</computeroutput> object for any value that
+    is SQL NULL. However, by changing the value of the <emphasis role="italic">null</emphasis> attribute, the Rexx
+    programmer can change the value the interpreter returns for NULL when this statement is executed. Typically this would
+    be done when the returned values are going to be displayed as text and the programmer would prefer to work with a
+    string directly. Perhaps <emphasis role="italic">NULL</emphasis>, or <emphasis role="italic">no value</emphasis>.
   </para>
   <para>
     When a <computeroutput>ooSQLiteStmt</computeroutput> object is instantiated, the <emphasis role="italic">null</emphasis>
     attribute is assigned the value of the <xref linkend="atrNullClsOOSQLiteConnection"/> object that is used to instantiate
-    the statement.
+    the statement. Changing the attribute of the connection afterwards does not change the attribute of the statement.
   </para>
   <para>
     <emphasis role="bold">Note</emphasis> that this attribute does not affect the value the programmer must use to assign a
-    SQL NULL to the database. The programmer must use the <computeroutput>.nil</computeroutput> object for that.
+    SQL NULL to the database. The programmer must use <link linkend="mthBindNull">bindNull</link> for that.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
-  <para>
-    Raises syntax errors when incorrect usage is detected.
-  </para>
   <para>
     This attribute is provided by ooSQLite, there is no similar feature provided by SQLite.
   </para>
@@ -530,26 +708,24 @@
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example sets the <emphasis role="italic">null</emphasis> attribute of the statment to <emphasis role="italic">no
-    value</emphasis>. This allows the application to invoke the <emphasis role="italic">left</emphasis> method on the
-    returned value without having to check that the return is the <computeroutput>.nil</computeroutput> object. Note that
-    invoking the <emphasis role="italic">left</emphasis> method on the <computeroutput>.nil</computeroutput> object will
-    raise a syntax condition:
+    This example sets the <emphasis role="italic">null</emphasis> attribute of the statement to <emphasis role="italic">no
+    price</emphasis>. This allows the application to invoke the <emphasis role="italic">left</emphasis> method on the
+    returned value without having to check that the return is the <computeroutput>.nil</computeroutput> object:
 <programlisting language="rexx">
-
-  dbConn = .ooSQLiteConnection~new(dbName, .ooSQLite~OPEN_READWRITE)
-
-  sql = 'SELECT * FROM foods ORDER BY name;'
-  stmt = .ooSQLiteStmt~new(dbConn, sql)
-  stmt~null = 'no value'
-
-  say stmt~columnName(1)~left(25) || stmt~columnName(2)~left(25) || stmt~columnName(3)~left(25)
-  say '='~copies(80)
-
+  stmt = .ooSQLiteStmt~new(db, "SELECT name, price FROM foods ORDER BY name;")
+  stmt~null = 'no price'
   do while stmt~step == stmt~ROW
-    say stmt~columnText(1)~left(25) || stmt~columnText(2)~left(25) || stmt~columnText(3)~left(25)
+    say stmt~columnText(1)~left(20) stmt~columnText(2)
   end
+  stmt~finalize
 
+  /* Output:
+
+  Bacon                3.75
+  Bagels               1.25
+  Bagels, raisin       1.5
+  Cheese               no price
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -557,8 +733,8 @@
 </section>  <!-- End ooSQLiteStmt::nullObj() [attribute]  -->
 
 
-<section id="atrRecordFormatClsStmt"><title>recordFormat (Attribute)</title>
-<indexterm><primary>recordFormat</primary></indexterm>
+<section id="atrRecordFormatClsStmt" revisionflag="changed"><title>&changed11;recordFormat (Attribute)</title>
+<indexterm><primary>recordFormat</primary><secondary>ooSQLiteStmt class</secondary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>recordFormat</secondary></indexterm>
 <mediaobject>
 <imageobject>
@@ -572,42 +748,47 @@
 </mediaobject>
 
 <para>
-  xx
+  Reflects the default format of a result set for this statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">recordFormat get:</emphasis></term>
   <listitem>
   <para>
-    details about get
+    Returns the format of this statement, one of the ooSQLite Result Set Format <link
+    linkend="sctOOSQLiteSpecific">Constants</link>: the format given to <link linkend="mthNewClsStmt">new</link>, or the
+    value of the <link linkend="atrRecordFormatClsConn">recordFormat</link> attribute of the connection when <emphasis
+    role="italic">new</emphasis> was not given one, unless it was changed afterwards.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">recordFormat set:</emphasis></term>
   <listitem>
   <para>
-    details about set
+    Set this attribute to one of the ooSQLite Result Set Format <link linkend="sctOOSQLiteSpecific">Constants</link>. Any
+    other value raises a syntax error.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    No method of the ooSQLiteStmt class returns a result set: the values of a statement are retrieved one column at a
+    time. The attribute records the format chosen for the statement; it does not change the format used by the
+    connection, for instance by its <link linkend="mthExec">exec</link> method.
   </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Details</emphasis></term>
-  <listitem>
   <para>
-    Anything?
+    &changed11;In previous versions, this attribute did not work: getting it returned the value of the <link
+    linkend="atrInitCodeClsStmt">initCode</link> attribute, and setting it changed the value of <emphasis
+    role="italic">initCode</emphasis>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-
-]]>
+    This example shows that a new statement takes the format of its connection:
+<programlisting language="rexx">
+  db~recordFormat = .ooSQLite~OO_STEM_OF_STEMS
+  stmt = .ooSQLiteStmt~new(db, "SELECT * FROM foods;")
+  say stmt~recordFormat                -- 3, the format of the connection
+  stmt~finalize
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -625,7 +806,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds a BLOB value to a host parameter of this statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -633,10 +814,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>index [required]</term>
       <listitem>
       <para>
-        xx
+        The index of the host parameter, 1 for the first parameter. The index of a named parameter can be obtained with
+        <link linkend="mthBindParameterIndex">bindParameterIndex</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>value [required]</term>
+      <listitem>
+      <para>
+        The data to bind: a String, a Buffer, or a MutableBuffer object. All the bytes of the data are bound, including any
+        embedded NUL characters.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -645,29 +834,44 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error: <computeroutput>RANGE</computeroutput> if <emphasis role="italic">index</emphasis> is
+    not the index of a parameter of the statement, <computeroutput>MISUSE</computeroutput> if the statement has been
+    stepped and not reset.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The data is copied by SQLite, so the object passed as <emphasis role="italic">value</emphasis> can be changed after the
+    method returns. What is said here about binding values applies to all the <emphasis role="italic">bind</emphasis>
+    methods: values can only be bound before the statement is first stepped, or after it is <link
+    linkend="mthReset">reset</link>; a bound value stays in place, also after a reset, until another value is bound to the
+    same parameter, or the bindings are cleared with <link linkend="mthClearBindings">clearBindings</link>; and a parameter
+    that has not been bound is NULL.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    Raises a syntax error, 93.900, if <emphasis role="italic">value</emphasis> is not a String, a Buffer, or a MutableBuffer.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">bindBlob</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_blob</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example stores some binary data in the picture column of a row:
+<programlisting language="rexx">
+  picture = 'FFD8FFE0'x || 'not really a JPEG image'
+  stmt = .ooSQLiteStmt~new(db, "UPDATE foods SET picture = ? WHERE name = 'Bacon';")
+  rc = stmt~bindBlob(1, picture)
+  if rc == stmt~OK then rc = stmt~step
+  if rc &lt;&gt; stmt~DONE then say 'Error:' db~errMsg
+  stmt~finalize
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -685,7 +889,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds a floating point value to a host parameter of this statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -693,10 +897,16 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>index [required]</term>
       <listitem>
       <para>
-        xx
+        The index of the host parameter, 1 for the first parameter.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>value [required]</term>
+      <listitem>
+      <para>
+        The number to bind. It is converted to a double precision floating point number.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -705,30 +915,26 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error, as <link linkend="mthBindBlob">bindBlob</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="mthBindBlob">bindBlob</link> for when values can be bound, and how long they stay
+    bound. The example of <link linkend="mthBindNull">bindNull</link> also uses <emphasis
+    role="italic">bindDouble</emphasis>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    Raises a syntax error if <emphasis role="italic">value</emphasis> is not a number.
   </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
-  <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    The functionality of the <emphasis role="italic">bindDouble</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_double</ulink> API.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -745,7 +951,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds a 32-bit integer value to a host parameter of this statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -753,10 +959,17 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>index [required]</term>
       <listitem>
       <para>
-        xx
+        The index of the host parameter, 1 for the first parameter.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>value [required]</term>
+      <listitem>
+      <para>
+        The whole number to bind, which must fit in 32 bits: from -2147483648 to 2147483647. Use <link
+        linkend="mthBindInt64">bindInt64</link> for larger numbers.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -765,30 +978,26 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error, as <link linkend="mthBindBlob">bindBlob</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="mthBindBlob">bindBlob</link> for when values can be bound, and how long they stay
+    bound. The examples of <link linkend="mthBindNull">bindNull</link> and <link linkend="mthReset">reset</link> also use
+    <emphasis role="italic">bindInt</emphasis>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    Raises a syntax error if <emphasis role="italic">value</emphasis> is not a whole number that fits in 32 bits.
   </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
-  <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    The functionality of the <emphasis role="italic">bindInt</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_int</ulink> API.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -805,7 +1014,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds a 64-bit integer value to a host parameter of this statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -813,10 +1022,16 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>index [required]</term>
       <listitem>
       <para>
-        xx
+        The index of the host parameter, 1 for the first parameter.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>value [required]</term>
+      <listitem>
+      <para>
+        The whole number to bind, which must fit in 64 bits: from -9223372036854775808 to 9223372036854775807.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -825,29 +1040,37 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error, as <link linkend="mthBindBlob">bindBlob</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="mthBindBlob">bindBlob</link> for when values can be bound, and how long they stay
+    bound.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    Raises a syntax error if <emphasis role="italic">value</emphasis> is not a whole number that fits in 64 bits.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">bindInt64</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_int64</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example stores a number that does not fit in 32 bits:
+<programlisting language="rexx">
+  db~exec("CREATE TABLE counters(name TEXT, value INTEGER);")
+  stmt = .ooSQLiteStmt~new(db, "INSERT INTO counters VALUES('bytes', ?);")
+  stmt~bindInt64(1, 9876543210)
+  stmt~step
+  stmt~finalize
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -865,18 +1088,18 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds the SQL NULL value to a host parameter of this statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>index [required]</term>
       <listitem>
       <para>
-        xx
+        The index of the host parameter, 1 for the first parameter.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -885,29 +1108,46 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error, as <link linkend="mthBindBlob">bindBlob</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A parameter that has never been bound is already NULL. <emphasis role="italic">bindNull</emphasis> is needed to set
+    to NULL a parameter that was bound to another value; <link linkend="mthClearBindings">clearBindings</link> does it for
+    all the parameters at once. The <xref linkend="atrNullClsOOSQLiteStmt"/> attribute has no effect on binding: it only
+    changes what <link linkend="mthColumnText">columnText</link> returns for NULL values.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">bindNull</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_null</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example inserts two rows with the same statement. The second one has no price:
+<programlisting language="rexx">
+  sql  = "INSERT INTO foods(type_id, name, price) VALUES(?, ?, ?);"
+  stmt = .ooSQLiteStmt~new(db, sql)
 
-]]>
+  stmt~bindInt(1, 2)
+  stmt~bindText(2, 'Ham')
+  stmt~bindDouble(3, 4.5)
+  stmt~step
+
+  stmt~reset
+  stmt~bindInt(1, 3)
+  stmt~bindText(2, 'Brie')
+  stmt~bindNull(3)                     -- no price yet
+  stmt~step
+
+  stmt~finalize
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -925,50 +1165,42 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the number of host parameters in this statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments to this method.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The index of the last host parameter of the statement, or 0 if it has none.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    This is the number of parameters when the parameters are written as <computeroutput>?</computeroutput>, or as names:
+    <computeroutput>:name</computeroutput>, <computeroutput>@name</computeroutput>, or <computeroutput>$name</computeroutput>.
+    A named parameter that appears more than once in the SQL is a single parameter. When the parameters are numbered
+    explicitly, as in <computeroutput>?NNN</computeroutput>, the numbers can leave gaps, and the value returned is the
+    largest number used, not the number of parameters.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">bindParameterCount</emphasis> method is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/bind_parameter_count.html">sqlite3_bind_parameter_count</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="mthBindParameterIndex">bindParameterIndex</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -985,18 +1217,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the index of the host parameter with the given name.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>name [required]</term>
       <listitem>
       <para>
-        xx
+        The name of the parameter, as written in the SQL, including its first character: for the parameter
+        <computeroutput>:type</computeroutput>, the name is <computeroutput>:type</computeroutput>, not <computeroutput>type</computeroutput>.
+        The comparison is case sensitive.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1005,29 +1239,42 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    Additional comments.
+    The index of the parameter, which can be used with the <emphasis role="italic">bind</emphasis> methods, or 0 if the
+    statement has no parameter with that name.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">bindParameterIndex</emphasis> method is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/bind_parameter_index.html">sqlite3_bind_parameter_index</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example lists the parameters of a statement, binds them by name, and executes it:
+<programlisting language="rexx">
+  sql  = "SELECT name FROM foods WHERE type_id = :type AND price &lt; :maxPrice;"
+  stmt = .ooSQLiteStmt~new(db, sql)
 
-]]>
+  do i = 1 to stmt~bindParameterCount
+    say i stmt~bindParameterName(i)
+  end
+
+  stmt~bindInt(stmt~bindParameterIndex(':type'), 1)
+  stmt~bindDouble(stmt~bindParameterIndex(':maxPrice'), 1.4)
+  do while stmt~step == stmt~ROW
+    say stmt~columnText(1)
+  end
+  stmt~finalize
+
+  /* Output:
+
+  1 :type
+  2 :maxPrice
+  Bagels
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1045,18 +1292,18 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the name of the host parameter with the given index.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>index [required]</term>
       <listitem>
       <para>
-        xx
+        The index of the host parameter, 1 for the first parameter.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1065,30 +1312,23 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    Additional comments.
+    The name of the parameter as written in the SQL, including its first character, such as
+    <computeroutput>:type</computeroutput>. For a parameter written as <computeroutput>?</computeroutput>, which has no
+    name, and for an index that is out of range, the empty string is returned. A parameter written as
+    <computeroutput>?NNN</computeroutput> has that text as its name.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">bindParameterName</emphasis> method is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/bind_parameter_name.html">sqlite3_bind_parameter_name</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="mthBindParameterIndex">bindParameterIndex</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1105,7 +1345,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds a text value to a host parameter of this statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1113,10 +1353,17 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>index [required]</term>
       <listitem>
       <para>
-        xx
+        The index of the host parameter, 1 for the first parameter.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>text [required]</term>
+      <listitem>
+      <para>
+        The string to bind. SQLite expects the text to be UTF-8. The text ends at its first NUL character, if it has one:
+        use <link linkend="mthBindBlob">bindBlob</link> for data that can contain NUL characters.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1125,30 +1372,23 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error, as <link linkend="mthBindBlob">bindBlob</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The text is copied by SQLite. See the remarks of <link linkend="mthBindBlob">bindBlob</link> for when values can be
+    bound, and how long they stay bound. The example of <link linkend="mthBindNull">bindNull</link> also uses <emphasis
+    role="italic">bindText</emphasis>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
-  <listitem>
-  <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    The functionality of the <emphasis role="italic">bindText</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_text</ulink> API.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1165,7 +1405,8 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds a value taken from a result column of a statement to a host parameter of this statement. The value keeps its
+  datatype: an integer is bound as an integer, a BLOB as a BLOB, and so on.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1173,10 +1414,16 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>index [required]</term>
       <listitem>
       <para>
-        xx
+        The index of the host parameter, 1 for the first parameter.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>value [required]</term>
+      <listitem>
+      <para>
+        A value returned by <link linkend="mthColumnValue">columnValue</link>, which is a Pointer object.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1185,29 +1432,47 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error, as <link linkend="mthBindBlob">bindBlob</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The value returned by <emphasis role="italic">columnValue</emphasis> is only valid while the statement it comes from
+    stays on the same result row: it must be bound before that statement is stepped again, reset, or finalized. Once it is
+    bound, SQLite has its own copy. Passing any other Pointer, or a value that is no longer valid, has unpredictable
+    results, and can crash the interpreter.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    Raises a syntax error if <emphasis role="italic">value</emphasis> is not a Pointer object.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">bindValue</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_value</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example copies some rows from one table to another, keeping the datatypes of the values:
+<programlisting language="rexx">
+  db~exec("CREATE TABLE cheap(name TEXT, price REAL);")
+  src = .ooSQLiteStmt~new(db, "SELECT name, price FROM foods WHERE price &lt; 2;")
+  dst = .ooSQLiteStmt~new(db, "INSERT INTO cheap VALUES(?, ?);")
 
-]]>
+  do while src~step == src~ROW
+    dst~bindValue(1, src~columnValue(1))
+    dst~bindValue(2, src~columnValue(2))
+    dst~step
+    dst~reset
+  end
+
+  src~finalize
+  dst~finalize
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1225,7 +1490,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds a BLOB filled with zeros to a host parameter of this statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1233,10 +1498,16 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>index [required]</term>
       <listitem>
       <para>
-        xx
+        The index of the host parameter, 1 for the first parameter.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>length [required]</term>
+      <listitem>
+      <para>
+        The size of the BLOB, in bytes. A negative length is the same as 0.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1245,29 +1516,33 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error, as <link linkend="mthBindBlob">bindBlob</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    SQLite does not use memory for the zeros while the statement runs, so this is an efficient way to reserve space for a
+    large BLOB.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">bindZeroBlob</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_zeroblob</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example sets the picture column of a row to 4096 zero bytes:
+<programlisting language="rexx">
+  stmt = .ooSQLiteStmt~new(db, "UPDATE foods SET picture = ? WHERE name = 'Cheese';")
+  stmt~bindZeroBlob(1, 4096)
+  stmt~step
+  stmt~finalize
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1285,49 +1560,51 @@
 </mediaobject>
 
 <para>
-  xx
+  Sets all the host parameters of this statement to NULL.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments to this method.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    <link linkend="mthReset">reset</link> does not change the values bound to the parameters. Use <emphasis
+    role="italic">clearBindings</emphasis> when the next execution of the statement should not use them.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">clearBindings</emphasis> method is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/clear_bindings.html">sqlite3_clear_bindings</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    In this example, the second row inserted gets NULL for the type and the price:
+<programlisting language="rexx">
+  stmt = .ooSQLiteStmt~new(db, "INSERT INTO foods(type_id, name, price) VALUES(?, ?, ?);")
+  stmt~bindInt(1, 2)
+  stmt~bindText(2, 'Sausage')
+  stmt~bindDouble(3, 2.25)
+  stmt~step
 
-]]>
+  stmt~reset
+  stmt~clearBindings                   -- type_id and price are now NULL
+  stmt~bindText(2, 'Unknown food')
+  stmt~step
+  stmt~finalize
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1345,18 +1622,18 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the value of a column of the current result row as a BLOB.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>column [required]</term>
       <listitem>
       <para>
-        xx
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1365,29 +1642,50 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    A string with the bytes of the value, including any NUL characters. A value that is not a BLOB is converted: text is
+    returned as is, and a number as its text representation. An empty BLOB, a NULL value, and a column that is out of range
+    return the empty string.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    What is said here applies to all the methods that return the value of a column, such as <emphasis
+    role="italic">columnBlob</emphasis>, <link linkend="mthColumnInt">columnInt</link>, or <link
+    linkend="mthColumnText">columnText</link>: they return a value of the current result row, so they are meaningful only
+    after <link linkend="mthStepClsStmt">step</link> has returned <computeroutput>ROW</computeroutput>, and until the
+    statement is stepped again, reset, or finalized. If they are invoked at any other time, the result is undefined.
+    SQLite converts the value to the type asked for when the column holds a value of another type.
+  </para>
+  <para>
+    The <xref linkend="atrNullClsOOSQLiteStmt"/> attribute does not affect this method: a NULL value is the empty string.
+    Use <link linkend="mthColumnType">columnType</link> to tell a NULL value from an empty one.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">columnBlob</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_blob</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example reads the picture of a row, and displays its size and its bytes in hexadecimal:
+<programlisting language="rexx">
+  db~exec("UPDATE foods SET picture = x'89504E470D0A1A0A' WHERE id = 1;")
+  stmt = .ooSQLiteStmt~new(db, "SELECT picture FROM foods WHERE id = 1;")
+  if stmt~step == stmt~ROW then do
+    picture = stmt~columnBlob(1)
+    say stmt~columnBytes(1) picture~length picture~c2x
+  end
+  stmt~finalize
 
-]]>
+  /* Output:
+
+  8 8 89504E470D0A1A0A
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1405,18 +1703,18 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the size in bytes of the value of a column of the current result row.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>column [required]</term>
       <listitem>
       <para>
-        xx
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1425,30 +1723,27 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The size of a BLOB, or of the UTF-8 text of any other value: the number <computeroutput>3.9</computeroutput> has 3
+    bytes. A NULL value, and a column that is out of range, have 0 bytes.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="mthColumnBlob">columnBlob</link> for when the values of a row can be retrieved.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">columnBytes</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_bytes</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="mthColumnBlob">columnBlob</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1465,50 +1760,39 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the number of columns in the result set of this statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments to this method.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The number of columns, or 0 for a statement that returns no data, such as an INSERT or an UPDATE.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The number of columns is known as soon as the statement is prepared: this method can be invoked before <link
+    linkend="mthStepClsStmt">step</link>. Compare with <link linkend="mthDataCount">dataCount</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">columnCount</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/column_count.html">sqlite3_column_count</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="mthColumnName">columnName</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1525,18 +1809,18 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the name of the database that a result column comes from.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>column [required]</term>
       <listitem>
       <para>
-        xx
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1545,30 +1829,31 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The name of the database: <computeroutput>main</computeroutput> for the main database,
+    <computeroutput>temp</computeroutput> for the temporary database, or the name given to an attached database. When the
+    result column is an expression, not a column of a table, and when the column is out of range, the string <computeroutput>NULL</computeroutput>
+    is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The name is known as soon as the statement is prepared: this method can be invoked before <link
+    linkend="mthStepClsStmt">step</link>. <link linkend="mthColumnTableName">columnTableName</link> and <link
+    linkend="mthColumnOriginName">columnOriginName</link> give the table and the column of the table.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">columnDataBaseName</emphasis> method is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/column_database_name.html">sqlite3_column_database_name</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="mthColumnName">columnName</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1585,18 +1870,18 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the declared type of the table column that a result column comes from.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>column [required]</term>
       <listitem>
       <para>
-        xx
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1605,30 +1890,30 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The type as written in the <computeroutput>CREATE TABLE</computeroutput> statement, such as
+    <computeroutput>INTEGER</computeroutput> or <computeroutput>TEXT</computeroutput>. When the result column is an
+    expression, not a column of a table, when the column of the table was declared without a type, and when the column is
+    out of range, the empty string is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    SQLite is dynamically typed: the declared type does not say what type a value has. Use <link
+    linkend="mthColumnType">columnType</link> for the type of a value in the current row.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">columnDeclType</emphasis> method is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/column_decltype.html">sqlite3_column_decltype</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="mthColumnName">columnName</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1645,18 +1930,18 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the value of a column of the current result row as a floating point number.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>column [required]</term>
       <listitem>
       <para>
-        xx
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1665,30 +1950,27 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The value as a number. Text that starts with a number is converted to that number; a NULL value, and a column that is
+    out of range, return 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="mthColumnBlob">columnBlob</link> for when the values of a row can be retrieved.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">columnDouble</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_double</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="mthColumnType">columnType</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1705,18 +1987,19 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the number of the result column with the given name.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>columnName [required]</term>
       <listitem>
       <para>
-        xx
+        The name of the result column, as returned by <link linkend="mthColumnName">columnName</link>: for a column with an
+        <computeroutput>AS</computeroutput> clause, it is the name given there. The comparison is case insensitive.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1725,29 +2008,35 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The number of the column, 1 for the first column, or 0 if the result set has no column with that name. When several
+    columns have the same name, the number of the first one is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The column names are known as soon as the statement is prepared: this method can be invoked before <link
+    linkend="mthStepClsStmt">step</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    This method is an ooSQLite enhancement, there is no similar SQLite API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example finds the columns it needs by name, so that it does not depend on their order in the query:
+<programlisting language="rexx">
+  stmt = .ooSQLiteStmt~new(db, "SELECT id, name, price FROM foods ORDER BY price DESC;")
+  nameCol  = stmt~columnIndex('name')
+  priceCol = stmt~columnIndex('PRICE')
+  do while stmt~step == stmt~ROW
+    say stmt~columnText(nameCol)~left(20) stmt~columnText(priceCol)
+  end
+  stmt~finalize
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1765,18 +2054,18 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the value of a column of the current result row as a 32-bit integer.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>column [required]</term>
       <listitem>
       <para>
-        xx
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1785,30 +2074,29 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The value as a whole number. A floating point value is truncated, so 3.9 is 3, and text that starts with a number is
+    converted to that number. A NULL value, and a column that is out of range, return 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    When the value does not fit in 32 bits, only its lower 32 bits are returned, and the result is not meaningful: use
+    <link linkend="mthColumnInt64">columnInt64</link> for values that can be that large. See the remarks of <link
+    linkend="mthColumnBlob">columnBlob</link> for when the values of a row can be retrieved.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">columnInt</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_int</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the examples of <link linkend="mthNewClsStmt">new</link> and <link linkend="mthReset">reset</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1825,18 +2113,18 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the value of a column of the current result row as a 64-bit integer.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>column [required]</term>
       <listitem>
       <para>
-        xx
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1845,30 +2133,21 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The value as a whole number, converted as <link linkend="mthColumnInt">columnInt</link> does. A NULL value, and a
+    column that is out of range, return 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="mthColumnBlob">columnBlob</link> for when the values of a row can be retrieved.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
-  <listitem>
-  <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    The functionality of the <emphasis role="italic">columnInt64</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_int64</ulink> API.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1885,18 +2164,18 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the name of a result column.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>column [required]</term>
       <listitem>
       <para>
-        xx
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1905,29 +2184,48 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The name of the column: for a column with an <computeroutput>AS</computeroutput> clause, the name given there;
+    otherwise, the name SQLite gives it, which for a column of a table is normally the name of the table column, and for
+    an expression is normally the text of the expression. For a column that is out of range, the string <computeroutput>NULL</computeroutput>
+    is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The names are known as soon as the statement is prepared: this method can be invoked before <link
+    linkend="mthStepClsStmt">step</link>. SQLite does not guarantee the name of a column without an <computeroutput>AS</computeroutput>
+    clause, so a program that depends on the names should give them.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">columnName</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/column_name.html">sqlite3_column_name</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example displays, for each column of a query, its name, the column, table and database it comes from, and its
+    declared type. The last column is an expression, so it comes from no table:
+<programlisting language="rexx">
+  stmt = .ooSQLiteStmt~new(db, "SELECT id, name AS food, price, price * 2 FROM foods;")
+  do i = 1 to stmt~columnCount
+    say i stmt~columnName(i)~left(10) stmt~columnOriginName(i)~left(8) -
+          stmt~columnTableName(i)~left(8) stmt~columnDataBaseName(i)~left(6) -
+          stmt~columnDeclType(i)
+  end
+  stmt~finalize
 
-]]>
+  /* Output:
+
+  1 id         id       foods    main   INTEGER
+  2 food       name     foods    main   TEXT
+  3 price      price    foods    main   REAL
+  4 price * 2  NULL     NULL     NULL
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1945,18 +2243,18 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the name of the table column that a result column comes from.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>column [required]</term>
       <listitem>
       <para>
-        xx
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1965,30 +2263,29 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The name of the column in its table, without the alias that an <computeroutput>AS</computeroutput> clause may give it.
+    When the result column is an expression, not a column of a table, and when the column is out of range, the string
+    <computeroutput>NULL</computeroutput> is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The name is known as soon as the statement is prepared: this method can be invoked before <link
+    linkend="mthStepClsStmt">step</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">columnOriginName</emphasis> method is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/column_database_name.html">sqlite3_column_origin_name</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="mthColumnName">columnName</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -2005,18 +2302,18 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the name of the table that a result column comes from.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>column [required]</term>
       <listitem>
       <para>
-        xx
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2025,30 +2322,28 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The name of the table, without the alias that the query may give it. When the result column is an expression, not a
+    column of a table, and when the column is out of range, the string <computeroutput>NULL</computeroutput> is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The name is known as soon as the statement is prepared: this method can be invoked before <link
+    linkend="mthStepClsStmt">step</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">columnTableName</emphasis> method is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/column_database_name.html">sqlite3_column_table_name</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="mthColumnName">columnName</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -2065,18 +2360,18 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the value of a column of the current result row as a string.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>column [required]</term>
       <listitem>
       <para>
-        xx
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2085,30 +2380,32 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The value as a string: text as is, a number as its text representation, and a BLOB with all its bytes, as <link
+    linkend="mthColumnBlob">columnBlob</link> returns it. For a NULL value, and for a column that is out of range, the
+    value of the <xref linkend="atrNullClsOOSQLiteStmt"/> attribute is returned, which is the
+    <computeroutput>.nil</computeroutput> object unless it has been changed.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    This is the method used most to retrieve values, because any value can be represented as a string. See the remarks of
+    <link linkend="mthColumnBlob">columnBlob</link> for when the values of a row can be retrieved.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">columnText</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_text</ulink> API. For a BLOB, SQLite would return
+    only the bytes before the first NUL character; ooSQLite returns all of them.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the examples of the <xref linkend="atrNullClsOOSQLiteStmt"/> attribute and of <link
+    linkend="mthStepClsStmt">step</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -2125,18 +2422,18 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the datatype of the value of a column of the current result row.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>column [required]</term>
       <listitem>
       <para>
-        xx
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2145,29 +2442,53 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    One of the <link linkend="sctFundamentalDatatype">Fundamental Datatype</link> constants:
+    <computeroutput>INTEGER</computeroutput>, <computeroutput>FLOAT</computeroutput>, <computeroutput>TEXT</computeroutput>,
+    <computeroutput>BLOB</computeroutput>, or <computeroutput>SQLNULL</computeroutput>. A column that is out of range is
+    <computeroutput>SQLNULL</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    SQLite is dynamically typed: the same column can hold values of different types in different rows, whatever its
+    declared type. Retrieving a value with a method of another type, such as <link linkend="mthColumnText">columnText</link>
+    for an integer, can convert the value in place, and then the type returned by this method afterwards is undefined:
+    invoke <emphasis role="italic">columnType</emphasis> before retrieving the value. See the remarks of <link
+    linkend="mthColumnBlob">columnBlob</link> for when the values of a row can be retrieved.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">columnType</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_type</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example formats the price of each food according to its type:
+<programlisting language="rexx">
+  stmt = .ooSQLiteStmt~new(db, "SELECT name, price FROM foods;")
+  stmt~null = 'n/a'
+  do while stmt~step == stmt~ROW
+    select
+      when stmt~columnType(2) == stmt~SQLNULL then price = stmt~columnText(2)
+      when stmt~columnType(2) == stmt~FLOAT then price = stmt~columnDouble(2)~format(, 2)
+      otherwise price = '?'
+    end
+    say stmt~columnText(1)~left(20) price
+  end
+  stmt~finalize
 
-]]>
+  /* Output:
+
+  Bagels               1.25
+  Bagels, raisin       1.50
+  Bacon                3.75
+  Cheese               n/a
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2185,18 +2506,19 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the value of a column of the current result row, in the form needed to bind it to a host parameter with <link
+  linkend="mthBindValue">bindValue</link>.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>column [required]</term>
       <listitem>
       <para>
-        xx
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2205,30 +2527,29 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    A Pointer object, which points to an SQLite <computeroutput>sqlite3_value</computeroutput> structure.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The only use of the value returned is to pass it to <link linkend="mthBindValue">bindValue</link>, which binds it to
+    a parameter of a statement keeping its datatype. It is only valid while this statement stays on the same result row:
+    see the remarks of <link linkend="mthBindValue">bindValue</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">columnValue</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_value</ulink> API. The value is what SQLite calls an
+    unprotected <computeroutput>sqlite3_value</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="mthBindValue">bindValue</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -2245,49 +2566,42 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the number of columns in the current result row.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments to this method.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    Additional comments.
+    The number of columns of the current row: the same as <link linkend="mthColumnCount">columnCount</link> after <link
+    linkend="mthStepClsStmt">step</link> has returned <computeroutput>ROW</computeroutput>, and 0 when there is no current
+    row: before the statement is stepped, after <emphasis role="italic">step</emphasis> has returned
+    <computeroutput>DONE</computeroutput> or an error, and after a reset.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">dataCount</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/data_count.html">sqlite3_data_count</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example shows the difference between <emphasis role="italic">dataCount</emphasis> and <emphasis
+    role="italic">columnCount</emphasis>:
+<programlisting language="rexx">
+  stmt = .ooSQLiteStmt~new(db, "SELECT id, name FROM foods;")
+  say stmt~columnCount stmt~dataCount    -- 2 0
+  stmt~step
+  say stmt~columnCount stmt~dataCount    -- 2 2
+  stmt~finalize
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2305,49 +2619,37 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the database connection of this statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments to this method.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    Additional comments.
+    The <link linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> object that was used to instantiate the statement.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">dbHandle</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/db_handle.html">sqlite3_db_handle</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example uses the connection of the statement to find how many rows it deleted:
+<programlisting language="rexx">
+  stmt = .ooSQLiteStmt~new(db, "DELETE FROM foods WHERE price IS NULL;")
+  stmt~step
+  say stmt~dbHandle~changes 'row(s) deleted'
+  stmt~finalize
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2365,49 +2667,52 @@
 </mediaobject>
 
 <para>
-  xx
+  Deletes the prepared statement and releases the resources it uses.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments to this method.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> if the last execution of the statement had no error, or if it was never
+    executed. If the last <link linkend="mthStepClsStmt">step</link> failed, the error code it returned is returned again.
+    In both cases, the statement is finalized.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    After a statement is finalized, its <link linkend="atrFinalized">finalized</link> attribute is true, and invoking
+    its other methods raises a syntax error. Finalizing a statement that is already finalized is a harmless no-op that
+    returns <computeroutput>OK</computeroutput>.
+  </para>
+  <para>
+    All the statements of a connection should be finalized before it is <link linkend="mthClose">closed</link>: while
+    there is any statement that is not finalized, <emphasis role="italic">close</emphasis> returns
+    <computeroutput>BUSY</computeroutput> and the connection stays open. A statement that is not finalized is finalized
+    when it is garbage collected, but a program can not know when that happens.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">finalize</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/finalize.html">sqlite3_finalize</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example finalizes a statement that has not been run to completion:
+<programlisting language="rexx">
+  stmt = .ooSQLiteStmt~new(db, "SELECT name FROM foods;")
+  stmt~step
+  say stmt~finalize stmt~finalized       -- 0 1
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2416,7 +2721,7 @@
 
 
 <section id="mthReset"><title>reset</title>
-<indexterm><primary>reset</primary></indexterm>
+<indexterm><primary>reset</primary><secondary>ooSQLiteStmt class</secondary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>reset</secondary></indexterm>
 <mediaobject>
 <imageobject>
@@ -2425,49 +2730,59 @@
 </mediaobject>
 
 <para>
-  xx
+  Resets this statement to its initial state, so that it can be executed again.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments to this method.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> if the last execution of the statement had no error, or if it was never
+    executed. If the last <link linkend="mthStepClsStmt">step</link> failed, the error code it returned is returned again.
+    In both cases, the statement is reset.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A statement can be reset at any time, whether it has been run to completion or not. Resetting a statement does not
+    change the values bound to its parameters: use <link linkend="mthClearBindings">clearBindings</link> for that. After a
+    reset, new values can be bound, and the statement is executed again by stepping it. Reusing a statement in this way is
+    faster than preparing a new one.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">reset</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/reset.html">sqlite3_reset</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example executes the same query for three different values of its parameter:
+<programlisting language="rexx">
+  stmt = .ooSQLiteStmt~new(db, "SELECT count(*) FROM foods WHERE type_id = ?;")
+  do type = 1 to 3
+    stmt~bindInt(1, type)
+    stmt~step
+    say 'type' type':' stmt~columnInt(1) 'food(s)'
+    stmt~reset
+  end
+  stmt~finalize
 
-]]>
+  /* Output:
+
+  type 1: 2 food(s)
+  type 2: 1 food(s)
+  type 3: 1 food(s)
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2475,8 +2790,64 @@
 </section>  <!-- End ooSQLiteStmt::reset() -->
 
 
+<section id="mthSqlClsStmt" revisionflag="added"><title>&added11;sql</title>
+<indexterm><primary>sql</primary></indexterm>
+<indexterm><primary>ooSQLiteStmt class</primary><secondary>sql</secondary></indexterm>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/stmt_sql.svg" scale="55" />
+</imageobject>
+</mediaobject>
+
+<para>
+  Returns the SQL text of this statement.
+</para>
+<variablelist>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
+  <listitem>
+  <para>
+    There are no arguments to this method.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
+  <listitem>
+  <para>
+    The text of the SQL statement, as it was given to <link linkend="mthNewClsStmt">new</link>. When the text given to
+    <emphasis role="italic">new</emphasis> held more than one statement, only the first one is returned, because only that
+    one was prepared.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    The text does not change when values are bound to the parameters: the parameters are still shown as they were
+    written. The classic interface has the same function in the <link linkend="rtn-oosqlSql">oosqlSql</link> routine.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Details</emphasis></term>
+  <listitem>
+  <para>
+    The functionality of the <emphasis role="italic">sql</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/expanded_sql.html">sqlite3_sql</ulink> API.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
+  <listitem>
+  <para>
+    This example displays the text of a statement:
+<programlisting language="rexx">
+  stmt = .ooSQLiteStmt~new(db, "SELECT name FROM foods WHERE id = ?;")
+  say stmt~sql                           -- SELECT name FROM foods WHERE id = ?;
+  stmt~finalize
+</programlisting>
+  </para>
+  </listitem></varlistentry>
+</variablelist>
+</section>  <!-- End ooSQLiteStmt::sql() -->
+
+
 <section id="mthStepClsStmt"><title>step</title>
-<indexterm><primary>step</primary></indexterm>
+<indexterm><primary>step</primary><secondary>ooSQLiteStmt class</secondary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>step</secondary></indexterm>
 <mediaobject>
 <imageobject>
@@ -2485,49 +2856,83 @@
 </mediaobject>
 
 <para>
-  xx
+  Executes this statement, or advances it to its next result row.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments to this method.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    One of the <link linkend="sctResultCode">Result Code</link> constants. The most common ones are:
+    <variablelist>
+      <varlistentry><term>ROW</term>
+      <listitem>
+      <para>
+        A new result row is ready. Its values can be retrieved with the <emphasis role="italic">column</emphasis> methods.
+        Invoke <emphasis role="italic">step</emphasis> again for the next row.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>DONE</term>
+      <listitem>
+      <para>
+        The statement has run to completion: there are no more rows, or, for a statement that returns no data, it has been
+        executed. Do not invoke <emphasis role="italic">step</emphasis> again before a <link linkend="mthReset">reset</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>BUSY</term>
+      <listitem>
+      <para>
+        The database is locked by another connection. The statement can be stepped again later; see the <link
+        linkend="mthBusyTimeOut">busyTimeOut</link> and <link linkend="mthBusyHandler">busyHandler</link> methods of the
+        connection.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>Other codes</term>
+      <listitem>
+      <para>
+        An error. The <link linkend="mthErrMsg">errMsg</link> method of the connection describes it. ooSQLite enables
+        extended result codes for every connection, so the code is often an extended one, such as
+        <computeroutput>CONSTRAINT_UNIQUE</computeroutput> (2067) for a duplicate value in a UNIQUE column, rather than
+        <computeroutput>CONSTRAINT</computeroutput> (19); see <link
+        linkend="mthExtendedResultCodes">extendedResultCodes</link>.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A statement that returns data, such as a SELECT, is stepped once for each result row, and once more to get
+    <computeroutput>DONE</computeroutput>. A statement that returns no data, such as an INSERT, is executed by a single
+    step, which returns <computeroutput>DONE</computeroutput> on success.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">step</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/step.html">sqlite3_step</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example displays all the rows of a query, and checks that it ended without error:
+<programlisting language="rexx">
+  stmt = .ooSQLiteStmt~new(db, "SELECT name FROM foods ORDER BY name;")
+  do forever
+    rc = stmt~step
+    if rc &lt;&gt; stmt~ROW then leave
+    say stmt~columnText(1)
+  end
+  if rc &lt;&gt; stmt~DONE then say 'Error' rc':' db~errMsg
+  stmt~finalize
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2545,49 +2950,49 @@
 </mediaobject>
 
 <para>
-  xx
+  Tests if this statement has been stepped, but has not run to completion and has not been reset.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments to this method.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns true if <link linkend="mthStepClsStmt">step</link> has been invoked at least once, and the statement has
+    neither returned <computeroutput>DONE</computeroutput> nor been <link linkend="mthReset">reset</link>. Otherwise,
+    returns false.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    This method can also be invoked on a statement that has been finalized; it returns false.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">stmtBusy</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/stmt_busy.html">sqlite3_stmt_busy</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example shows the value of <emphasis role="italic">stmtBusy</emphasis>, and of <link
+    linkend="mthstmtReadonly">stmtReadonly</link>, while a query is executed:
+<programlisting language="rexx">
+  stmt = .ooSQLiteStmt~new(db, "SELECT name FROM foods;")
+  say stmt~stmtReadonly stmt~stmtBusy    -- 1 0
+  stmt~step
+  say stmt~stmtBusy                      -- 1
+  stmt~reset
+  say stmt~stmtBusy                      -- 0
+  stmt~finalize
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2605,50 +3010,41 @@
 </mediaobject>
 
 <para>
-  xx
+  Tests if this statement makes no direct changes to the database.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments to this method.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns true if the statement does not write to the database, such as a SELECT, and false if it can, such as an
+    INSERT, an UPDATE, or a DELETE.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A statement can be read only and still change the database indirectly, through a user defined function that executes
+    SQL of its own. Transaction control statements, such as BEGIN and COMMIT, are read only, because they make no changes
+    by themselves.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">stmtReadonly</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/stmt_readonly.html">sqlite3_stmt_readonly</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="mthStmtBusy">stmtBusy</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -2665,7 +3061,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the value of one of the performance counters of this statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2673,10 +3069,17 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>op [required]</term>
       <listitem>
       <para>
-        xx
+        The counter to return, one of the <link linkend="sctStatusParameterStmt">Status Parameter (stmt)</link> constants,
+        such as <computeroutput>STMTSTATUS_FULLSCAN_STEP</computeroutput> or <computeroutput>STMTSTATUS_VM_STEP</computeroutput>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>reset [optional]</term>
+      <listitem>
+      <para>
+        If true, the counter is set to 0 after its value is returned. The default is false.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2685,94 +3088,49 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The value of the counter. For an <emphasis role="italic">op</emphasis> that SQLite does not know, 0 is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The counters accumulate over all the executions of the statement, also after a reset, until they are reset with the
+    <emphasis role="italic">reset</emphasis> argument. They can help find out whether a query would benefit from an index.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The functionality of the <emphasis role="italic">stmtStatus</emphasis> method is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/stmt_status.html">sqlite3_stmt_status</ulink> API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example runs a query and displays some of its counters. There is no index on the price column, so the whole
+    table is scanned, and the result has to be sorted:
+<programlisting language="rexx">
+  stmt = .ooSQLiteStmt~new(db, "SELECT name FROM foods WHERE price > 1 ORDER BY name;")
+  do while stmt~step == stmt~ROW
+  end
+  say 'Full scan steps:' stmt~stmtStatus(stmt~STMTSTATUS_FULLSCAN_STEP)
+  say 'Sorts:          ' stmt~stmtStatus(stmt~STMTSTATUS_SORT)
+  say 'VM steps:       ' stmt~stmtStatus(stmt~STMTSTATUS_VM_STEP, .true)
+  say 'VM steps now:   ' stmt~stmtStatus(stmt~STMTSTATUS_VM_STEP)
+  stmt~finalize
 
-]]>
+  /* Output:
+
+  Full scan steps: 3
+  Sorts:           1
+  VM steps:        47
+  VM steps now:    0
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLiteStmt::stmtStatus() -->
 
-
-<section id="mthValue"><title>value</title>
-<indexterm><primary>value</primary></indexterm>
-<indexterm><primary>ooSQLiteStmt class</primary><secondary>value</secondary></indexterm>
-<mediaobject>
-<imageobject>
-<imagedata fileref="images/primary/stmt_value.svg" scale="55" />
-</imageobject>
-</mediaobject>
-
-<para>
-  xx
-</para>
-<variablelist>
-  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
-  <listitem>
-  <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
-  <listitem>
-  <para>
-    xx
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    Additional comments.
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Details</emphasis></term>
-  <listitem>
-  <para>
-    Anything?
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
-  <listitem>
-  <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
-  </para>
-  </listitem></varlistentry>
-</variablelist>
-</section>  <!-- End ooSQLiteStmt::value() -->
-
-
-</section>
+</section>  <!-- End ooSQLiteStmt class -->

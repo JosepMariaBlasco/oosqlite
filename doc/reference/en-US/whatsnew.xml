@@ -138,11 +138,29 @@
     with routines were not affected.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">The recordFormat attribute of a statement works</emphasis></term>
+  <listitem>
+  <para>
+    The <link linkend="atrRecordFormatClsStmt">recordFormat</link> attribute of the ooSQLiteStmt class ran the code of the
+    attribute of the connection on the data of the statement: getting it returned the statement's <link
+    linkend="atrInitCodeClsStmt">initCode</link>, normally 0, and setting it changed initCode. It now returns the format
+    given to <link linkend="mthNewClsStmt">new</link>, or inherited from the connection, and setting it changes only the
+    format. The attribute of the connection was not affected.
+  </para>
+  </listitem></varlistentry>
 </variablelist>
 </section>
 
-<section id="sctWhatsChangedExtended"><title>Extended Methods and Routines</title>
+<section id="sctWhatsChangedExtended"><title>New and Extended Methods and Routines</title>
 <variablelist>
+  <varlistentry><term><emphasis role="bold">ooSQLiteStmt~sql</emphasis></term>
+  <listitem>
+  <para>
+    The new <link linkend="mthSqlClsStmt">sql</link> method of the ooSQLiteStmt class returns the SQL text of the
+    statement, like the classic <link linkend="rtn-oosqlSql">oosqlSql</link> routine. Its native code was already in the
+    library, but the class did not define the method.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">ooSQLResult~blob and oosqlResultBlob accept Rexx data</emphasis></term>
   <listitem>
   <para>
@@ -219,6 +237,15 @@
 
 <section id="sctWhatsChangedOther"><title>Other Fixes</title>
 <variablelist>
+  <varlistentry><term><emphasis role="bold">Memory leak in columnIndex and oosqlColumnIndex</emphasis></term>
+  <listitem>
+  <para>
+    <link linkend="mthColumnIndex">columnIndex</link> of the ooSQLiteStmt class and the classic <link
+    linkend="rtn-oosqlColumnIndex">oosqlColumnIndex</link> lost a few bytes of SQLite memory each time they found the
+    column: the upper case copy of its name was never freed. A program that looked up columns by name in a loop kept
+    growing.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">oosqlBackupPageCount and oosqlBackupRemaining</emphasis></term>
   <listitem>
   <para>
@@ -252,6 +279,20 @@
     The syntax diagrams are now railroad diagrams generated from EBNF, like the ones of the ooRexx reference, instead of
     text. <link linkend="readsy">How to Read the Syntax Diagrams</link> is the common section of the ooRexx books. The
     diagrams of the methods and routines that were still templates show their real arguments, taken from the code.
+  </para></listitem>
+  <listitem><para>
+    The chapter on the <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class is now complete: every method and
+    attribute has its arguments, return value, remarks, and, for most of them, a tested example. The method table lists
+    all of them. The example of <link linkend="atrLastErrMsgClsStmt">lastErrMsg</link> displayed the initCode attribute as
+    the error code. The template section of the value method, an internal debugging aid, was removed.
+  </para></listitem>
+  <listitem><para>
+    Arguments named after the C++ code were renamed, in the diagrams and in the text: <emphasis
+    role="italic">column</emphasis> instead of <emphasis role="italic">col</emphasis> and <emphasis
+    role="italic">columnName</emphasis> instead of <emphasis role="italic">colName</emphasis> in the column methods of
+    the ooSQLiteStmt class and in the classic oosqlColumn routines, and <emphasis role="italic">op</emphasis> instead of
+    <emphasis role="italic">param</emphasis> in <link linkend="mthStmtStatus">stmtStatus</link> and <link
+    linkend="rtn-oosqlStmtStatus">oosqlStmtStatus</link>, as in SQLite.
   </para></listitem>
   <listitem><para>
     New section for a method that was not documented: <link linkend="mthCollationNeeded">collationNeeded</link> of
