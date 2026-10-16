@@ -88,3 +88,12 @@ connection_trace ::= 'trace(' callBackObj ( ',' mthName )? ( ',' userData )? ')'
 connection_tracecallback ::= 'traceCallBack(' sql ',' userData ')'
 connection_updatehook ::= 'updateHook(' callBackObj ( ',' mthName )? ( ',' userData )? ')'
 connection_updatehookcallback ::= 'updateHookCallBack(' op ',' dbName ',' tableName ',' rowID ',' userData ')'
+
+/* oosqliteMutex.xml */
+mutex_new ::= 'new(' type? ')'
+mutex_closed_get ::= 'closed'
+mutex_isnull_get ::= 'isNull'
+mutex_enter ::= 'enter'
+mutex_free ::= 'free'
+mutex_leave ::= 'leave'
+mutex_try ::= 'try'

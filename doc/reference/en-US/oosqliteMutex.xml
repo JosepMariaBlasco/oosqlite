@@ -92,12 +92,11 @@
 <section id="mthNewClsOOSQLiteMutex"><title>new (Class method)</title>
 <indexterm><primary>new</primary><secondary>ooSQLiteMutex class</secondary></indexterm>
 <indexterm><primary>ooSQLiteMutex class</primary><secondary>new</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--new(--+--------+--)--------------------------><
-          +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/mutex_new.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -154,14 +153,11 @@
 <section id="atrClosedClsMutex"><title>closed (Attribute)</title>
 <indexterm><primary>closed</primary></indexterm>
 <indexterm><primary>ooSQLiteMutex class</primary><secondary>closed</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--closed-----------------------------------------------------><
-
->>--closed-=-varName-------------------------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/mutex_closed_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -210,14 +206,11 @@
 <section id="atrIsNull"><title>isNull (Attribute)</title>
 <indexterm><primary>isNull</primary></indexterm>
 <indexterm><primary>ooSQLiteMutex class</primary><secondary>isNull</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--isNull-----------------------------------------------------><
-
->>--isNull-=-varName-------------------------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/mutex_isnull_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -266,12 +259,11 @@
 <section id="mthEnter"><title>enter</title>
 <indexterm><primary>enter</primary></indexterm>
 <indexterm><primary>ooSQLiteMutex class</primary><secondary>enter</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--enter(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/mutex_enter.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -327,12 +319,11 @@
 <section id="mthFree"><title>free</title>
 <indexterm><primary>free</primary></indexterm>
 <indexterm><primary>ooSQLiteMutex class</primary><secondary>free</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--free(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/mutex_free.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -388,12 +379,11 @@
 <section id="mthLeave"><title>leave</title>
 <indexterm><primary>leave</primary></indexterm>
 <indexterm><primary>ooSQLiteMutex class</primary><secondary>leave</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--leave(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/mutex_leave.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -449,12 +439,11 @@
 <section id="mthTry"><title>try</title>
 <indexterm><primary>try</primary></indexterm>
 <indexterm><primary>ooSQLiteMutex class</primary><secondary>try</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--try(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/mutex_try.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
