@@ -461,13 +461,11 @@
   <para>
     This example instantiates an <computeroutput>ooSQLiteBackup</computeroutput> object and checks the <emphasis
     role="italic">initCode</emphasis> value to be sure it is safe to proceed:
-<programlisting>
-<![CDATA[
-
+<programlisting language="rexx">
   buObj = .ooSQLiteBackup~new(srcConn, dstConn)
-  if buObj~initCode <> buObj~OK then do ...
-
-]]>
+  if buObj~initCode &lt;&gt; buObj~OK then do
+    ...
+  end
 </programlisting>
   </para>
   </listitem></varlistentry>

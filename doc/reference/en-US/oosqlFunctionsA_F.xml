@@ -2953,8 +2953,7 @@
   <para>
     This example defines a <computeroutput>double</computeroutput> function and a <computeroutput>my_sum</computeroutput>
     aggregate, uses them, and then removes the function:
-<programlisting>
-<![CDATA[
+<programlisting language="rexx">
 call oosqlOpen ":memory:", "db"
 
 call oosqlCreateFunction db, "double", 1, "doubleRtn"
@@ -2980,7 +2979,6 @@ call oosqlCreateFunction db, "double"
   if sum == .nil then call oosqlResultNull context
   else call oosqlResultInt context, sum["TOTAL"]
   return 0
-]]>
 </programlisting>
   </para>
   </listitem></varlistentry>

@@ -955,16 +955,16 @@
     This example installs a busy handler with a <emphasis role="italic">onTimeOut</emphasis> method that is to be invoked. It
     passes the busy handler object itself as the <emphasis role="italic">userData</emphasis> argument:
 
-<programlisting>
+<programlisting language="rexx">
   helper = .MyHelperClass~new
 
   db = .ooSQLiteConnection~new('phoneBook.rdbx')
   if db~initCode &lt;&gt; 0 then return db~lastErrCode
 
-  db~busyHandler(helper, onTimeOut, helper)
+  db~busyHandler(helper, 'onTimeOut', helper)
   ...
 
-::class 'MyHelperClass
+::class 'MyHelperClass'
 
 ::method onTimeOut unguarded
   use arg count, helperObj
@@ -1542,11 +1542,9 @@
     database connection object, the SQLite context of the invocation, the user data, and then one argument for each value
     the function was called with:
   </para>
-<programlisting>
-<![CDATA[
+<programlisting language="rexx">
 ::method myFunction
   use arg db, context, userData, value1, value2, ...
-]]>
 </programlisting>
   <para>
     The values are sqlite3_value handles, read with the methods of the <link linkend="clsOOSQLValue">ooSQLValue</link>
@@ -1558,11 +1556,9 @@
     The <emphasis role="italic">stepMth</emphasis> method is invoked for each row of the aggregate. It gets the database
     connection object, the SQLite context, the aggregate object, the user data, and then the values:
   </para>
-<programlisting>
-<![CDATA[
+<programlisting language="rexx">
 ::method myStep
   use arg db, context, aggregateObj, userData, value1, ...
-]]>
 </programlisting>
   <para>
     The aggregate object is the object the aggregate uses to keep its state from one row to the next. On the first
@@ -1602,8 +1598,7 @@
   <para>
     This example defines a <computeroutput>double</computeroutput> function and a <computeroutput>my_sum</computeroutput>
     aggregate, uses them, and then removes the function:
-<programlisting>
-<![CDATA[
+<programlisting language="rexx">
 db = .ooSQLiteConnection~new(":memory:")
 calc = .Calculator~new
 
@@ -1632,7 +1627,6 @@ db~createFunction("double", .nil)
   if sum == .nil then .ooSQLResult~null(context)
   else .ooSQLResult~int(context, sum["TOTAL"])
   return self~OK
-]]>
 </programlisting>
   </para>
   </listitem></varlistentry>
