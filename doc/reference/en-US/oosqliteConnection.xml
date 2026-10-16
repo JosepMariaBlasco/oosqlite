@@ -255,12 +255,11 @@
 <section id="mthNewClsOOSQLiteConnection"><title>new (Class method)</title>
 <indexterm><primary>new</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>new</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--new(--file--+---------+--+-------------+--+------------+--)----------------><
-                +-,-opts--+  +-,-defFormat-+  +-,-reserved-+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_new.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Instantiates a new database connection object and opens the specified database for use.
@@ -386,13 +385,11 @@
 <section id="atrBackupDestination"><title>backupDestination (Attribute)</title>
 <indexterm><primary>backupDestination</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>backupDestination</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--backupDestination----------------------------><
-
->>--backupDestination = varName------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_backupdestination_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">backupDestination</emphasis> attribute reflects whether this database connection is
@@ -445,13 +442,11 @@
 <section id="atrClosedClsConn"><title>closed (Attribute)</title>
 <indexterm><primary>closed</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>closed</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--closed---------------------------------------><
-
->>--closed = varName-----------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_closed_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Reflects the open or closed state of this database connection.
@@ -486,13 +481,11 @@
 <section id="atrFileName"><title>fileName (Attribute)</title>
 <indexterm><primary>fileName</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>fileName</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--fileName-------------------------------------><
-
->>--fileName = varName---------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_filename_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Reflects the database file name used to instantiate this connection.
@@ -524,13 +517,11 @@
 <section id="atrInitCodeClsConn"><title>initCode (Attribute)</title>
 <indexterm><primary>initCode</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>initCode</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--initCode-------------------------------------><
-
->>--initCode = varName---------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_initcode_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Reflects the status of the initialization of the database connection. Any value other than 0, (<emphasis
@@ -592,13 +583,11 @@
 <section id="atrLastErrCodeClsConn"><title>lastErrCode (Attribute)</title>
 <indexterm><primary>lastErrCode</primary><secondary>ooSQLiteConnection class</secondary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>lastErrCode</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--lastErrCode----------------------------------><
-
->>--lastErrCode = varName------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_lasterrcode_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Reflects the last error code set by for the <computeroutput>ooSQLiteConnection</computeroutput> object.
@@ -673,13 +662,11 @@
 <section id="atrLastErrMsgClsConn"><title>lastErrMsg (Attribute)</title>
 <indexterm><primary>lastErrMsg</primary><secondary>ooSQLiteConnection class</secondary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>lastErrMsg</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--lastErrMsg-----------------------------------><
-
->>--lastErrMsg = varName-------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_lasterrmsg_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Reflects a human readable explanation, a message, of the last error code recorded by the connection object.
@@ -751,14 +738,16 @@
 <section id="atrNullClsOOSQLiteConnection" xreflabel="null"><title>null (Attribute)</title>
 <indexterm><primary>null</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>null</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--null-----------------------------------------><
-
->>--null = nullObj-------------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_null_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_null_set.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Reflects the default representation for the SQL NULL value that is returned by the interpreter, for this database
@@ -844,13 +833,16 @@
 <section id="atrRecordFormatClsConn"><title>recordFormat (Attribute)</title>
 <indexterm><primary>recordFormat</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>recordFormat</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--recordFormat---------------------------------><
-
->>--recordFormat = varName-----------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_recordformat_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_recordformat_set.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Over-rides the process-wide default record format set through the ooSQLite <link
@@ -883,12 +875,11 @@
 <section id="mthBusyHandler"><title>busyHandler</title>
 <indexterm><primary>busyHandler</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>busyHandler</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--busyHandler(--callBackObj--+------------+--+------------+--)---------------><
-                               +-,-mthName--+  +-,-userData-+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_busyhandler.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Installs a user defined busy handler.
@@ -994,11 +985,11 @@
 <section id="mthBusyCallBack"><title>busyCallBack</title>
 <indexterm><primary>busyCallBack</primary></indexterm>
 <indexterm><primary>Callback Methods</primary><secondary>busyCallBack</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--busyCallBack(--countInvoked,--userData--)----><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_busycallback.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">busyCallBack</emphasis> method is an example of a user callback method for the <link
@@ -1059,11 +1050,11 @@
 <section id="mthBusyTimeOut"><title>busyTimeOut</title>
 <indexterm><primary>busyTimeOut</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>busyTimeOut</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--busyTimeOut(--milliseconds--)----------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_busytimeout.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Sets a busy handler that sleeps for the specified amount of time when a table is locked. The handler sleeps multiple times
@@ -1129,11 +1120,11 @@
 <section id="mthChanges"><title>changes</title>
 <indexterm><primary>changes</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>changes</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--changes--------------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_changes.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Returns the number of database rows that were changed or inserted or deleted by the most recently completed SQL
@@ -1174,11 +1165,11 @@
 <section id="mthClose"><title>close</title>
 <indexterm><primary>close</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>close</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--close----------------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_close.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">close</emphasis> method releases all systems resources that have been allocated for the
@@ -1249,12 +1240,11 @@
 <section id="mthCommitHook"><title>commitHook</title>
 <indexterm><primary>commitHook</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>commitHook</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--commitHook(--callBackObj--+------------+--+------------+--)----------------><
-                              +-,-mthName--+  +-,-userData-+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_commithook.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Registers a callback method to be invoked whenever a transaction is committed.
@@ -1312,12 +1302,11 @@
 <section id="mthCommitHookCallBack"><title>commitHookCallBack</title>
 <indexterm><primary>commitHookCallBack</primary></indexterm>
 <indexterm><primary>Callback Methods</primary><secondary>commitHookCallBack</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--commitHookCallBack(--userData--)-------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_commithookcallback.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">commitHookCallBack</emphasis> method is an example of a user callback method for the <link
@@ -1383,12 +1372,11 @@
 <section id="mthCreateCollation"><title>createCollation</title>
 <indexterm><primary>createCollation</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>createCollation</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--createCollation(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_createcollation.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -1443,26 +1431,24 @@
 <section id="mthCreateFunction" revisionflag="changed"><title>&changed11;createFunction</title>
 <indexterm><primary>createFunction</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>createFunction</secondary></indexterm>
-<programlisting>
-<![CDATA[
-Define a SQL function implemented in Rexx:
-
->>--createFunction(--name--,--callbackObj--,--countArgs--,--funcMth------------>
->--+--------------------+--)--------------------------------------------------><
-   +-,--,--,--userData--+
-
-Define a SQL aggregate implemented in Rexx:
-
->>--createFunction(--name--,--callbackObj--,--countArgs--,--,--stepMth--------->
->--,--finalMth--+--------------+--)-------------------------------------------><
-                +-,--userData--+
-
-Remove a SQL function or aggregate implemented in Rexx:
-
->>--createFunction(--name--,--.nil--+--------------+--)--><
-                                    +-,-countArgs--+
-]]>
-</programlisting>
+<para>Define a SQL function implemented in Rexx:</para>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_createfunction_function.svg" scale="55" />
+</imageobject>
+</mediaobject>
+<para>Define a SQL aggregate implemented in Rexx:</para>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_createfunction_aggregate.svg" scale="55" />
+</imageobject>
+</mediaobject>
+<para>Remove a SQL function or aggregate implemented in Rexx:</para>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_createfunction_remove.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Adds or removes a user defined SQL function or aggregate on this database connection. Once defined, the function can be
@@ -1657,11 +1643,11 @@ db~createFunction("double", .nil)
 <section id="mthDbFileName"><title>dbFileName</title>
 <indexterm><primary>dbFileName</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>dbFileName</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--dbFileName(--name--)-------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_dbfilename.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Returns the database file name of the database specified by <emphasis role="italic">name</emphasis>.
@@ -1711,11 +1697,11 @@ db~createFunction("double", .nil)
 <section id="mthDbMutex"><title>dbMutex</title>
 <indexterm><primary>dbMutex</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>dbMutex</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--dbMutex--------------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_dbmutex.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Retrieves an <link linkend="clsOOSQLiteMutex">ooSQLitMutex</link> object that represents the SQLite mutex that serializes
@@ -1768,11 +1754,11 @@ db~createFunction("double", .nil)
 <section id="mthDbReadOnly"><title>dbReadOnly</title>
 <indexterm><primary>dbReadOnly</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>dbReadOnly</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--dbReadOnly(--name--)-------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_dbreadonly.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Determines if the named database on this connection is read only.
@@ -1850,11 +1836,11 @@ db~createFunction("double", .nil)
 <section id="mthDbReleaseMemory"><title>dbReleaseMemory</title>
 <indexterm><primary>dbReleaseMemory</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>dbReleaseMemory</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--dbReleaseMemory------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_dbreleasememory.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Causes the SQLite database engine to attempt to free as much heap memory as possible from this database connection.
@@ -1894,12 +1880,11 @@ db~createFunction("double", .nil)
 <section id="mthDbStatus"><title>dbStatus</title>
 <indexterm><primary>dbStatus</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>dbStatus</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--dbStatus(--opt--,--result--+----------+--)---><
-                               +-,-reset--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_dbstatus.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Retrieves runtime status information about this database connection.
@@ -2017,11 +2002,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthErrCode"><title>errCode</title>
 <indexterm><primary>errCode</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>errCode</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--errCode--------------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_errcode.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Returns the numeric result <link linkend="sctResultCode">code</link> for the most recent failed SQLite API call associated
@@ -2071,11 +2056,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthErrMsg"><title>errMsg</title>
 <indexterm><primary>errMsg</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>errMsg</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--errMsg---------------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_errmsg.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Returns the English-language text that describes the current<link linkend="mthErrCode">errCode</link> value.
@@ -2124,12 +2109,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthExec"><title>exec</title>
 <indexterm><primary>exec</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>exec</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--exec(--sql-+---------+-+----------+-+---------+-+-----------+-+---------+--)---><
-               +-,-useCB-+ +-,-format-+ +-,-cbObj-+ +-,-mthName-+ +-,-uData-+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_exec.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Executes the specified SQL statement(s). A callback is invoked for each result row coming out of the evaluated SQL
@@ -2263,12 +2247,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthExecCallBack"><title>execCallBack</title>
 <indexterm><primary>execCallBack</primary></indexterm>
 <indexterm><primary>Callback Methods</primary><secondary>execCallBack</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--execCallBack(--row--,--rowNum--,--userData--)---------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_execcallback.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">execCallBack</emphasis> method is an example of a user callback method for the <link
@@ -2397,11 +2380,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthExtendedErrCode"><title>extendedErrCode</title>
 <indexterm><primary>extendedErrCode</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>extendedErrCode</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--extendedErrCode------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_extendederrcode.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Returns the numeric result <link linkend="sctResultCode">code</link> for the most recent failed SQLite API call associated
@@ -2452,11 +2435,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthExtendedResultCodes"><title>extendedResultCodes</title>
 <indexterm><primary>extendedResultCodes</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>extendedResultCodes</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--extendedResultCodes(--onOff--)---------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_extendedresultcodes.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   This is a nop in ooSQLite, extended result codes are always on.
@@ -2504,11 +2487,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthGetAutocommit"><title>getAutocommit</title>
 <indexterm><primary>getAutocommit</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>getAutocommit</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--getAutocommit--------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_getautocommit.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Determines if this database connection is, or is not, in autocommit mode.
@@ -2549,11 +2532,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthInterrupt"><title>interrupt</title>
 <indexterm><primary>interrupt</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>interrupt</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--interrupt------------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_interrupt.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   <emphasis role="italic">Interrupt</emphasis> causes any pending database operation to abort and return at the earliest
@@ -2611,11 +2594,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthLastInsertRowID"><title>lastInsertRowID</title>
 <indexterm><primary>lastInsertRowID</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>lastInsertRowID</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--lastInsertRowID------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_lastinsertrowid.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Returns the rowid of the most recent successful INSERT into the database from this database connection.
@@ -2665,11 +2648,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthLimit"><title>limit</title>
 <indexterm><primary>limit</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>limit</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--limit(--id--,--value--)----------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_limit.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Queries or sets the limiting size of various constructs on this database connection.
@@ -2733,12 +2716,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthNextStmt"><title>nextStmt</title>
 <indexterm><primary>nextStmt</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>nextStmt</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--nextStmt(--+--------+--)---------------------><
-               +--stmt--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_nextstmt.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Returns the next prepared statement <link linkend="clsOOSQLiteStmt">object</link> after the specified statement, or the
@@ -2791,12 +2773,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthProfile"><title>profile</title>
 <indexterm><primary>profile</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>profile</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--profile(--callBackObj--+------------+--+------------+--)----><
-                           +-,-mthName--+  +-,-userData-+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_profile.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Registers an user callback method that can be used for profiling. The callback method is invoked is invoked as each SQL
@@ -2867,12 +2848,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthProfileCallBack"><title>profileCallBack</title>
 <indexterm><primary>profileCallBack</primary></indexterm>
 <indexterm><primary>Callback Methods</primary><secondary>profileCallBack</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--profileCallBack(--sql--,--nanoSeconds--,--userData--)--------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_profilecallback.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">profileCallBack</emphasis> method is an example of a user callback method for the <link
@@ -2949,12 +2929,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthProgressHandler"><title>progressHandler</title>
 <indexterm><primary>progressHandler</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>progressHandler</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--progressHandler(--callBackObj--+-------------+-+----------+--+----------+--)---><
-                                    +-,-instrcts-+ +-,-mName--+  +-,-urData-+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_progresshandler.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Registers an user callback method that is invoked periodically during long running calls to <link
@@ -3027,11 +3006,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthProgressCallBack"><title>progressCallBack</title>
 <indexterm><primary>progressCallBack</primary></indexterm>
 <indexterm><primary>Callback Methods</primary><secondary>progressCallBack</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--progressCallBack(--userData--)---------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_progresscallback.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">progressCallBack</emphasis> method is an example of a user callback method for the <link
@@ -3098,12 +3077,11 @@ Bytes of page memory used by all caches on this database connection:
 <section id="mthPragma"><title>pragma</title>
 <indexterm><primary>pragma</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>pragma</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--pragma(--name--+----------+--)---------------><
-                   +-,-value--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_pragma.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Executes a PRAGMA statement.  A <emphasis role="italic">PRAGMA</emphasis> statement is a SQLite specific SQL extension,
@@ -4053,12 +4031,11 @@ cid     name      type           notnull     dflt_value   pk
 <section id="mthRollbackHook"><title>rollbackHook</title>
 <indexterm><primary>rollbackHook</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>rollbackHook</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--rollbackHook(--callBackObj--+------------+--+------------+--)----------------><
-                                +-,-mthName--+  +-,-userData-+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_rollbackhook.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Registers a callback method to be invoked whenever a transaction is rolled back.
@@ -4116,12 +4093,11 @@ cid     name      type           notnull     dflt_value   pk
 <section id="mthRollbackHookCallBack"><title>rollbackHookCallBack</title>
 <indexterm><primary>rollbackHookCallBack</primary></indexterm>
 <indexterm><primary>Callback Methods</primary><secondary>rollbackHookCallBack</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--rollbackHookCallBack(--userData--)------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_rollbackhookcallback.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">rollbackHookCallBack</emphasis> method is an example of a user callback method for the <link
@@ -4191,12 +4167,11 @@ cid     name      type           notnull     dflt_value   pk
 <section id="mthSetAuthorizer"><title>setAuthorizer</title>
 <indexterm><primary>setAuthorizer</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>setAuthorizer</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--setAuthorizer(--callBackObj--+------------+--+------------+--)-------------><
-                                 +-,-mthName--+  +-,-userData-+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_setauthorizer.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Registers an authorizer callback method that is invoked as SQL statements are being compiled by instantiating an <link
@@ -4278,12 +4253,11 @@ cid     name      type           notnull     dflt_value   pk
 <section id="mthAuthorizerCallBack"><title>authorizerCallBack</title>
 <indexterm><primary>authorizerCallBack</primary></indexterm>
 <indexterm><primary>Callback Methods</primary><secondary>authorizerCallBack</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--authorizerCallBack(--code--,--str1--,--str2--,--str3--,--str4--,--userData--)-><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_authorizercallback.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">authorizerCallBack</emphasis> method is an example of a user callback method for the <link
@@ -4519,12 +4493,11 @@ cid     name      type           notnull     dflt_value   pk
 <section id="mthTableColumnMetadata"><title>tableColumnMetadata</title>
 <indexterm><primary>tableColumnMetadata</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>tableColumnMetadata</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--tableColumnMetadata(--tableName--,--colName--,--results--+-----------+--)--><
-                                                             +-,-dbName--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_tablecolumnmetadata.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Retrieves metadata about a specific column of a specific table of this database connection.
@@ -4638,12 +4611,11 @@ cid     name      type           notnull     dflt_value   pk
 <section id="mthTotalChanges"><title>totalChanges</title>
 <indexterm><primary>totalChanges</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>totalChanges</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--totalChanges---------------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_totalchanges.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Determines the number of row changes caused by INSERT, UPDATE or DELETE statements since the database connection was
@@ -4689,12 +4661,11 @@ cid     name      type           notnull     dflt_value   pk
 <section id="mthTrace"><title>trace</title>
 <indexterm><primary>trace</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>trace</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--trace(--callBackObj--+------------+--+------------+--)------><
-                         +-,-mthName--+  +-,-userData-+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_trace.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Registers an user callback method that can be used for tracing. The callback method is invoked at various times when an SQL
@@ -4766,12 +4737,11 @@ cid     name      type           notnull     dflt_value   pk
 <section id="mthTraceCallBack"><title>traceCallBack</title>
 <indexterm><primary>traceCallBack</primary></indexterm>
 <indexterm><primary>Callback Methods</primary><secondary>traceCallBack</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--commitHookCallBack(--sql--,--userData--)-----><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_tracecallback.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">traceCallBack</emphasis> method is an example of a user callback method for the <link
@@ -4832,12 +4802,11 @@ cid     name      type           notnull     dflt_value   pk
 <section id="mthUpdateHook"><title>updateHook</title>
 <indexterm><primary>updateHook</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>updateHook</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--updateHook(--callBackObj--+------------+--+------------+--)----------------><
-                              +-,-mthName--+  +-,-userData-+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_updatehook.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Registers a callback method to be invoked whenever a row is updated, inserted, or deleted.
@@ -4895,12 +4864,11 @@ cid     name      type           notnull     dflt_value   pk
 <section id="mthUpdateHookCallBack"><title>updateHookCallBack</title>
 <indexterm><primary>updateHookCallBack</primary></indexterm>
 <indexterm><primary>Callback Methods</primary><secondary>updateHookCallBack</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--updateHookCallBack(--op--,--dbName--,--tableName--,--rowID--,--userData--)-><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_updatehookcallback.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">updateHookCallBack</emphasis> method is an example of a user callback method for the <link
