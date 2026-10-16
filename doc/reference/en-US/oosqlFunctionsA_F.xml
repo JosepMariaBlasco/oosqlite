@@ -1939,7 +1939,7 @@
         have been <link linkend="rtn-oosqlFinalize">finalized</link>.
       </para>
       </listitem></varlistentry>
-      <varlistentry><term>colName [required]</term>
+      <varlistentry><term>columnName [required]</term>
       <listitem>
       <para>
         The name of the column whose index is desired. The name is case-insensitive because SQLite does not allow column
