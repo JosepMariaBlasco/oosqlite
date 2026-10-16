@@ -153,6 +153,24 @@
 
 <section id="sctWhatsChangedExtended"><title>New and Extended Methods and Routines</title>
 <variablelist>
+  <varlistentry><term><emphasis role="bold">The constants of SQLite 3.52.0</emphasis></term>
+  <listitem>
+  <para>
+    The <link linkend="chpOOSQLiteConstants">ooSQLiteConstants</link> class had the constants of SQLite 3.8.4.3, the
+    version ooSQLite was written for. The embedded SQLite was updated several times since, but the constants were not,
+    so the extended result codes, open flags, status parameters, limits, and other values added by later versions of
+    SQLite were missing. Following what was done up to SQLite 3.8.4.3, every group of constants of the class now has all
+    the constants of SQLite 3.52.0: 122 new constants, such as <computeroutput>CONSTRAINT_ROWID</computeroutput>,
+    <computeroutput>BUSY_TIMEOUT</computeroutput>, <computeroutput>OPEN_NOFOLLOW</computeroutput>, <computeroutput>LIMIT_WORKER_THREADS</computeroutput>,
+    or <computeroutput>STMTSTATUS_RUN</computeroutput>. The constants that SQLite marks as not used or for internal
+    use are left out, as before. Where SQLite renamed a constant, both names are available: for instance
+    <computeroutput>MUTEX_STATIC_MAIN</computeroutput> and <computeroutput>MUTEX_STATIC_MASTER</computeroutput>.
+  </para>
+  <para>
+    <computeroutput>DBSTATUS_MAX</computeroutput>, the largest connection status parameter, is now 13, the value of
+    SQLite 3.52.0; it was 10.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">ooSQLiteStmt~sql</emphasis></term>
   <listitem>
   <para>
@@ -285,6 +303,11 @@
     attribute has its arguments, return value, remarks, and, for most of them, a tested example. The method table lists
     all of them. The example of <link linkend="atrLastErrMsgClsStmt">lastErrMsg</link> displayed the initCode attribute as
     the error code. The template section of the value method, an internal debugging aid, was removed.
+  </para></listitem>
+  <listitem><para>
+    The <link linkend="chpOOSQLiteConstants">constants chapter</link> lists all the constants of the class, also the
+    ones that were missing from it, such as NOTICE and WARNING. The values of the version constants are those of the
+    embedded SQLite, and the NULL datatype is listed with its ooSQLite name, SQLNULL.
   </para></listitem>
   <listitem><para>
     Arguments named after the C++ code were renamed, in the diagrams and in the text: <emphasis

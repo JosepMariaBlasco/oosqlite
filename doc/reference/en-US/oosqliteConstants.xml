@@ -108,22 +108,34 @@ The "ooFoods.rdbx" database file has been corrupted.
 </row>
 </thead>
 <tbody>
-<!-- NOTE these 3 constants must be updated each time a new version of the SQLite database engine is embedded in ooSQLite -->
+<!-- NOTE these 6 constants must be updated each time a new version of the SQLite database engine is embedded in ooSQLite -->
 <row>
 <entry align="center"><emphasis role="bold"></emphasis></entry>
 <entry align="center"><emphasis role="bold">Compile-Time Version Constants</emphasis></entry>
 </row>
 <row>
 <entry>VERSION</entry>
-<entry>&quot;3.40.1&quot; The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
+<entry>&quot;3.52.0&quot; The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
 </row>
 <row>
 <entry>VERSION_NUMBER</entry>
-<entry>3040001 The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
+<entry>3052000 The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
 </row>
 <row>
 <entry>SOURCE_ID</entry>
-<entry>&quot;2022-12-28 14:03:47 df5c253c0b3dd24916e4ec7cf77d3db5294cc9fd45ae7b9c5e82ad8197f38a24&quot; The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
+<entry>&quot;2026-03-06 16:01:44 557aeb43869d3585137b17690cb3b64f7de6921774daae9e56403c3717dceab6&quot; The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
+</row>
+<row>
+<entry>SCM_BRANCH</entry>
+<entry>&quot;trunk&quot; The name of the branch of the SQLite source repository the embedded SQLite was built from. The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
+</row>
+<row>
+<entry>SCM_TAGS</entry>
+<entry>&quot;release major-release version-3.52.0&quot; The tags of the check-in of the SQLite source repository the embedded SQLite was built from. The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
+</row>
+<row>
+<entry>SCM_DATETIME</entry>
+<entry>&quot;2026-03-06T16:01:44.367Z&quot; The date and time of the check-in of the SQLite source repository the embedded SQLite was built from. The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
 </row>
 
 <row>
@@ -284,12 +296,44 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>File opened that is not a database file</entry>
 </row>
 <row>
+<entry>NOTICE</entry>
+<entry>Notifications from sqlite3_log()</entry>
+</row>
+<row>
+<entry>WARNING</entry>
+<entry>Warnings from sqlite3_log()</entry>
+</row>
+<row>
 <entry>ROW</entry>
 <entry>sqlite3_step() has another row ready</entry>
 </row>
 <row>
 <entry>DONE</entry>
 <entry>sqlite3_step() has finished executing</entry>
+</row>
+<row>
+<entry>ERROR_MISSING_COLLSEQ</entry>
+<entry></entry>
+</row>
+<row>
+<entry>ERROR_RETRY</entry>
+<entry></entry>
+</row>
+<row>
+<entry>ERROR_SNAPSHOT</entry>
+<entry></entry>
+</row>
+<row>
+<entry>ERROR_RESERVESIZE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>ERROR_KEY</entry>
+<entry></entry>
+</row>
+<row>
+<entry>ERROR_UNABLE</entry>
+<entry></entry>
 </row>
 <!--  Support for the extended error codes is compiled in. So we make no distiction between a result
       code and an extended result code.
@@ -403,7 +447,51 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry></entry>
 </row>
 <row>
+<entry>IOERR_VNODE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_AUTH</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_BEGIN_ATOMIC</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_COMMIT_ATOMIC</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_ROLLBACK_ATOMIC</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_DATA</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_CORRUPTFS</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_IN_PAGE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_BADKEY</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_CODEC</entry>
+<entry></entry>
+</row>
+<row>
 <entry>LOCKED_SHAREDCACHE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>LOCKED_VTAB</entry>
 <entry></entry>
 </row>
 <row>
@@ -412,6 +500,10 @@ The "ooFoods.rdbx" database file has been corrupted.
 </row>
 <row>
 <entry>BUSY_SNAPSHOT</entry>
+<entry></entry>
+</row>
+<row>
+<entry>BUSY_TIMEOUT</entry>
 <entry></entry>
 </row>
 <row>
@@ -431,7 +523,19 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry></entry>
 </row>
 <row>
+<entry>CANTOPEN_SYMLINK</entry>
+<entry></entry>
+</row>
+<row>
 <entry>CORRUPT_VTAB</entry>
+<entry></entry>
+</row>
+<row>
+<entry>CORRUPT_SEQUENCE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>CORRUPT_INDEX</entry>
 <entry></entry>
 </row>
 <row>
@@ -448,6 +552,14 @@ The "ooFoods.rdbx" database file has been corrupted.
 </row>
 <row>
 <entry>READONLY_DBMOVED</entry>
+<entry></entry>
+</row>
+<row>
+<entry>READONLY_CANTINIT</entry>
+<entry></entry>
+</row>
+<row>
+<entry>READONLY_DIRECTORY</entry>
 <entry></entry>
 </row>
 <row>
@@ -491,6 +603,18 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry></entry>
 </row>
 <row>
+<entry>CONSTRAINT_ROWID</entry>
+<entry></entry>
+</row>
+<row>
+<entry>CONSTRAINT_PINNED</entry>
+<entry></entry>
+</row>
+<row>
+<entry>CONSTRAINT_DATATYPE</entry>
+<entry></entry>
+</row>
+<row>
 <entry>NOTICE_RECOVER_WAL</entry>
 <entry></entry>
 </row>
@@ -499,7 +623,19 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry></entry>
 </row>
 <row>
+<entry>NOTICE_RBU</entry>
+<entry></entry>
+</row>
+<row>
 <entry>WARNING_AUTOINDEX</entry>
+<entry></entry>
+</row>
+<row>
+<entry>AUTH_USER</entry>
+<entry></entry>
+</row>
+<row>
+<entry>OK_LOAD_PERMANENTLY</entry>
 <entry></entry>
 </row>
 
@@ -536,6 +672,10 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>Ok for sqlite3_open_v2()</entry>
 </row>
 <row>
+<entry>OPEN_MEMORY</entry>
+<entry>0x00000080  Ok for sqlite3_open_v2()</entry>
+</row>
+<row>
 <entry>OPEN_MAIN_DB</entry>
 <entry>VFS only</entry>
 </row>
@@ -564,6 +704,10 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>VFS only</entry>
 </row>
 <row>
+<entry>OPEN_SUPER_JOURNAL</entry>
+<entry>0x00004000  VFS only</entry>
+</row>
+<row>
 <entry>OPEN_NOMUTEX</entry>
 <entry>Ok for sqlite3_open_v2()</entry>
 </row>
@@ -582,6 +726,14 @@ The "ooFoods.rdbx" database file has been corrupted.
 <row>
 <entry>OPEN_WAL</entry>
 <entry>VFS only</entry>
+</row>
+<row>
+<entry>OPEN_NOFOLLOW</entry>
+<entry>0x01000000  Ok for sqlite3_open_v2()</entry>
+</row>
+<row>
+<entry>OPEN_EXRESCODE</entry>
+<entry>0x02000000  Extended result codes</entry>
 </row>
 
 <row>
@@ -750,6 +902,10 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>ACCESS_READ</entry>
 <entry>Unused</entry>
 </row>
+<row>
+<entry>CHECKPOINT_NOOP</entry>
+<entry></entry>
+</row>
 
 <row>
 <entry align="center"><emphasis role="bold"></emphasis></entry>
@@ -765,6 +921,10 @@ The "ooFoods.rdbx" database file has been corrupted.
 </row>
 <row>
 <entry>CHECKPOINT_RESTART</entry>
+<entry></entry>
+</row>
+<row>
+<entry>CHECKPOINT_TRUNCATE</entry>
 <entry></entry>
 </row>
 
@@ -860,6 +1020,38 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>CONFIG_WIN32_HEAPSIZE</entry>
 <entry>int nByte</entry>
 </row>
+<row>
+<entry>CONFIG_PCACHE_HDRSZ</entry>
+<entry>int *psz</entry>
+</row>
+<row>
+<entry>CONFIG_PMASZ</entry>
+<entry>unsigned int szPma</entry>
+</row>
+<row>
+<entry>CONFIG_STMTJRNL_SPILL</entry>
+<entry>int nByte</entry>
+</row>
+<row>
+<entry>CONFIG_SMALL_MALLOC</entry>
+<entry>boolean</entry>
+</row>
+<row>
+<entry>CONFIG_SORTERREF_SIZE</entry>
+<entry>int nByte</entry>
+</row>
+<row>
+<entry>CONFIG_MEMDB_MAXSIZE</entry>
+<entry>sqlite3_int64</entry>
+</row>
+<row>
+<entry>CONFIG_ROWID_IN_VIEW</entry>
+<entry>int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_MAINDBNAME</entry>
+<entry>const char*</entry>
+</row>
 
 <row>
 <entry align="center"><emphasis role="bold"></emphasis></entry>
@@ -876,6 +1068,90 @@ The "ooFoods.rdbx" database file has been corrupted.
 <row>
 <entry>DBCONFIG_ENABLE_TRIGGER</entry>
 <entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_ENABLE_FTS3_TOKENIZER</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_ENABLE_LOAD_EXTENSION</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_NO_CKPT_ON_CLOSE</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_ENABLE_QPSG</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_TRIGGER_EQP</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_RESET_DATABASE</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_DEFENSIVE</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_WRITABLE_SCHEMA</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_LEGACY_ALTER_TABLE</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_DQS_DML</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_DQS_DDL</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_ENABLE_VIEW</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_LEGACY_FILE_FORMAT</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_TRUSTED_SCHEMA</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_STMT_SCANSTATUS</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_REVERSE_SCANORDER</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_ENABLE_ATTACH_CREATE</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_ENABLE_ATTACH_WRITE</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_ENABLE_COMMENTS</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_FP_DIGITS</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_MAX</entry>
+<entry>Largest DBCONFIG</entry>
 </row>
 
 <row>
@@ -923,6 +1199,22 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry></entry>
 </row>
 <row>
+<entry>DBSTATUS_DEFERRED_FKS</entry>
+<entry></entry>
+</row>
+<row>
+<entry>DBSTATUS_CACHE_USED_SHARED</entry>
+<entry></entry>
+</row>
+<row>
+<entry>DBSTATUS_CACHE_SPILL</entry>
+<entry></entry>
+</row>
+<row>
+<entry>DBSTATUS_TEMPBUF_SPILL</entry>
+<entry></entry>
+</row>
+<row>
 <entry>DBSTATUS_MAX</entry>
 <entry>Largest defined DBSTATUS</entry>
 </row>
@@ -945,6 +1237,18 @@ The "ooFoods.rdbx" database file has been corrupted.
 </row>
 <row>
 <entry>LAST_ERRNO</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_GET_LOCKPROXYFILE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_SET_LOCKPROXYFILE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_LAST_ERRNO</entry>
 <entry></entry>
 </row>
 <row>
@@ -1013,6 +1317,98 @@ The "ooFoods.rdbx" database file has been corrupted.
 </row>
 <row>
 <entry>FCNTL_COMMIT_PHASETWO</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_WIN32_SET_HANDLE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_WAL_BLOCK</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_ZIPVFS</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_RBU</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_VFS_POINTER</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_JOURNAL_POINTER</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_WIN32_GET_HANDLE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_PDB</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_BEGIN_ATOMIC_WRITE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_COMMIT_ATOMIC_WRITE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_ROLLBACK_ATOMIC_WRITE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_LOCK_TIMEOUT</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_DATA_VERSION</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_SIZE_LIMIT</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_CKPT_DONE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_RESERVE_BYTES</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_CKPT_START</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_EXTERNAL_READER</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_CKSM_FILE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_RESET_CACHE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_NULL_IO</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_BLOCK_ON_CONNECT</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_FILESTAT</entry>
 <entry></entry>
 </row>
 
@@ -1097,6 +1493,18 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>IOCAP_POWERSAFE_OVERWRITE</entry>
 <entry></entry>
 </row>
+<row>
+<entry>IOCAP_IMMUTABLE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOCAP_BATCH_ATOMIC</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOCAP_SUBPAGE_READ</entry>
+<entry></entry>
+</row>
 
 <row>
 <entry align="center"><emphasis role="bold"></emphasis></entry>
@@ -1146,6 +1554,14 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>LIMIT_TRIGGER_DEPTH</entry>
 <entry></entry>
 </row>
+<row>
+<entry>LIMIT_WORKER_THREADS</entry>
+<entry></entry>
+</row>
+<row>
+<entry>LIMIT_PARSER_DEPTH</entry>
+<entry></entry>
+</row>
 
 <row>
 <entry align="center"><emphasis role="bold"></emphasis></entry>
@@ -1189,6 +1605,10 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry></entry>
 </row>
 <row>
+<entry>MUTEX_STATIC_MAIN</entry>
+<entry></entry>
+</row>
+<row>
 <entry>MUTEX_STATIC_MEM</entry>
 <entry>sqlite3_malloc()</entry>
 </row>
@@ -1207,6 +1627,30 @@ The "ooFoods.rdbx" database file has been corrupted.
 <row>
 <entry>MUTEX_STATIC_PMEM</entry>
 <entry>sqlite3PageMalloc()</entry>
+</row>
+<row>
+<entry>MUTEX_STATIC_APP1</entry>
+<entry>For use by application</entry>
+</row>
+<row>
+<entry>MUTEX_STATIC_APP2</entry>
+<entry>For use by application</entry>
+</row>
+<row>
+<entry>MUTEX_STATIC_APP3</entry>
+<entry>For use by application</entry>
+</row>
+<row>
+<entry>MUTEX_STATIC_VFS1</entry>
+<entry>For use by built-in VFS</entry>
+</row>
+<row>
+<entry>MUTEX_STATIC_VFS2</entry>
+<entry>For use by extension VFS</entry>
+</row>
+<row>
+<entry>MUTEX_STATIC_VFS3</entry>
+<entry>For use by application VFS</entry>
 </row>
 
 <row>
@@ -1308,6 +1752,26 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>STMTSTATUS_VM_STEP</entry>
 <entry>This is the number of virtual machine operations executed by the prepared statement if that number is less than or equal to 2147483647. The number of virtual machine operations can be used as a proxy for the total work done by the prepared statement. If the number of virtual machine operations exceeds 2147483647 then the value returned by this statement status code is undefined.</entry>
 </row>
+<row>
+<entry>STMTSTATUS_REPREPARE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>STMTSTATUS_RUN</entry>
+<entry></entry>
+</row>
+<row>
+<entry>STMTSTATUS_FILTER_MISS</entry>
+<entry></entry>
+</row>
+<row>
+<entry>STMTSTATUS_FILTER_HIT</entry>
+<entry></entry>
+</row>
+<row>
+<entry>STMTSTATUS_MEMUSED</entry>
+<entry></entry>
+</row>
 
 <row>
 <entry align="center"><emphasis role="bold"></emphasis></entry>
@@ -1355,7 +1819,31 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>sqlite3_create_collation only</entry>
 </row>
 <row>
+<entry>UTF8_ZT</entry>
+<entry>Zero-terminated UTF8</entry>
+</row>
+<row>
 <entry>DETERMINISTIC</entry>
+<entry></entry>
+</row>
+<row>
+<entry>DIRECTONLY</entry>
+<entry></entry>
+</row>
+<row>
+<entry>SUBTYPE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>INNOCUOUS</entry>
+<entry></entry>
+</row>
+<row>
+<entry>RESULT_SUBTYPE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>SELFORDER1</entry>
 <entry></entry>
 </row>
 
@@ -1365,6 +1853,18 @@ The "ooFoods.rdbx" database file has been corrupted.
 </row>
 <row>
 <entry>VTAB_CONSTRAINT_SUPPORT</entry>
+<entry></entry>
+</row>
+<row>
+<entry>VTAB_INNOCUOUS</entry>
+<entry></entry>
+</row>
+<row>
+<entry>VTAB_DIRECTONLY</entry>
+<entry></entry>
+</row>
+<row>
+<entry>VTAB_USES_ALL_SCHEMAS</entry>
 <entry></entry>
 </row>
 
@@ -1389,18 +1889,30 @@ The "ooFoods.rdbx" database file has been corrupted.
 </row>
 </thead>
 <tbody>
-<!-- NOTE these 3 constants should maybe be updated each time a new version of SQLite is used? ... -->
+<!-- NOTE these 6 constants must be updated each time a new version of the SQLite database engine is embedded in ooSQLite -->
 <row>
 <entry>VERSION</entry>
-<entry>&quot;3.40.1&quot; The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
+<entry>&quot;3.52.0&quot; The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
 </row>
 <row>
 <entry>VERSION_NUMBER</entry>
-<entry>3040001 The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
+<entry>3052000 The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
 </row>
 <row>
 <entry>SOURCE_ID</entry>
-<entry>&quot;2022-12-28 14:03:47 df5c253c0b3dd24916e4ec7cf77d3db5294cc9fd45ae7b9c5e82ad8197f38a24&quot; The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
+<entry>&quot;2026-03-06 16:01:44 557aeb43869d3585137b17690cb3b64f7de6921774daae9e56403c3717dceab6&quot; The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
+</row>
+<row>
+<entry>SCM_BRANCH</entry>
+<entry>&quot;trunk&quot; The name of the branch of the SQLite source repository the embedded SQLite was built from. The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
+</row>
+<row>
+<entry>SCM_TAGS</entry>
+<entry>&quot;release major-release version-3.52.0&quot; The tags of the check-in of the SQLite source repository the embedded SQLite was built from. The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
+</row>
+<row>
+<entry>SCM_DATETIME</entry>
+<entry>&quot;2026-03-06T16:01:44.367Z&quot; The date and time of the check-in of the SQLite source repository the embedded SQLite was built from. The value of this constant will vary depending on the exact version of the SQLite database engine embedded in ooSQLite. Typically this documentation is updated when ooSQLite is upgraded to use a new version of the SQLite library so that the value shown here is current.</entry>
 </row>
 
 </tbody></tgroup>
@@ -1642,6 +2154,30 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>DONE</entry>
 <entry>sqlite3_step() has finished executing</entry>
 </row>
+<row>
+<entry>ERROR_MISSING_COLLSEQ</entry>
+<entry></entry>
+</row>
+<row>
+<entry>ERROR_RETRY</entry>
+<entry></entry>
+</row>
+<row>
+<entry>ERROR_SNAPSHOT</entry>
+<entry></entry>
+</row>
+<row>
+<entry>ERROR_RESERVESIZE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>ERROR_KEY</entry>
+<entry></entry>
+</row>
+<row>
+<entry>ERROR_UNABLE</entry>
+<entry></entry>
+</row>
 <!--  Support for the extended error codes is compiled in. So we make no distiction between a result
       code and an extended result code.
 <row>
@@ -1754,7 +2290,51 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry></entry>
 </row>
 <row>
+<entry>IOERR_VNODE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_AUTH</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_BEGIN_ATOMIC</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_COMMIT_ATOMIC</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_ROLLBACK_ATOMIC</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_DATA</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_CORRUPTFS</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_IN_PAGE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_BADKEY</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOERR_CODEC</entry>
+<entry></entry>
+</row>
+<row>
 <entry>LOCKED_SHAREDCACHE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>LOCKED_VTAB</entry>
 <entry></entry>
 </row>
 <row>
@@ -1763,6 +2343,10 @@ The "ooFoods.rdbx" database file has been corrupted.
 </row>
 <row>
 <entry>BUSY_SNAPSHOT</entry>
+<entry></entry>
+</row>
+<row>
+<entry>BUSY_TIMEOUT</entry>
 <entry></entry>
 </row>
 <row>
@@ -1782,7 +2366,19 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry></entry>
 </row>
 <row>
+<entry>CANTOPEN_SYMLINK</entry>
+<entry></entry>
+</row>
+<row>
 <entry>CORRUPT_VTAB</entry>
+<entry></entry>
+</row>
+<row>
+<entry>CORRUPT_SEQUENCE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>CORRUPT_INDEX</entry>
 <entry></entry>
 </row>
 <row>
@@ -1799,6 +2395,14 @@ The "ooFoods.rdbx" database file has been corrupted.
 </row>
 <row>
 <entry>READONLY_DBMOVED</entry>
+<entry></entry>
+</row>
+<row>
+<entry>READONLY_CANTINIT</entry>
+<entry></entry>
+</row>
+<row>
+<entry>READONLY_DIRECTORY</entry>
 <entry></entry>
 </row>
 <row>
@@ -1842,6 +2446,18 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry></entry>
 </row>
 <row>
+<entry>CONSTRAINT_ROWID</entry>
+<entry></entry>
+</row>
+<row>
+<entry>CONSTRAINT_PINNED</entry>
+<entry></entry>
+</row>
+<row>
+<entry>CONSTRAINT_DATATYPE</entry>
+<entry></entry>
+</row>
+<row>
 <entry>NOTICE_RECOVER_WAL</entry>
 <entry></entry>
 </row>
@@ -1850,7 +2466,19 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry></entry>
 </row>
 <row>
+<entry>NOTICE_RBU</entry>
+<entry></entry>
+</row>
+<row>
 <entry>WARNING_AUTOINDEX</entry>
+<entry></entry>
+</row>
+<row>
+<entry>AUTH_USER</entry>
+<entry></entry>
+</row>
+<row>
+<entry>OK_LOAD_PERMANENTLY</entry>
 <entry></entry>
 </row>
 
@@ -1905,6 +2533,10 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>Ok for sqlite3_open_v2()</entry>
 </row>
 <row>
+<entry>OPEN_MEMORY</entry>
+<entry>0x00000080  Ok for sqlite3_open_v2()</entry>
+</row>
+<row>
 <entry>OPEN_MAIN_DB</entry>
 <entry>VFS only</entry>
 </row>
@@ -1933,6 +2565,10 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>VFS only</entry>
 </row>
 <row>
+<entry>OPEN_SUPER_JOURNAL</entry>
+<entry>0x00004000  VFS only</entry>
+</row>
+<row>
 <entry>OPEN_NOMUTEX</entry>
 <entry>Ok for sqlite3_open_v2()</entry>
 </row>
@@ -1951,6 +2587,14 @@ The "ooFoods.rdbx" database file has been corrupted.
 <row>
 <entry>OPEN_WAL</entry>
 <entry>VFS only</entry>
+</row>
+<row>
+<entry>OPEN_NOFOLLOW</entry>
+<entry>0x01000000  Ok for sqlite3_open_v2()</entry>
+</row>
+<row>
+<entry>OPEN_EXRESCODE</entry>
+<entry>0x02000000  Extended result codes</entry>
 </row>
 
 </tbody></tgroup>
@@ -2196,6 +2840,10 @@ The "ooFoods.rdbx" database file has been corrupted.
 <tbody>
 
 <row>
+<entry>CHECKPOINT_NOOP</entry>
+<entry></entry>
+</row>
+<row>
 <entry>CHECKPOINT_PASSIVE</entry>
 <entry></entry>
 </row>
@@ -2205,6 +2853,10 @@ The "ooFoods.rdbx" database file has been corrupted.
 </row>
 <row>
 <entry>CHECKPOINT_RESTART</entry>
+<entry></entry>
+</row>
+<row>
+<entry>CHECKPOINT_TRUNCATE</entry>
 <entry></entry>
 </row>
 
@@ -2317,6 +2969,34 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>CONFIG_WIN32_HEAPSIZE</entry>
 <entry>int nByte</entry>
 </row>
+<row>
+<entry>CONFIG_PCACHE_HDRSZ</entry>
+<entry>int *psz</entry>
+</row>
+<row>
+<entry>CONFIG_PMASZ</entry>
+<entry>unsigned int szPma</entry>
+</row>
+<row>
+<entry>CONFIG_STMTJRNL_SPILL</entry>
+<entry>int nByte</entry>
+</row>
+<row>
+<entry>CONFIG_SMALL_MALLOC</entry>
+<entry>boolean</entry>
+</row>
+<row>
+<entry>CONFIG_SORTERREF_SIZE</entry>
+<entry>int nByte</entry>
+</row>
+<row>
+<entry>CONFIG_MEMDB_MAXSIZE</entry>
+<entry>sqlite3_int64</entry>
+</row>
+<row>
+<entry>CONFIG_ROWID_IN_VIEW</entry>
+<entry>int*</entry>
+</row>
 </tbody></tgroup>
 </table>
 </section>
@@ -2339,6 +3019,10 @@ The "ooFoods.rdbx" database file has been corrupted.
 </thead>
 <tbody>
 <row>
+<entry>DBCONFIG_MAINDBNAME</entry>
+<entry>const char*</entry>
+</row>
+<row>
 <entry>DBCONFIG_LOOKASIDE</entry>
 <entry>void* int int</entry>
 </row>
@@ -2349,6 +3033,90 @@ The "ooFoods.rdbx" database file has been corrupted.
 <row>
 <entry>DBCONFIG_ENABLE_TRIGGER</entry>
 <entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_ENABLE_FTS3_TOKENIZER</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_ENABLE_LOAD_EXTENSION</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_NO_CKPT_ON_CLOSE</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_ENABLE_QPSG</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_TRIGGER_EQP</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_RESET_DATABASE</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_DEFENSIVE</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_WRITABLE_SCHEMA</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_LEGACY_ALTER_TABLE</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_DQS_DML</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_DQS_DDL</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_ENABLE_VIEW</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_LEGACY_FILE_FORMAT</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_TRUSTED_SCHEMA</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_STMT_SCANSTATUS</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_REVERSE_SCANORDER</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_ENABLE_ATTACH_CREATE</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_ENABLE_ATTACH_WRITE</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_ENABLE_COMMENTS</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_FP_DIGITS</entry>
+<entry>int int*</entry>
+</row>
+<row>
+<entry>DBCONFIG_MAX</entry>
+<entry>Largest DBCONFIG</entry>
 </row>
 </tbody></tgroup>
 </table>
@@ -2418,6 +3186,22 @@ The "ooFoods.rdbx" database file has been corrupted.
 </entry>
 </row>
 <row>
+<entry>DBSTATUS_DEFERRED_FKS</entry>
+<entry>This parameter returns zero for the current value if and only if all foreign key constraints (deferred or immediate) have been resolved. The highwater mark is always 0.</entry>
+</row>
+<row>
+<entry>DBSTATUS_CACHE_USED_SHARED</entry>
+<entry>This parameter is similar to DBSTATUS_CACHE_USED, except that if a pager cache is shared between two or more connections the bytes of heap memory used by that pager cache is divided evenly between the attached connections. In other words, if none of the pager caches associated with the database connection are shared, this request returns the same value as DBSTATUS_CACHE_USED. Or, if one or more of the pager caches are shared, the value returned by this call will be smaller than that returned by DBSTATUS_CACHE_USED. The highwater mark associated with DBSTATUS_CACHE_USED_SHARED is always 0.</entry>
+</row>
+<row>
+<entry>DBSTATUS_CACHE_SPILL</entry>
+<entry>This parameter returns the number of dirty cache entries that have been written to disk in the middle of a transaction due to the page cache overflowing. Transactions are more efficient if they are written to disk all at once. When pages spill mid-transaction, that introduces additional overhead. This parameter can be used to help identify inefficiencies that can be resolved by increasing the cache size.</entry>
+</row>
+<row>
+<entry>DBSTATUS_TEMPBUF_SPILL</entry>
+<entry>This parameter returns the number of bytes written to temporary files on disk that could have been kept in memory had sufficient memory been available. This value includes writes to intermediate tables that are part of complex queries, external sorts that spill to disk, and writes to TEMP tables. The highwater mark is always 0. There is overlap between the quantities measured by this parameter and DBSTATUS_CACHE_WRITE. Resetting one will reduce the other.</entry>
+</row>
+<row>
 <entry>DBSTATUS_MAX</entry>
 <entry>Largest defined DBSTATUS</entry>
 </row>
@@ -2456,6 +3240,18 @@ The "ooFoods.rdbx" database file has been corrupted.
 </row>
 <row>
 <entry>LAST_ERRNO</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_GET_LOCKPROXYFILE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_SET_LOCKPROXYFILE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_LAST_ERRNO</entry>
 <entry></entry>
 </row>
 <row>
@@ -2526,6 +3322,98 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>FCNTL_COMMIT_PHASETWO</entry>
 <entry></entry>
 </row>
+<row>
+<entry>FCNTL_WIN32_SET_HANDLE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_WAL_BLOCK</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_ZIPVFS</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_RBU</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_VFS_POINTER</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_JOURNAL_POINTER</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_WIN32_GET_HANDLE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_PDB</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_BEGIN_ATOMIC_WRITE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_COMMIT_ATOMIC_WRITE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_ROLLBACK_ATOMIC_WRITE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_LOCK_TIMEOUT</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_DATA_VERSION</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_SIZE_LIMIT</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_CKPT_DONE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_RESERVE_BYTES</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_CKPT_START</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_EXTERNAL_READER</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_CKSM_FILE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_RESET_CACHE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_NULL_IO</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_BLOCK_ON_CONNECT</entry>
+<entry></entry>
+</row>
+<row>
+<entry>FCNTL_FILESTAT</entry>
+<entry></entry>
+</row>
 </tbody></tgroup>
 </table>
 </section>
@@ -2560,7 +3448,7 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry></entry>
 </row>
 <row>
-<entry>NULL</entry>
+<entry>SQLNULL</entry>
 <entry></entry>
 </row>
 <row>
@@ -2641,6 +3529,18 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>IOCAP_POWERSAFE_OVERWRITE</entry>
 <entry></entry>
 </row>
+<row>
+<entry>IOCAP_IMMUTABLE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOCAP_BATCH_ATOMIC</entry>
+<entry></entry>
+</row>
+<row>
+<entry>IOCAP_SUBPAGE_READ</entry>
+<entry></entry>
+</row>
 </tbody></tgroup>
 </table>
 </section>
@@ -2705,6 +3605,14 @@ The "ooFoods.rdbx" database file has been corrupted.
 <row>
 <entry>LIMIT_TRIGGER_DEPTH</entry>
 <entry>The maximum depth of recursion for triggers.</entry>
+</row>
+<row>
+<entry>LIMIT_WORKER_THREADS</entry>
+<entry>The maximum number of auxiliary worker threads that a single prepared statement may start.</entry>
+</row>
+<row>
+<entry>LIMIT_PARSER_DEPTH</entry>
+<entry>The maximum depth of the LALR(1) parser stack used to analyze input SQL statements.</entry>
 </row>
 </tbody></tgroup>
 </table>
@@ -2781,6 +3689,10 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry></entry>
 </row>
 <row>
+<entry>MUTEX_STATIC_MAIN</entry>
+<entry></entry>
+</row>
+<row>
 <entry>MUTEX_STATIC_MEM</entry>
 <entry>sqlite3_malloc()</entry>
 </row>
@@ -2799,6 +3711,30 @@ The "ooFoods.rdbx" database file has been corrupted.
 <row>
 <entry>MUTEX_STATIC_PMEM</entry>
 <entry>sqlite3PageMalloc()</entry>
+</row>
+<row>
+<entry>MUTEX_STATIC_APP1</entry>
+<entry>For use by application</entry>
+</row>
+<row>
+<entry>MUTEX_STATIC_APP2</entry>
+<entry>For use by application</entry>
+</row>
+<row>
+<entry>MUTEX_STATIC_APP3</entry>
+<entry>For use by application</entry>
+</row>
+<row>
+<entry>MUTEX_STATIC_VFS1</entry>
+<entry>For use by built-in VFS</entry>
+</row>
+<row>
+<entry>MUTEX_STATIC_VFS2</entry>
+<entry>For use by extension VFS</entry>
+</row>
+<row>
+<entry>MUTEX_STATIC_VFS3</entry>
+<entry>For use by application VFS</entry>
 </row>
 </tbody></tgroup>
 </table>
@@ -2965,6 +3901,26 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>STMTSTATUS_VM_STEP</entry>
 <entry>This is the number of virtual machine operations executed by the prepared statement if that number is less than or equal to 2147483647. The number of virtual machine operations can be used as a proxy for the total work done by the prepared statement. If the number of virtual machine operations exceeds 2147483647 then the value returned by this statement status code is undefined.</entry>
 </row>
+<row>
+<entry>STMTSTATUS_REPREPARE</entry>
+<entry>This is the number of times that the prepared statement has been automatically regenerated due to schema changes or changes to bound parameters that might affect the query plan.</entry>
+</row>
+<row>
+<entry>STMTSTATUS_RUN</entry>
+<entry>This is the number of times that the prepared statement has been run. A single run for the purposes of this counter is one or more calls to step followed by a call to reset. The counter is incremented on the first step of each cycle.</entry>
+</row>
+<row>
+<entry>STMTSTATUS_FILTER_MISS</entry>
+<entry>This is the number of times that a Bloom filter returned a find, and thus the join step had to be processed as normal. See STMTSTATUS_FILTER_HIT.</entry>
+</row>
+<row>
+<entry>STMTSTATUS_FILTER_HIT</entry>
+<entry>This is the number of times that a join step was bypassed because a Bloom filter returned not-found.</entry>
+</row>
+<row>
+<entry>STMTSTATUS_MEMUSED</entry>
+<entry>This is the approximate number of bytes of heap memory used to store the prepared statement. This value is not actually a counter, and so the reset argument of stmtStatus is ignored for it.</entry>
+</row>
 </tbody></tgroup>
 </table>
 </section>
@@ -3044,7 +4000,31 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>sqlite3_create_collation only</entry>
 </row>
 <row>
+<entry>UTF8_ZT</entry>
+<entry>Zero-terminated UTF8</entry>
+</row>
+<row>
 <entry>DETERMINISTIC</entry>
+<entry></entry>
+</row>
+<row>
+<entry>DIRECTONLY</entry>
+<entry></entry>
+</row>
+<row>
+<entry>SUBTYPE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>INNOCUOUS</entry>
+<entry></entry>
+</row>
+<row>
+<entry>RESULT_SUBTYPE</entry>
+<entry></entry>
+</row>
+<row>
+<entry>SELFORDER1</entry>
 <entry></entry>
 </row>
 </tbody></tgroup>
@@ -3070,6 +4050,18 @@ The "ooFoods.rdbx" database file has been corrupted.
 <tbody>
 <row>
 <entry>VTAB_CONSTRAINT_SUPPORT</entry>
+<entry></entry>
+</row>
+<row>
+<entry>VTAB_INNOCUOUS</entry>
+<entry></entry>
+</row>
+<row>
+<entry>VTAB_DIRECTONLY</entry>
+<entry></entry>
+</row>
+<row>
+<entry>VTAB_USES_ALL_SCHEMAS</entry>
 <entry></entry>
 </row>
 </tbody></tgroup>
