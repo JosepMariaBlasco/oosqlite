@@ -4281,6 +4281,372 @@ AggregateErrorTrapped:
 
 /******************************************************************************/
 /*                                                                            */
+/* Section 33: Tier 6 — user extensions in shared libraries                   */
+/*                                                                            */
+/* loadExtension / enableLoadExtension (a SQLite extension), and the         */
+/* ooSQLExtensions library and package managers: loadLibrary, getLibrary,     */
+/* ooSQLLibrary~getHandle, loadPackage, getPackage, ooSQLPackage~register,    */
+/* getFunction, getCollation, getCollationNeeded, and the auto* methods.      */
+/*                                                                            */
+/* The libraries are the test libraries in examples/user.extensions; build   */
+/* them first with "make -f Makefile.lin example_dlls".  The auto* tests      */
+/* change process-wide state, so each one turns automatic registration off   */
+/* again before it checks anything.                                           */
+/*                                                                            */
+/******************************************************************************/
+
+--------------------------------------------------------------------------------
+-- Helper: an in-memory database with a small table of names                  --
+--------------------------------------------------------------------------------
+
+::Method namesDB
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE names(n TEXT);")
+  db~exec("INSERT INTO names VALUES('a'); INSERT INTO names VALUES('c');" -
+    "INSERT INTO names VALUES('b');")
+  Return db
+
+--------------------------------------------------------------------------------
+-- Helper: the names in the order given by a collation, as one string         --
+--------------------------------------------------------------------------------
+
+::Method orderedNames
+  Use Strict Arg db, collation
+  -- On an SQL error exec returns an empty array and sets lastErrMsg
+  rows = db~exec("SELECT n FROM names ORDER BY n COLLATE" collation";", .true)
+  If rows~items == 0 Then Return "error:" db~lastErrMsg
+  names = ""
+  Do row Over rows
+    names = names || row["N"]
+  End
+  Return names
+
+--------------------------------------------------------------------------------
+-- Helper: the value of a one-row, one-column query, or .nil on error         --
+--------------------------------------------------------------------------------
+
+::Method queryValue
+  Use Strict Arg db, sql
+  rows = db~exec(sql, .true)
+  If rows~items == 0 Then Return .nil
+  Return rows[1]["V"]
+
+--------------------------------------------------------------------------------
+-- loadExtension / enableLoadExtension                                        --
+--------------------------------------------------------------------------------
+
+::Method testLoadExtensionNotEnabled
+  db = self~openMemoryDB
+  rc = db~loadExtension(userExtLib("simpleextension"))
+  self~assertEquals(.ooSQLite~ERROR, rc, -
+    "loadExtension without enableLoadExtension should fail")
+  self~assertTrue(db~lastErrMsg~pos("not authorized") > 0, -
+    "lastErrMsg should say not authorized:" db~lastErrMsg)
+  db~close
+
+::Method testLoadExtension
+  db = self~namesDB
+  self~assertEquals(0, db~enableLoadExtension(.true), -
+    "enableLoadExtension(.true) should return OK")
+  self~assertEquals(0, db~loadExtension(userExtLib("simpleextension")), -
+    "loadExtension should return OK")
+  self~assertEquals(5.5, self~queryValue(db, "SELECT half(11) AS v;"), -
+    "half() from the extension should work")
+  self~assertEquals("cba", self~orderedNames(db, "reverse"), -
+    "reverse collation from the extension should work")
+  self~assertEquals("a, c, b", -
+    self~queryValue(db, "SELECT strAggregate(n) AS v FROM names;"), -
+    "strAggregate aggregate from the extension should work")
+  db~close
+
+::Method testLoadExtensionBadFile
+  db = self~openMemoryDB
+  db~enableLoadExtension(.true)
+  rc = db~loadExtension(userExtLib("nosuchextension"))
+  self~assertEquals(.ooSQLite~ERROR, rc, -
+    "loadExtension of a missing file should fail")
+  self~assertTrue(db~lastErrMsg~pos("nosuchextension") > 0, -
+    "lastErrMsg should name the file:" db~lastErrMsg)
+  db~close
+
+::Method testEnableLoadExtensionOff
+  db = self~openMemoryDB
+  db~enableLoadExtension(.true)
+  self~assertEquals(0, db~enableLoadExtension(.false), -
+    "enableLoadExtension(.false) should return OK")
+  rc = db~loadExtension(userExtLib("simpleextension"))
+  self~assertEquals(.ooSQLite~ERROR, rc, -
+    "loadExtension should fail again after enableLoadExtension(.false)")
+  db~close
+
+--------------------------------------------------------------------------------
+-- loadLibrary / getLibrary / ooSQLLibrary~getHandle                          --
+--------------------------------------------------------------------------------
+
+::Method testLoadLibrary
+  success = .ooSQLExtensions~loadLibrary(userExtLib("testlibrary"), -
+    .Array~of("reverse", "halfFunc"))
+  self~assertTrue(success, "loadLibrary should succeed:" -
+    .ooSQLExtensions~lastErrMsg)
+  lib = .ooSQLExtensions~getLibrary("testlibrary")
+  self~assertTrue(lib~isA(.ooSQLLibrary), -
+    "getLibrary should return an ooSQLLibrary")
+  hReverse = lib~getHandle("reverse")
+  self~assertTrue(hReverse~isA(.Pointer), "getHandle should return a Pointer")
+  self~assertFalse(hReverse~isNull, "the handle should not be null")
+  db = self~namesDB
+  self~assertEquals(0, db~createCollation("REV", hReverse), -
+    "createCollation with a library handle should return OK")
+  self~assertEquals("cba", self~orderedNames(db, "REV"), -
+    "the library collation should sort in reverse")
+  self~assertEquals(0, db~createFunction("half", lib~getHandle("halfFunc"), 1), -
+    "createFunction with a library handle should return OK")
+  self~assertEquals(4.5, self~queryValue(db, "SELECT half(9) AS v;"), -
+    "the library function should work")
+  db~close
+
+::Method testLoadLibraryUnresolvedName
+  -- Names are resolved in order; the load stops at the first that fails, and
+  -- what was resolved before it stays usable.
+  success = .ooSQLExtensions~loadLibrary(userExtLib("testlibrary"), -
+    .Array~of("reverse", "noSuchFunc", "halfFunc"))
+  self~assertFalse(success, "loadLibrary should fail on an unknown name")
+  self~assertTrue(.ooSQLExtensions~lastErrCode \= 0, -
+    "lastErrCode should be set")
+  self~assertTrue(.ooSQLExtensions~lastErrMsg~pos("noSuchFunc") > 0, -
+    "lastErrMsg should name the function:" .ooSQLExtensions~lastErrMsg)
+  lib = .ooSQLExtensions~getLibrary("testlibrary")
+  self~assertTrue(lib~isA(.ooSQLLibrary), -
+    "the library stays loaded")
+  self~assertTrue(lib~getHandle("reverse")~isA(.Pointer), -
+    "a name resolved before the error stays usable")
+
+::Method testLoadLibraryBadFile
+  success = .ooSQLExtensions~loadLibrary(userExtLib("nosuchlibrary"))
+  self~assertFalse(success, "loadLibrary of a missing file should fail")
+  self~assertTrue(.ooSQLExtensions~lastErrCode \= 0, -
+    "lastErrCode should be set")
+  self~assertTrue(.ooSQLExtensions~lastErrMsg~pos("nosuchlibrary") > 0, -
+    "lastErrMsg should name the file:" .ooSQLExtensions~lastErrMsg)
+
+::Method testGetLibraryNotLoaded
+  lib = .ooSQLExtensions~getLibrary("noSuchLibrary")
+  self~assertNull(lib, "getLibrary of an unknown library should return .nil")
+  self~assertEquals(1008, .ooSQLExtensions~lastErrCode, -
+    "lastErrCode should be OO_NO_SUCH_LIBRARY (1008)")
+
+::Method testLibraryGetHandleNoSuch
+  .ooSQLExtensions~loadLibrary(userExtLib("testlibrary"))
+  lib = .ooSQLExtensions~getLibrary("testlibrary")
+  self~assertNull(lib~getHandle("noSuchFunc"), -
+    "getHandle of an unknown name should return .nil")
+  self~assertTrue(lib~lastErrCode \= 0, "lib~lastErrCode should be set")
+  self~assertTrue(lib~lastErrMsg~pos("noSuchFunc") > 0, -
+    "lib~lastErrMsg should name the function:" lib~lastErrMsg)
+
+--------------------------------------------------------------------------------
+-- loadPackage / getPackage / ooSQLPackage                                    --
+--------------------------------------------------------------------------------
+
+::Method loadTestPackage
+  success = .ooSQLExtensions~loadPackage(userExtLib("testpackage"))
+  self~assertTrue(success, "loadPackage should succeed:" -
+    .ooSQLExtensions~lastErrMsg)
+  Return .ooSQLExtensions~getPackage("testPackage")
+
+::Method testLoadPackageWithConnection
+  db = self~namesDB
+  success = .ooSQLExtensions~loadPackage(userExtLib("testpackage"), db)
+  self~assertTrue(success, "loadPackage should succeed:" -
+    .ooSQLExtensions~lastErrMsg)
+  self~assertEquals(1.5, self~queryValue(db, "SELECT half(3) AS v;"), -
+    "loadPackage with a connection registers the functions on it")
+  self~assertEquals("a, c, b", -
+    self~queryValue(db, "SELECT strAggregate(n) AS v FROM names;"), -
+    "loadPackage with a connection registers the aggregates on it")
+  self~assertEquals("cba", self~orderedNames(db, "reverse"), -
+    "loadPackage with a connection registers the collations on it")
+  db~close
+
+::Method testLoadPackageBadFile
+  success = .ooSQLExtensions~loadPackage(userExtLib("nosuchpackage"))
+  self~assertFalse(success, "loadPackage of a missing file should fail")
+  self~assertTrue(.ooSQLExtensions~lastErrCode \= 0, -
+    "lastErrCode should be set")
+
+::Method testGetPackage
+  package = self~loadTestPackage
+  self~assertTrue(package~isA(.ooSQLPackage), -
+    "getPackage should return an ooSQLPackage")
+  self~assertNull(.ooSQLExtensions~getPackage("noSuchPackage"), -
+    "getPackage of an unknown package should return .nil")
+  self~assertEquals(1007, .ooSQLExtensions~lastErrCode, -
+    "lastErrCode should be OO_NO_SUCH_PACKAGE (1007)")
+
+::Method testPackageRegister
+  package = self~loadTestPackage
+  db = self~namesDB
+  self~assertEquals(0, package~register(db), "register should return OK")
+  self~assertEquals(2.5, self~queryValue(db, "SELECT half(5) AS v;"), -
+    "register makes the functions available")
+  self~assertEquals("cba", self~orderedNames(db, "reverse"), -
+    "register makes the collations available")
+  db~close
+
+::Method testPackageGetFunction
+  package = self~loadTestPackage
+  function = package~getFunction("half")
+  self~assertTrue(function~isA(.ooSQLFunction), -
+    "getFunction should return an ooSQLFunction")
+  db = self~openMemoryDB
+  self~assertEquals(0, db~createFunction("half", function), -
+    "createFunction with an ooSQLFunction should return OK")
+  self~assertEquals(3.5, self~queryValue(db, "SELECT half(7) AS v;"), -
+    "the package function should work")
+  db~close
+
+::Method testPackageGetCollation
+  package = self~loadTestPackage
+  collation = package~getCollation("reverse")
+  self~assertTrue(collation~isA(.ooSQLCollation), -
+    "getCollation should return an ooSQLCollation")
+  db = self~namesDB
+  self~assertEquals(0, db~createCollation("reverse", collation), -
+    "createCollation with an ooSQLCollation should return OK")
+  self~assertEquals("cba", self~orderedNames(db, "reverse"), -
+    "the package collation should sort in reverse")
+  db~close
+
+::Method testPackageGetCollationNeeded
+  package = self~loadTestPackage
+  collNeeded = package~getCollationNeeded
+  self~assertTrue(collNeeded~isA(.ooSQLCollationNeeded), -
+    "getCollationNeeded should return an ooSQLCollationNeeded")
+  db = self~namesDB
+  self~assertEquals(0, db~collationNeeded(collNeeded), -
+    "collationNeeded with an ooSQLCollationNeeded should return OK")
+  self~assertEquals("cba", self~orderedNames(db, "reverseOrder"), -
+    "the collation needed callback should register reverseOrder on demand")
+  db~close
+  db = self~namesDB
+  self~assertEquals(0, db~collationNeeded(package), -
+    "collationNeeded with the package itself should return OK")
+  self~assertEquals("cba", self~orderedNames(db, "reverseOrder"), -
+    "the package's collation needed callback should work")
+  db~close
+
+--------------------------------------------------------------------------------
+-- autoPackage / autoFunction / autoCollation / autoCollationNeeded            --
+--------------------------------------------------------------------------------
+
+::Method testAutoPackage
+  self~loadTestPackage
+  on  = .ooSQLExtensions~autoPackage("testPackage")
+  db1 = self~openMemoryDB
+  half1 = self~queryValue(db1, "SELECT half(1) AS v;")
+  off = .ooSQLExtensions~autoPackage("testPackage", .false)
+  db2 = self~openMemoryDB
+  half2 = self~queryValue(db2, "SELECT half(1) AS v;")
+  db1~close
+  db2~close
+  self~assertTrue(on, "autoPackage should succeed")
+  self~assertEquals(0.5, half1, "a new connection gets the package")
+  self~assertTrue(off, "autoPackage(.., .false) should succeed")
+  self~assertNull(half2, "after turning it off, new connections do not")
+
+::Method testLoadPackageMakeAuto
+  success = .ooSQLExtensions~loadPackage(userExtLib("testpackage"), , .true)
+  db1 = self~openMemoryDB
+  half1 = self~queryValue(db1, "SELECT half(1) AS v;")
+  off = .ooSQLExtensions~autoPackage("testPackage", .false)
+  db1~close
+  self~assertTrue(success, "loadPackage(.., , .true) should succeed")
+  self~assertEquals(0.5, half1, "makeAuto registers the package automatically")
+  self~assertTrue(off, "autoPackage(.., .false) should succeed")
+
+::Method testAutoFunction
+  self~loadTestPackage
+  on  = .ooSQLExtensions~autoFunction("testPackage", "half")
+  db1 = self~openMemoryDB
+  half1 = self~queryValue(db1, "SELECT half(1) AS v;")
+  off = .ooSQLExtensions~autoFunction("testPackage", "half", .false)
+  db2 = self~openMemoryDB
+  half2 = self~queryValue(db2, "SELECT half(1) AS v;")
+  db1~close
+  db2~close
+  self~assertTrue(on, "autoFunction should succeed")
+  self~assertEquals(0.5, half1, "a new connection gets the function")
+  self~assertTrue(off, "autoFunction(.., .., .false) should succeed")
+  self~assertNull(half2, "after turning it off, new connections do not")
+
+::Method testAutoCollation
+  self~loadTestPackage
+  on  = .ooSQLExtensions~autoCollation("testPackage", "reverse")
+  db1 = self~namesDB
+  names1 = self~orderedNames(db1, "reverse")
+  off = .ooSQLExtensions~autoCollation("testPackage", "reverse", .false)
+  db2 = self~namesDB
+  names2 = self~orderedNames(db2, "reverse")
+  db1~close
+  db2~close
+  self~assertTrue(on, "autoCollation should succeed")
+  self~assertEquals("cba", names1, "a new connection gets the collation")
+  self~assertTrue(off, "autoCollation(.., .., .false) should succeed")
+  self~assertTrue(names2~pos("no such collation") > 0, -
+    "after turning it off, new connections do not:" names2)
+
+::Method testAutoCollationNeeded
+  self~loadTestPackage
+  on  = .ooSQLExtensions~autoCollationNeeded("testPackage")
+  db1 = self~namesDB
+  names1 = self~orderedNames(db1, "reverseOrder")
+  off = .ooSQLExtensions~autoCollationNeeded("testPackage", .false)
+  db2 = self~namesDB
+  names2 = self~orderedNames(db2, "reverseOrder")
+  db1~close
+  db2~close
+  self~assertTrue(on, "autoCollationNeeded should succeed")
+  self~assertEquals("cba", names1, -
+    "a new connection gets the collation needed callback")
+  self~assertTrue(off, "autoCollationNeeded(.., .false) should succeed")
+  self~assertTrue(names2~pos("no such collation") > 0, -
+    "after turning it off, new connections do not:" names2)
+
+::Method testAutoPackageNotLoaded
+  self~assertFalse(.ooSQLExtensions~autoPackage("noSuchPackage"), -
+    "autoPackage of an unknown package should fail")
+  self~assertEquals(1007, .ooSQLExtensions~lastErrCode, -
+    "lastErrCode should be OO_NO_SUCH_PACKAGE (1007)")
+
+--------------------------------------------------------------------------------
+-- The tables of loaded libraries and packages must survive garbage           --
+-- collection: they used to be kept only in the C structures, so the          --
+-- collector freed them and the next loadPackage crashed (SIGSEGV).           --
+--------------------------------------------------------------------------------
+
+::Method testExtensionTablesSurviveGC
+  .ooSQLExtensions~loadLibrary(userExtLib("testlibrary"))
+  package = self~loadTestPackage
+  package~getFunction("half")
+  .ooSQLExtensions~getLibrary("testlibrary")~getHandle("reverse")
+  Do i = 1 To 3
+    self~churnMemory
+    self~assertTrue(.ooSQLExtensions~getPackage("testPackage")~isA(.ooSQLPackage), -
+      "getPackage after garbage collection, round" i)
+    lib = .ooSQLExtensions~getLibrary("testlibrary")
+    self~assertTrue(lib~isA(.ooSQLLibrary), -
+      "getLibrary after garbage collection, round" i)
+    self~assertTrue(lib~getHandle("reverse")~isA(.Pointer), -
+      "getHandle after garbage collection, round" i)
+    package = .ooSQLExtensions~getPackage("testPackage")
+    self~assertTrue(package~getFunction("half")~isA(.ooSQLFunction), -
+      "getFunction after garbage collection, round" i)
+    self~assertTrue(.ooSQLExtensions~loadPackage(userExtLib("testpackage")), -
+      "loadPackage after garbage collection, round" i)
+  End
+
+/******************************************************************************/
+/*                                                                            */
 /* ooSQLiteClassic.testGroup — Tier 4: Classic Rexx routines (oosqlXxx)       */
 /* ====================================================================       */
 /*                                                                            */
@@ -6764,6 +7130,32 @@ ResetAutoExtNoRot13:
 
 /******************************************************************************/
 /*                                                                            */
+/* Section C9: Classic — oosqlEnableLoadExtension / oosqlLoadExtension        */
+/*                                                                            */
+/* Uses the simpleExtension test library from examples/user.extensions       */
+/* (make -f Makefile.lin example_dlls).                                       */
+/*                                                                            */
+/******************************************************************************/
+
+::Method testClassicLoadExtensionNotEnabled
+  db = self~classicOpenMemory
+  rc = oosqlLoadExtension(db, userExtLib("simpleextension"))
+  self~assertEquals(1, rc, -
+    "oosqlLoadExtension without oosqlEnableLoadExtension should fail")
+  Call oosqlClose db
+
+::Method testClassicLoadExtension
+  db = self~classicOpenMemory
+  self~assertEquals(0, oosqlEnableLoadExtension(db, .true), -
+    "oosqlEnableLoadExtension(db, .true) should return OK")
+  self~assertEquals(0, oosqlLoadExtension(db, userExtLib("simpleextension")), -
+    "oosqlLoadExtension should return OK")
+  rows = oosqlExec(db, "SELECT half(11) AS v;", .true, .ooSQLite~OO_ARRAY_OF_DIRECTORIES)
+  self~assertEquals(5.5, rows[1]["V"], "half() from the extension should work")
+  Call oosqlClose db
+
+/******************************************************************************/
+/*                                                                            */
 /* Callback routines for Section C6                                           */
 /*                                                                            */
 /* These ::Routine definitions implement the callbacks for classic callback   */
@@ -7059,3 +7451,20 @@ ResetAutoExtNoRot13:
   Use Arg db, ctx, userData
   Call oosqlResultErrorTooBig ctx
   Return 0
+
+/******************************************************************************/
+/*                                                                            */
+/* userExtLib — full path of a test library in examples/user.extensions      */
+/*                                                                            */
+/* The libraries are built by "make -f Makefile.lin example_dlls".            */
+/*                                                                            */
+/******************************************************************************/
+
+::Routine userExtLib Public
+  Use Strict Arg baseName
+  sep = .File~separator
+  testDir = .File~new(.context~package~name)~parent
+  dir = .File~new(testDir || sep || ".." || sep || "examples" || sep || "user.extensions")~absolutePath
+  If .RexxInfo~platform~upper~left(7) == "WINDOWS" Then
+    Return dir || sep || baseName || ".dll"
+  Return dir || sep || "lib" || baseName || ".so"
