@@ -201,8 +201,8 @@
 ::attribute lastErrMsg get external "LIBRARY oosqlite oosqlstmt_getLastErrMsg_atr"
 ::attribute null get external "LIBRARY oosqlite oosqlstmt_getNull_atr"
 ::attribute null set external "LIBRARY oosqlite oosqlstmt_setNull_atr"
-::attribute recordFormat get external "LIBRARY oosqlite oosqlconn_getRecordFormat_atr"
-::attribute recordFormat set external "LIBRARY oosqlite oosqlconn_setRecordFormat_atr"
+::attribute recordFormat get external "LIBRARY oosqlite oosqlstmt_getRecordFormat_atr"
+::attribute recordFormat set external "LIBRARY oosqlite oosqlstmt_setRecordFormat_atr"
 
 ::method init external "LIBRARY oosqlite oosqlstmt_init"
 ::method uninit external "LIBRARY oosqlite oosqlstmt_uninit"

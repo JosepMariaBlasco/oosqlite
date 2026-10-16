@@ -16845,8 +16845,8 @@ RexxMethodEntry ooSQLite_methods[] = {
     REXX_METHOD(oosqlstmt_getLastErrMsg_atr,          oosqlstmt_getLastErrMsg_atr),
     REXX_METHOD(oosqlstmt_getNull_atr,                oosqlstmt_getNull_atr),
     REXX_METHOD(oosqlstmt_setNull_atr,                oosqlstmt_setNull_atr),
-    REXX_METHOD(oosqlstmt_getRecordFormat_atr,        oosqlconn_getRecordFormat_atr),
-    REXX_METHOD(oosqlstmt_setRecordFormat_atr,        oosqlconn_setRecordFormat_atr),
+    REXX_METHOD(oosqlstmt_getRecordFormat_atr,        oosqlstmt_getRecordFormat_atr),
+    REXX_METHOD(oosqlstmt_setRecordFormat_atr,        oosqlstmt_setRecordFormat_atr),
 
     REXX_METHOD(oosqlstmt_init,                       oosqlstmt_init),
     REXX_METHOD(oosqlstmt_uninit,                     oosqlstmt_uninit),
