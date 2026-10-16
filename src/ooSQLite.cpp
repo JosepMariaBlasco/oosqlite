@@ -2354,7 +2354,7 @@ static void finalCallback(sqlite3_context *sqlContext)
     }
 
     // We just check for errors, we do not actually use rc.
-    replyIsGood(c, reply, &rc, pcf->stepMethod, pcf->finalName, isMethod);
+    replyIsGood(c, reply, &rc, pcf->finalMethod, pcf->finalName, isMethod);
 
     // There is only a global reference to release if a step invocation
     // produced an aggregate object.
