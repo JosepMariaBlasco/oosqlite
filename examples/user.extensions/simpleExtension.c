@@ -186,7 +186,9 @@ static void halfFunc(sqlite3_context *context, int argc, sqlite3_value **argv)
  */
 static int reverseCollation(void* data, int len1, const void* str1, int len2, const void* str2)
 {
-    return - sqlite3_strnicmp((char *)str1, (char *)str2, len1 < len2 ? len1 : len2);
+    // Compare the common part; if it is equal, the shorter string sorts first.
+    int r = sqlite3_strnicmp((char *)str1, (char *)str2, len1 < len2 ? len1 : len2);
+    return - (r != 0 ? r : len1 - len2);
 }
 
 /**
@@ -214,7 +216,7 @@ static int ebcdicCollation(void* data, int len1, const void* str1, int len2, con
         // I don't think this is possible, but just to make sure
         return len1 - len2;
     }
-    for ( i = 0; i < min, asciiToEbcdic[*a] == asciiToEbcdic[*b]; i++ )
+    for ( i = 0; i < min && asciiToEbcdic[*a] == asciiToEbcdic[*b]; i++ )
     {
         a++;
         b++;
@@ -313,9 +315,15 @@ void strAggStep(sqlite3_context* sqlCntx, int countArgs, sqlite3_value** values)
 void strAggFinalize(sqlite3_context* sqlCntx)
 {
     pStrAggCntx psac = (pStrAggCntx) sqlite3_aggregate_context(sqlCntx, sizeof(StrAggCntx));
-    if ( psac == NULL || psac->result == NULL )
+    if ( psac == NULL )
     {
         sqlite3_result_error_nomem(sqlCntx);
+        return;
+    }
+    if ( psac->result == NULL )
+    {
+        // No rows: the result is NULL, as for the group_concat() of SQLite.
+        sqlite3_result_null(sqlCntx);
         return;
     }
 
