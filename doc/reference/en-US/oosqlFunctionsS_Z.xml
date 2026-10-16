@@ -235,18 +235,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the SQL text of a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -255,29 +257,50 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The text of the SQL statement, as it was given to <link linkend="rtn-oosqlPrepare">oosqlPrepare</link>. When the
+    text given to <emphasis role="italic">oosqlPrepare</emphasis> held more than one statement, only the first one is
+    returned, because only that one was prepared.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The text does not change when values are bound to the parameters: the parameters are still shown as they were
+    written.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlSql</emphasis> routine is similar to that of the SQLite <ulink
+    url="http://www.sqlite.org/c3ref/expanded_sql.html">sqlite3_sql</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthSqlClsStmt">sql</link> method of the <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class
+    does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example executes, one by one, all the statements in a string. It uses the <emphasis
+    role="italic">_tail</emphasis> argument of <link linkend="rtn-oosqlPrepare">oosqlPrepare</link> to get what follows
+    each statement, and displays each statement before executing it:
+<programlisting language="rexx">
+  sql = "CREATE TABLE t(a); INSERT INTO t VALUES(1); INSERT INTO t VALUES(2);"
+  do while sql &lt;&gt; ''
+    rc = oosqlPrepare(db, sql~strip, 'stmt', 'sql')
+    if rc &lt;&gt; .ooSQLite~OK then leave
+    if oosqlIsHandleNull(stmt) then leave  -- only blanks or comments were left
+    say oosqlSql(stmt)
+    rc = oosqlStep(stmt)
+    call oosqlFinalize stmt
+  end
+  /* Output:
+  CREATE TABLE t(a);
+  INSERT INTO t VALUES(1);
+  INSERT INTO t VALUES(2);
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -355,18 +378,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Executes a prepared statement, or advances it to its next result row.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -375,29 +400,54 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    One of the <link linkend="sctResultCode">Result Code</link> constants. The most common ones are
+    <computeroutput>ROW</computeroutput>, when a new result row is ready, and its values can be retrieved with the
+    <emphasis role="italic">oosqlColumn</emphasis> routines; <computeroutput>DONE</computeroutput>, when the statement
+    has run to completion: there are no more rows, or, for a statement that returns no data, it has been executed; and
+    <computeroutput>BUSY</computeroutput>, when the database is locked by another connection, and the statement can be
+    stepped again later, see <link linkend="rtn-oosqlBusyTimeOut">oosqlBusyTimeOut</link> and <link
+    linkend="rtn-oosqlBusyHandler">oosqlBusyHandler</link>.
+  </para>
+  <para>
+    Any other code is an error, which <link linkend="rtn-oosqlErrMsg">oosqlErrMsg</link> describes. ooSQLite enables
+    extended result codes for every connection, so the code is often an extended one, such as
+    <computeroutput>CONSTRAINT_UNIQUE</computeroutput> (2067) for a duplicate value in a UNIQUE column, rather than
+    <computeroutput>CONSTRAINT</computeroutput> (19).
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A statement that returns data, such as a SELECT, is stepped once for each result row, and once more to get
+    <computeroutput>DONE</computeroutput>. A statement that returns no data, such as an INSERT, is executed by a single
+    step, which returns <computeroutput>DONE</computeroutput> on success. After <computeroutput>DONE</computeroutput> or
+    an error, do not step the statement again before <link linkend="rtn-oosqlReset">resetting</link> it.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlStep</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/step.html">sqlite3_step</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthStepClsStmt">step</link> method of the <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link>
+    class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example displays all the rows of a query, and checks that it ended without error:
+<programlisting language="rexx">
+  rc = oosqlPrepare(db, "SELECT name FROM foods ORDER BY name;", 'stmt')
+  do forever
+    rc = oosqlStep(stmt)
+    if rc &lt;&gt; .ooSQLite~ROW then leave
+    say oosqlColumnText(stmt, 1)
+  end
+  if rc &lt;&gt; .ooSQLite~DONE then say 'Error' rc':' oosqlErrMsg(db)
+  call oosqlFinalize stmt
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -415,18 +465,19 @@
 </mediaobject>
 
 <para>
-  xx
+  Tests if a prepared statement has been stepped, but has not run to completion and has not been reset.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle can be null.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -435,29 +486,35 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    Additional comments.
+    Returns true if <link linkend="rtn-oosqlStep">oosqlStep</link> has been invoked at least once, and the statement has
+    neither returned <computeroutput>DONE</computeroutput> nor been <link linkend="rtn-oosqlReset">reset</link>.
+    Otherwise, and for a null handle, returns false.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlStmtBusy</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/stmt_busy.html">sqlite3_stmt_busy</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthStmtBusy">stmtBusy</link> method of the <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link>
+    class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example shows the value of <emphasis role="italic">oosqlStmtBusy</emphasis>, and of <link
+    linkend="rtn-oosqlStmtReadonly">oosqlStmtReadonly</link>, while a query is executed:
+<programlisting language="rexx">
+  rc = oosqlPrepare(db, "SELECT name FROM foods;", 'stmt')
+  say oosqlStmtReadonly(stmt) oosqlStmtBusy(stmt)    -- 1 0
+  rc = oosqlStep(stmt)
+  say oosqlStmtBusy(stmt)                            -- 1
+  rc = oosqlReset(stmt)
+  say oosqlStmtBusy(stmt)                            -- 0
+  call oosqlFinalize stmt
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -475,18 +532,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Tests if a prepared statement makes no direct changes to the database.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -495,30 +554,33 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns true if the statement does not write to the database, such as a SELECT, and false if it can, such as an
+    INSERT, an UPDATE, or a DELETE.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A statement can be read only and still change the database indirectly, through a user defined function that executes
+    SQL of its own. Transaction control statements, such as BEGIN and COMMIT, are read only, because they make no
+    changes by themselves.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlStmtReadonly</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/stmt_readonly.html">sqlite3_stmt_readonly</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthstmtReadonly">stmtReadonly</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlStmtBusy">oosqlStmtBusy</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -535,7 +597,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the value of one of the performance counters of a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -543,10 +605,26 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>op [required]</term>
+      <listitem>
+      <para>
+        The counter to return, one of the <link linkend="sctStatusParameterStmt">Status Parameter (stmt)</link>
+        constants, such as <computeroutput>STMTSTATUS_FULLSCAN_STEP</computeroutput> or
+        <computeroutput>STMTSTATUS_VM_STEP</computeroutput>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>reset [optional]</term>
+      <listitem>
+      <para>
+        If true, the counter is set to 0 after its value is returned. The default is false.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -555,29 +633,49 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The value of the counter. For an <emphasis role="italic">op</emphasis> that is not one of the constants, 0 is
+    returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The counters accumulate over all the executions of the statement, also after a reset, until they are reset with the
+    <emphasis role="italic">reset</emphasis> argument. They can help find out whether a query would benefit from an
+    index.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlStmtStatus</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/stmt_status.html">sqlite3_stmt_status</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthStmtStatus">stmtStatus</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example runs a query and displays some of its counters. There is no index on the price column, so the whole
+    table is scanned, and the result has to be sorted:
+<programlisting language="rexx">
+  rc = oosqlPrepare(db, "SELECT name FROM foods WHERE price &gt; 1 ORDER BY name;", 'stmt')
+  do while oosqlStep(stmt) == .ooSQLite~ROW
+  end
+  say 'Full scan steps:' oosqlStmtStatus(stmt, .ooSQLite~STMTSTATUS_FULLSCAN_STEP)
+  say 'Sorts:          ' oosqlStmtStatus(stmt, .ooSQLite~STMTSTATUS_SORT)
+  say 'VM steps:       ' oosqlStmtStatus(stmt, .ooSQLite~STMTSTATUS_VM_STEP, .true)
+  say 'VM steps now:   ' oosqlStmtStatus(stmt, .ooSQLite~STMTSTATUS_VM_STEP)
+  call oosqlFinalize stmt
+  /* Output:
+  Full scan steps: 3
+  Sorts:           1
+  VM steps:        47
+  VM steps now:    0
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>

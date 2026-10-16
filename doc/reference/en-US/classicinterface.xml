@@ -96,67 +96,67 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBackupFinish">oosqlBackupFinish()</link></entry>
-<entry>.</entry>
+<entry>Called to release all resources associated with the backup operation.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBackupInit">oosqlBackupInit()</link></entry>
-<entry>.</entry>
+<entry>Called once to initialize an online backup.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBackupPageCount">oosqlBackupPageCount()</link></entry>
-<entry>.</entry>
+<entry>Returns the total number of pages in the source database file.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBackupRemaining">oosqlBackupRemaining()</link></entry>
-<entry>.</entry>
+<entry>Returns the number of pages still to be backed up in the source database file.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBackupStep">oosqlBackupStep()</link></entry>
-<entry>.</entry>
+<entry>Copies up to <emphasis role="italic">count</emphasis> pages between the source and destination databases specified by the <emphasis role="italic">buHandle</emphasis> argument.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBindBlob">oosqlBindBlob()</link></entry>
-<entry>.</entry>
+<entry>Binds a BLOB value to a host parameter of a prepared statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBindDouble">oosqlBindDouble()</link></entry>
-<entry>.</entry>
+<entry>Binds a floating point value to a host parameter of a prepared statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBindInt">oosqlBindInt()</link></entry>
-<entry>.</entry>
+<entry>Binds a 32-bit integer value to a host parameter of a prepared statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBindInt64">oosqlBindInt64()</link></entry>
-<entry>.</entry>
+<entry>Binds a 64-bit integer value to a host parameter of a prepared statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBindNull">oosqlBindNull()</link></entry>
-<entry>.</entry>
+<entry>Binds the SQL NULL value to a host parameter of a prepared statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBindParameterCount">oosqlBindParameterCount()</link></entry>
-<entry>.</entry>
+<entry>Returns the number of host parameters in a prepared statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBindParameterIndex">oosqlBindParameterIndex()</link></entry>
-<entry>.</entry>
+<entry>Returns the index of the host parameter with the given name.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBindParameterName">oosqlBindParameterName()</link></entry>
-<entry>.</entry>
+<entry>Returns the name of the host parameter with the given index.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBindText">oosqlBindText()</link></entry>
-<entry>.</entry>
+<entry>Binds a text value to a host parameter of a prepared statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBindValue">oosqlBindValue()</link></entry>
-<entry>.</entry>
+<entry>Binds a value taken from a result column of a statement to a host parameter of a prepared statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBindZeroBlob">oosqlBindZeroBlob()</link></entry>
-<entry>.</entry>
+<entry>Binds a BLOB filled with zeros to a host parameter of a prepared statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBusyHandler">oosqlBusyHandler()</link></entry>
@@ -167,12 +167,16 @@
 <entry>.</entry>
 </row>
 <row>
+<entry><link linkend="rtn-oosqlCancelAutoBuiltin">oosqlCancelAutoBuiltin()</link></entry>
+<entry>.</entry>
+</row>
+<row>
 <entry><link linkend="rtn-oosqlChanges">oosqlChanges()</link></entry>
 <entry>.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlClearBindings">oosqlClearBindings()</link></entry>
-<entry>.</entry>
+<entry>Sets all the host parameters of a prepared statement to NULL.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlClose">oosqlClose()</link></entry>
@@ -180,63 +184,63 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnBlob">oosqlColumnBlob()</link></entry>
-<entry>.</entry>
+<entry>Returns the value of a column of the current result row of a prepared statement as a BLOB.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnBytes">oosqlColumnBytes()</link></entry>
-<entry>.</entry>
+<entry>Returns the size in bytes of the value of a column of the current result row of a prepared statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnCount">oosqlColumnCount()</link></entry>
-<entry>.</entry>
+<entry>Returns the number of columns in the result set of a prepared statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnDatabaseName">oosqlColumnDatabaseName()</link></entry>
-<entry>.</entry>
+<entry>Returns the name of the database that a result column of a prepared statement comes from.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnDeclType">oosqlColumnDeclType()</link></entry>
-<entry>.</entry>
+<entry>Returns the declared type of the table column that a result column of a prepared statement comes from.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnDouble">oosqlColumnDouble()</link></entry>
-<entry>.</entry>
+<entry>Returns the value of a column of the current result row of a prepared statement as a floating point number.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnIndex">oosqlColumnIndex()</link></entry>
-<entry>.</entry>
+<entry>Returns the number of the result column of a prepared statement with the given name.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnInt">oosqlColumnInt()</link></entry>
-<entry>.</entry>
+<entry>Returns the value of a column of the current result row of a prepared statement as a 32-bit integer.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnInt64">oosqlColumnInt64()</link></entry>
-<entry>.</entry>
+<entry>Returns the value of a column of the current result row of a prepared statement as a 64-bit integer.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnName">oosqlColumnName()</link></entry>
-<entry>.</entry>
+<entry>Returns the name of a result column of a prepared statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnOriginName">oosqlColumnOriginName()</link></entry>
-<entry>.</entry>
+<entry>Returns the name of the table column that a result column of a prepared statement comes from.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnTableName">oosqlColumnTableName()</link></entry>
-<entry>.</entry>
+<entry>Returns the name of the table that a result column of a prepared statement comes from.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnText">oosqlColumnText()</link></entry>
-<entry>.</entry>
+<entry>Returns the value of a column of the current result row of a prepared statement as a string.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnType">oosqlColumnType()</link></entry>
-<entry>.</entry>
+<entry>Returns the datatype of the value of a column of the current result row of a prepared statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnValue">oosqlColumnValue()</link></entry>
-<entry>.</entry>
+<entry>Returns the value of a column of the current result row of a prepared statement, in the form needed to bind it to a host parameter with <link linkend="rtn-oosqlBindValue">oosqlBindValue</link>.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlCollationNeeded">oosqlCollationNeeded()</link></entry>
@@ -264,11 +268,11 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlCreateFunction">oosqlCreateFunction()</link></entry>
-<entry>.</entry>
+<entry>Adds or removes a user defined SQL function or aggregate on a database connection.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlDataCount">oosqlDataCount()</link></entry>
-<entry>.</entry>
+<entry>Returns the number of columns in the current result row of a prepared statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlDbFileName">oosqlDbFileName()</link></entry>
@@ -276,7 +280,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlDbHandle">oosqlDbHandle()</link></entry>
-<entry>.</entry>
+<entry>Returns the database connection of a prepared statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlDbMutex">oosqlDbMutex()</link></entry>
@@ -324,10 +328,323 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlFinalize">oosqlFinalize()</link></entry>
+<entry>Deletes a prepared statement and releases the resources it uses.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlGetAutocommit">oosqlGetAutocommit()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlInterrupt">oosqlInterrupt()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlIsHandleNull">oosqlIsHandleNull()</link></entry>
+<entry>This routine provides a way for the programmer to check if a <link linkend="defHandle">handle</link> is null.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlLastInsertRowID">oosqlLastInsertRowID()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlLibVersion">oosqlLibVersion()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlLibVersionNumber">oosqlLibVersionNumber()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlLimit">oosqlLimit()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlLoadExtension">oosqlLoadExtension()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlMemoryHighWater">oosqlMemoryHighWater()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlMemoryUsed">oosqlMemoryUsed()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlMutexEnter">oosqlMutexEnter()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlMutexFree">oosqlMutexFree()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlMutexLeave">oosqlMutexLeave()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlMutexTry">oosqlMutexTry()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlNextStmt">oosqlNextStmt()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlOpen">oosqlOpen()</link></entry>
+<entry>Opens a database connection.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlPrepare">oosqlPrepare()</link></entry>
+<entry>Prepares a SQL statement to be executed by the database engine.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlProfile">oosqlProfile()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlProgressHandler">oosqlProgressHandler()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlReleaseMemory">oosqlReleaseMemory()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlReset">oosqlReset()</link></entry>
+<entry>Resets a prepared statement to its initial state, so that it can be executed again.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlResetAutoExtension">oosqlResetAutoExtension()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlResultBlob">oosqlResultBlob()</link></entry>
+<entry>Sets the result of a user defined SQL function, or of the final step of an aggregate, to a blob.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlResultDouble">oosqlResultDouble()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlResultError">oosqlResultError()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlResultErrorCode">oosqlResultErrorCode()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlResultErrorNoMem">oosqlResultErrorNoMem()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlResultErrorTooBig">oosqlResultErrorTooBig()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlResultInt">oosqlResultInt()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlResultInt64">oosqlResultInt64()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlResultNull">oosqlResultNull()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlResultText">oosqlResultText()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlResultValue">oosqlResultValue()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlResultZeroBlob">oosqlResultZeroBlob()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlRollbackHook">oosqlRollbackHook()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlSetAuthorizer">oosqlSetAuthorizer()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlSoftHeapLimit64">oosqlSoftHeapLimit64()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlSourceID">oosqlSourceID()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlSql">oosqlSql()</link></entry>
+<entry>Returns the SQL text of a prepared statement.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlStatus">oosqlStatus()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlStep">oosqlStep()</link></entry>
+<entry>Executes a prepared statement, or advances it to its next result row.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlStmtBusy">oosqlStmtBusy()</link></entry>
+<entry>Tests if a prepared statement has been stepped, but has not run to completion and has not been reset.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlStmtReadonly">oosqlStmtReadonly()</link></entry>
+<entry>Tests if a prepared statement makes no direct changes to the database.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlStmtStatus">oosqlStmtStatus()</link></entry>
+<entry>Returns the value of one of the performance counters of a prepared statement.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlStrGlob">oosqlStrGlob()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlTableColumnMetadata">oosqlTableColumnMetadata()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlThreadSafe">oosqlThreadSafe()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlTotalChanges">oosqlTotalChanges()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlTrace">oosqlTrace()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlUpdateHook">oosqlUpdateHook()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlValueBlob">oosqlValueBlob()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlValueBytes">oosqlValueBytes()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlValueDouble">oosqlValueDouble()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlValueInt">oosqlValueInt()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlValueNumericType">oosqlValueNumericType()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlValueText">oosqlValueText()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlValueType">oosqlValueType()</link></entry>
+<entry>.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlVersion">oosqlVersion()</link></entry>
 <entry>.</entry>
 </row>
 </tbody></tgroup>
 </table>
+
+<section id="sctClassicStmt"><title>Prepared Statements</title>
+<indexterm><primary>prepared statement</primary><secondary>Classic Rexx Interface</secondary></indexterm>
+<indexterm><primary>Classic Rexx Interface</primary><secondary>prepared statements</secondary></indexterm>
+<para>
+  In the classic Rexx interface, a prepared statement is represented by a <link linkend="defHandle">handle</link>, which
+  is a Pointer object. The life time of a statement generally goes like this:
+  <itemizedlist>
+  <listitem>
+  <para>
+    Prepare the statement with <link linkend="rtn-oosqlPrepare">oosqlPrepare</link>, which sets a variable to the
+    handle.
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+    Bind values to host parameters using one of the <emphasis role="italic">oosqlBind</emphasis> routines, such as <link
+    linkend="rtn-oosqlBindText">oosqlBindText</link>, <link linkend="rtn-oosqlBindInt">oosqlBindInt</link>, or <link
+    linkend="rtn-oosqlBindNull">oosqlBindNull</link>.
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+    Execute the SQL by invoking <link linkend="rtn-oosqlStep">oosqlStep</link> one or more times. Each time <emphasis
+    role="italic">oosqlStep</emphasis> returns <computeroutput>ROW</computeroutput>, the values of the current result
+    row can be retrieved with the <emphasis role="italic">oosqlColumn</emphasis> routines, such as <link
+    linkend="rtn-oosqlColumnText">oosqlColumnText</link> or <link linkend="rtn-oosqlColumnInt">oosqlColumnInt</link>.
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+    Possibly, reset the statement using <link linkend="rtn-oosqlReset">oosqlReset</link>, then go back to step 2. Do
+    this zero or more times.
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+    Release the resources used by the statement by invoking <link linkend="rtn-oosqlFinalize">oosqlFinalize</link>.
+  </para>
+  </listitem>
+  </itemizedlist>
+</para>
+<para>
+  In SQLite, host parameters and result columns are numbered from 0. In ooSQLite, as is normal in Rexx, they are
+  numbered from 1: the first parameter of a statement and the first column of a result row are number 1.
+</para>
+<para>
+  These are the rules for statement handles. The routines that take a statement as their first argument raise a syntax
+  error, 88.914, if the argument is not a Pointer object, and 88.900 if it is a null handle, which is what <emphasis
+  role="italic">oosqlPrepare</emphasis> returns on error, or for SQL text that has no statement. The exceptions are
+  <link linkend="rtn-oosqlFinalize">oosqlFinalize</link>, which does nothing for a null handle, and <link
+  linkend="rtn-oosqlStmtBusy">oosqlStmtBusy</link>, which returns false. Once a statement has been finalized, its handle
+  is not valid any more, but it is not null: ooSQLite can not detect that it has been finalized, and using it in any
+  routine, also in <emphasis role="italic">oosqlFinalize</emphasis>, has unpredictable results, and can crash the
+  interpreter. The object orientated interface does not have this problem: invoking most methods of an <link
+  linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> object that has been finalized raises a syntax error.
+</para>
+<para>
+  Most of the statement routines work like an SQLite API with a similar name, and return what that API returns: a
+  result code for the <emphasis role="italic">oosqlBind</emphasis> routines, <emphasis role="italic">oosqlStep</emphasis>,
+  <emphasis role="italic">oosqlReset</emphasis>, and <emphasis role="italic">oosqlFinalize</emphasis>, or the value
+  asked for. The result codes are the ooSQLite <link linkend="sctResultCode">Result Code</link> constants, such as
+  <computeroutput>.ooSQLite~ROW</computeroutput>. When a routine returns an error code, <link
+  linkend="rtn-oosqlErrMsg">oosqlErrMsg</link> describes the error.
+</para>
+<para>
+  The examples of the statement routines use a <link linkend="defHandle">handle</link>, <computeroutput>db</computeroutput>,
+  to an open database connection, to a database with this table:
+<programlisting>
+  CREATE TABLE foods(id INTEGER PRIMARY KEY, type_id INTEGER, name TEXT, price REAL, picture BLOB);
+  INSERT INTO foods(type_id, name, price) VALUES(1, 'Bagels', 1.25);
+  INSERT INTO foods(type_id, name, price) VALUES(1, 'Bagels, raisin', 1.50);
+  INSERT INTO foods(type_id, name, price) VALUES(2, 'Bacon', 3.75);
+  INSERT INTO foods(type_id, name, price) VALUES(3, 'Cheese', NULL);
+</programlisting>
+</para>
+</section>  <!-- End Prepared Statements -->
 
 <section id="sct-onlineBackup"><title>Online Backup Feature</title>
 <indexterm><primary>online backup</primary><secondary>Classic Rexx Interface</secondary></indexterm>

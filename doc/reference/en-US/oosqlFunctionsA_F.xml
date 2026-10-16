@@ -544,7 +544,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds a BLOB value to a host parameter of a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -552,10 +552,26 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>index [required]</term>
+      <listitem>
+      <para>
+        The index of the host parameter, 1 for the first parameter. The index of a named parameter can be obtained with
+        <link linkend="rtn-oosqlBindParameterIndex">oosqlBindParameterIndex</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>value [required]</term>
+      <listitem>
+      <para>
+        The data to bind: a String, a Buffer, or a MutableBuffer object. All the bytes of the data are bound, including
+        any embedded NUL characters.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -564,29 +580,49 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error: <computeroutput>RANGE</computeroutput> if <emphasis role="italic">index</emphasis>
+    is not the index of a parameter of the statement, <computeroutput>MISUSE</computeroutput> if the statement has been
+    stepped and not reset.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The data is copied by SQLite, so the object passed as <emphasis role="italic">value</emphasis> can be changed after
+    the routine returns. What is said here about binding values applies to all the <emphasis
+    role="italic">oosqlBind</emphasis> routines: values can only be bound before the statement is first stepped, or
+    after it is <link linkend="rtn-oosqlReset">reset</link>; a bound value stays in place, also after a reset, until
+    another value is bound to the same parameter, or the bindings are cleared with <link
+    linkend="rtn-oosqlClearBindings">oosqlClearBindings</link>; and a parameter that has not been bound is NULL.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error, 88.900, if <emphasis role="italic">value</emphasis> is not a String, a Buffer, or a
+    MutableBuffer.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">oosqlBindBlob</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_blob</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthBindBlob">bindBlob</link> method of the <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link>
+    class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example stores some binary data in the picture column of a row:
+<programlisting language="rexx">
+  picture = 'FFD8FFE0'x || 'not really a JPEG image'
+  rc = oosqlPrepare(db, "UPDATE foods SET picture = ? WHERE name = 'Bacon';", 'stmt')
+  rc = oosqlBindBlob(stmt, 1, picture)
+  if rc == .ooSQLite~OK then rc = oosqlStep(stmt)
+  if rc &lt;&gt; .ooSQLite~DONE then say 'Error:' oosqlErrMsg(db)
+  call oosqlFinalize stmt
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -604,7 +640,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds a floating point value to a host parameter of a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -612,10 +648,24 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>index [required]</term>
+      <listitem>
+      <para>
+        The index of the host parameter, 1 for the first parameter.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>value [required]</term>
+      <listitem>
+      <para>
+        The number to bind. It is converted to a double precision floating point number.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -624,30 +674,30 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error, as <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> for when values can be bound, and how long
+    they stay bound. The example of <link linkend="rtn-oosqlBindNull">oosqlBindNull</link> also uses <emphasis
+    role="italic">oosqlBindDouble</emphasis>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error if <emphasis role="italic">value</emphasis> is not a number.
   </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
-  <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    The functionality of the <emphasis role="italic">oosqlBindDouble</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_double</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthBindDouble">bindDouble</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -664,7 +714,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds a 32-bit integer value to a host parameter of a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -672,10 +722,25 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>index [required]</term>
+      <listitem>
+      <para>
+        The index of the host parameter, 1 for the first parameter.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>value [required]</term>
+      <listitem>
+      <para>
+        The whole number to bind, which must fit in 32 bits: from -2147483648 to 2147483647. Use <link
+        linkend="rtn-oosqlBindInt64">oosqlBindInt64</link> for larger numbers.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -684,30 +749,30 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error, as <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> for when values can be bound, and how long
+    they stay bound. The examples of <link linkend="rtn-oosqlBindNull">oosqlBindNull</link> and <link
+    linkend="rtn-oosqlReset">oosqlReset</link> also use <emphasis role="italic">oosqlBindInt</emphasis>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error if <emphasis role="italic">value</emphasis> is not a whole number that fits in 32 bits.
   </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
-  <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    The functionality of the <emphasis role="italic">oosqlBindInt</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_int</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthBindInt">bindInt</link> method of the <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link>
+    class does the same for a statement object.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -724,7 +789,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds a 64-bit integer value to a host parameter of a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -732,10 +797,24 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>index [required]</term>
+      <listitem>
+      <para>
+        The index of the host parameter, 1 for the first parameter.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>value [required]</term>
+      <listitem>
+      <para>
+        The whole number to bind, which must fit in 64 bits: from -9223372036854775808 to 9223372036854775807.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -744,29 +823,41 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error, as <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> for when values can be bound, and how long
+    they stay bound.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error if <emphasis role="italic">value</emphasis> is not a whole number that fits in 64 bits.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">oosqlBindInt64</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_int64</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthBindInt64">bindInt64</link> method of the <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link>
+    class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example stores a number that does not fit in 32 bits:
+<programlisting language="rexx">
+  rc = oosqlExec(db, "CREATE TABLE counters(name TEXT, value INTEGER);")
+  rc = oosqlPrepare(db, "INSERT INTO counters VALUES('bytes', ?);", 'stmt')
+  rc = oosqlBindInt64(stmt, 1, 9876543210)
+  rc = oosqlStep(stmt)
+  call oosqlFinalize stmt
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -784,7 +875,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds the SQL NULL value to a host parameter of a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -792,10 +883,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>index [required]</term>
+      <listitem>
+      <para>
+        The index of the host parameter, 1 for the first parameter.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -804,29 +903,49 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error, as <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A parameter that has never been bound is already NULL. <emphasis role="italic">oosqlBindNull</emphasis> is needed to
+    set to NULL a parameter that was bound to another value; <link
+    linkend="rtn-oosqlClearBindings">oosqlClearBindings</link> does it for all the parameters at once.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlBindNull</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_null</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthBindNull">bindNull</link> method of the <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link>
+    class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example inserts two rows with the same statement. The second one has no price:
+<programlisting language="rexx">
+  sql = "INSERT INTO foods(type_id, name, price) VALUES(?, ?, ?);"
+  rc  = oosqlPrepare(db, sql, 'stmt')
 
-]]>
+  rc = oosqlBindInt(stmt, 1, 2)
+  rc = oosqlBindText(stmt, 2, 'Ham')
+  rc = oosqlBindDouble(stmt, 3, 4.5)
+  rc = oosqlStep(stmt)
+
+  rc = oosqlReset(stmt)
+  rc = oosqlBindInt(stmt, 1, 3)
+  rc = oosqlBindText(stmt, 2, 'Brie')
+  rc = oosqlBindNull(stmt, 3)              -- no price yet
+  rc = oosqlStep(stmt)
+
+  call oosqlFinalize stmt
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -844,18 +963,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the number of host parameters in a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -864,30 +985,35 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The index of the last host parameter of the statement, or 0 if it has none.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    This is the number of parameters when the parameters are written as <computeroutput>?</computeroutput>, or as names:
+    <computeroutput>:name</computeroutput>, <computeroutput>@name</computeroutput>, or
+    <computeroutput>$name</computeroutput>. A named parameter that appears more than once in the SQL is a single
+    parameter. When the parameters are numbered explicitly, as in <computeroutput>?NNN</computeroutput>, the numbers can
+    leave gaps, and the value returned is the largest number used, not the number of parameters.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlBindParameterCount</emphasis> routine is similar to that of
+    the SQLite <ulink url="http://www.sqlite.org/c3ref/bind_parameter_count.html">sqlite3_bind_parameter_count</ulink>
+    API.
+  </para>
+  <para>
+    The <link linkend="mthBindParameterCount">bindParameterCount</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlBindParameterIndex">oosqlBindParameterIndex</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -904,7 +1030,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the index of the host parameter with the given name.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -912,10 +1038,20 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>name [required]</term>
+      <listitem>
+      <para>
+        The name of the parameter, as written in the SQL, including its first character: for the parameter
+        <computeroutput>:type</computeroutput>, the name is <computeroutput>:type</computeroutput>, not
+        <computeroutput>type</computeroutput>. The comparison is case sensitive.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -924,29 +1060,47 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    Additional comments.
+    The index of the parameter, which can be used with the <emphasis role="italic">oosqlBind</emphasis> routines, or 0
+    if the statement has no parameter with that name.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlBindParameterIndex</emphasis> routine is similar to that of
+    the SQLite <ulink url="http://www.sqlite.org/c3ref/bind_parameter_index.html">sqlite3_bind_parameter_index</ulink>
+    API.
+  </para>
+  <para>
+    The <link linkend="mthBindParameterIndex">bindParameterIndex</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example lists the parameters of a statement, binds them by name, and executes it:
+<programlisting language="rexx">
+  sql = "SELECT name FROM foods WHERE type_id = :type AND price &lt; :maxPrice;"
+  rc  = oosqlPrepare(db, sql, 'stmt')
 
-]]>
+  do i = 1 to oosqlBindParameterCount(stmt)
+    say i oosqlBindParameterName(stmt, i)
+  end
+
+  rc = oosqlBindInt(stmt, oosqlBindParameterIndex(stmt, ':type'), 1)
+  rc = oosqlBindDouble(stmt, oosqlBindParameterIndex(stmt, ':maxPrice'), 1.4)
+  do while oosqlStep(stmt) == .ooSQLite~ROW
+    say oosqlColumnText(stmt, 1)
+  end
+  call oosqlFinalize stmt
+
+  /* Output:
+
+  1 :type
+  2 :maxPrice
+  Bagels
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -964,7 +1118,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the name of the host parameter with the given index.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -972,10 +1126,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>index [required]</term>
+      <listitem>
+      <para>
+        The index of the host parameter, 1 for the first parameter.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -984,30 +1146,27 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    Additional comments.
+    The name of the parameter as written in the SQL, including its first character, such as
+    <computeroutput>:type</computeroutput>. For a parameter written as <computeroutput>?</computeroutput>, which has no
+    name, and for an index that is out of range, the empty string is returned. A parameter written as
+    <computeroutput>?NNN</computeroutput> has that text as its name.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlBindParameterName</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/bind_parameter_name.html">sqlite3_bind_parameter_name</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthBindParameterName">bindParameterName</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlBindParameterIndex">oosqlBindParameterIndex</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1024,7 +1183,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds a text value to a host parameter of a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1032,10 +1191,25 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>index [required]</term>
+      <listitem>
+      <para>
+        The index of the host parameter, 1 for the first parameter.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>text [required]</term>
+      <listitem>
+      <para>
+        The string to bind. SQLite expects the text to be UTF-8. The text ends at its first NUL character, if it has
+        one: use <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> for data that can contain NUL characters.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1044,30 +1218,27 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error, as <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The text is copied by SQLite. See the remarks of <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> for when
+    values can be bound, and how long they stay bound. The example of <link
+    linkend="rtn-oosqlBindNull">oosqlBindNull</link> also uses <emphasis role="italic">oosqlBindText</emphasis>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlBindText</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_text</ulink> API.
   </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
-  <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    The <link linkend="mthBindText">bindText</link> method of the <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link>
+    class does the same for a statement object.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1084,7 +1255,8 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds a value taken from a result column of a statement to a host parameter of a prepared statement. The value keeps
+  its datatype: an integer is bound as an integer, a BLOB as a BLOB, and so on.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1092,10 +1264,24 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>index [required]</term>
+      <listitem>
+      <para>
+        The index of the host parameter, 1 for the first parameter.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>value [required]</term>
+      <listitem>
+      <para>
+        A value returned by <link linkend="rtn-oosqlColumnValue">oosqlColumnValue</link>, which is a Pointer object.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1104,29 +1290,51 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error, as <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The value returned by <emphasis role="italic">oosqlColumnValue</emphasis> is only valid while the statement it comes
+    from stays on the same result row: it must be bound before that statement is stepped again, reset, or finalized.
+    Once it is bound, SQLite has its own copy. Passing any other Pointer, or a value that is no longer valid, has
+    unpredictable results, and can crash the interpreter.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error if <emphasis role="italic">value</emphasis> is not a Pointer object.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">oosqlBindValue</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_value</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthBindValue">bindValue</link> method of the <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link>
+    class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example copies some rows from one table to another, keeping the datatypes of the values:
+<programlisting language="rexx">
+  rc = oosqlExec(db, "CREATE TABLE cheap(name TEXT, price REAL);")
+  rc = oosqlPrepare(db, "SELECT name, price FROM foods WHERE price &lt; 2;", 'src')
+  rc = oosqlPrepare(db, "INSERT INTO cheap VALUES(?, ?);", 'dst')
 
-]]>
+  do while oosqlStep(src) == .ooSQLite~ROW
+    rc = oosqlBindValue(dst, 1, oosqlColumnValue(src, 1))
+    rc = oosqlBindValue(dst, 2, oosqlColumnValue(src, 2))
+    rc = oosqlStep(dst)
+    rc = oosqlReset(dst)
+  end
+
+  call oosqlFinalize src
+  call oosqlFinalize dst
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1144,7 +1352,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Binds a BLOB filled with zeros to a host parameter of a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1152,10 +1360,24 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>index [required]</term>
+      <listitem>
+      <para>
+        The index of the host parameter, 1 for the first parameter.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>length [required]</term>
+      <listitem>
+      <para>
+        The size of the BLOB, in bytes. A negative length is the same as 0.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1164,29 +1386,37 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error, as <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    SQLite does not use memory for the zeros while the statement runs, so this is an efficient way to reserve space for
+    a large BLOB.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlBindZeroBlob</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/bind_blob.html">sqlite3_bind_zeroblob</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthBindZeroBlob">bindZeroBlob</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example sets the picture column of a row to 4096 zero bytes:
+<programlisting language="rexx">
+  rc = oosqlPrepare(db, "UPDATE foods SET picture = ? WHERE name = 'Cheese';", 'stmt')
+  rc = oosqlBindZeroBlob(stmt, 1, 4096)
+  rc = oosqlStep(stmt)
+  call oosqlFinalize stmt
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1444,18 +1674,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Sets all the host parameters of a prepared statement to NULL.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1464,29 +1696,43 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    <link linkend="rtn-oosqlReset">oosqlReset</link> does not change the values bound to the parameters. Use <emphasis
+    role="italic">oosqlClearBindings</emphasis> when the next execution of the statement should not use them.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlClearBindings</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/clear_bindings.html">sqlite3_clear_bindings</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthClearBindings">clearBindings</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    In this example, the second row inserted gets NULL for the type and the price:
+<programlisting language="rexx">
+  rc = oosqlPrepare(db, "INSERT INTO foods(type_id, name, price) VALUES(?, ?, ?);", 'stmt')
+  rc = oosqlBindInt(stmt, 1, 2)
+  rc = oosqlBindText(stmt, 2, 'Sausage')
+  rc = oosqlBindDouble(stmt, 3, 2.25)
+  rc = oosqlStep(stmt)
 
-]]>
+  rc = oosqlReset(stmt)
+  rc = oosqlClearBindings(stmt)            -- type_id and price are now NULL
+  rc = oosqlBindText(stmt, 2, 'Unknown food')
+  rc = oosqlStep(stmt)
+  call oosqlFinalize stmt
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1564,7 +1810,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the value of a column of the current result row of a prepared statement as a BLOB.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1572,10 +1818,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>column [required]</term>
+      <listitem>
+      <para>
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1584,29 +1838,53 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    A string with the bytes of the value, including any NUL characters. A value that is not a BLOB is converted: text is
+    returned as is, and a number as its text representation. An empty BLOB, a NULL value, and a column that is out of
+    range return the empty string.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    What is said here applies to all the routines that return the value of a column, such as <emphasis
+    role="italic">oosqlColumnBlob</emphasis>, <link linkend="rtn-oosqlColumnInt">oosqlColumnInt</link>, or <link
+    linkend="rtn-oosqlColumnText">oosqlColumnText</link>: they return a value of the current result row, so they are
+    meaningful only after <link linkend="rtn-oosqlStep">oosqlStep</link> has returned
+    <computeroutput>ROW</computeroutput>, and until the statement is stepped again, reset, or finalized. If they are
+    invoked at any other time, the result is undefined. SQLite converts the value to the type asked for when the column
+    holds a value of another type.
+  </para>
+  <para>
+    A NULL value is the empty string. Use <link linkend="rtn-oosqlColumnType">oosqlColumnType</link> to tell a NULL
+    value from an empty one.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlColumnBlob</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_blob</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthColumnBlob">columnBlob</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example reads the picture of a row, and displays its size and its bytes in hexadecimal:
+<programlisting language="rexx">
+  rc = oosqlExec(db, "UPDATE foods SET picture = x'89504E470D0A1A0A' WHERE id = 1;")
+  rc = oosqlPrepare(db, "SELECT picture FROM foods WHERE id = 1;", 'stmt')
+  if oosqlStep(stmt) == .ooSQLite~ROW then do
+    picture = oosqlColumnBlob(stmt, 1)
+    say oosqlColumnBytes(stmt, 1) picture~length picture~c2x
+  end
+  call oosqlFinalize stmt
+  /* Output:
+  8 8 89504E470D0A1A0A
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1624,7 +1902,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the size in bytes of the value of a column of the current result row of a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1632,10 +1910,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>column [required]</term>
+      <listitem>
+      <para>
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1644,30 +1930,32 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The size of a BLOB, or of the UTF-8 text of any other value: the number <computeroutput>3.9</computeroutput> has 3
+    bytes. A NULL value, and a column that is out of range, have 0 bytes.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="rtn-oosqlColumnBlob">oosqlColumnBlob</link> for when the values of a row can be
+    retrieved.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlColumnBytes</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_bytes</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthColumnBytes">columnBytes</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlColumnBlob">oosqlColumnBlob</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1684,18 +1972,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the number of columns in the result set of a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1704,30 +1994,31 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The number of columns, or 0 for a statement that returns no data, such as an INSERT or an UPDATE.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The number of columns is known as soon as the statement is prepared: this routine can be invoked before <link
+    linkend="rtn-oosqlStep">oosqlStep</link>. Compare with <link linkend="rtn-oosqlDataCount">oosqlDataCount</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlColumnCount</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/column_count.html">sqlite3_column_count</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthColumnCount">columnCount</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlColumnName">oosqlColumnName</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1744,7 +2035,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the name of the database that a result column of a prepared statement comes from.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1752,10 +2043,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>column [required]</term>
+      <listitem>
+      <para>
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1764,30 +2063,36 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The name of the database: <computeroutput>main</computeroutput> for the main database,
+    <computeroutput>temp</computeroutput> for the temporary database, or the name given to an attached database. When
+    the result column is an expression, not a column of a table, and when the column is out of range, the string
+    <computeroutput>NULL</computeroutput> is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The name is known as soon as the statement is prepared: this routine can be invoked before <link
+    linkend="rtn-oosqlStep">oosqlStep</link>. <link linkend="rtn-oosqlColumnTableName">oosqlColumnTableName</link> and
+    <link linkend="rtn-oosqlColumnOriginName">oosqlColumnOriginName</link> give the table and the column of the table.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlColumnDatabaseName</emphasis> routine is similar to that of
+    the SQLite <ulink url="http://www.sqlite.org/c3ref/column_database_name.html">sqlite3_column_database_name</ulink>
+    API.
+  </para>
+  <para>
+    The <link linkend="mthColumnDataBaseName">columnDataBaseName</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlColumnName">oosqlColumnName</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1804,7 +2109,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the declared type of the table column that a result column of a prepared statement comes from.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1812,10 +2117,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>column [required]</term>
+      <listitem>
+      <para>
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1824,30 +2137,34 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The type as written in the <computeroutput>CREATE TABLE</computeroutput> statement, such as
+    <computeroutput>INTEGER</computeroutput> or <computeroutput>TEXT</computeroutput>. When the result column is an
+    expression, not a column of a table, when the column of the table was declared without a type, and when the column
+    is out of range, the empty string is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    SQLite is dynamically typed: the declared type does not say what type a value has. Use <link
+    linkend="rtn-oosqlColumnType">oosqlColumnType</link> for the type of a value in the current row.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlColumnDeclType</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/column_decltype.html">sqlite3_column_decltype</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthColumnDeclType">columnDeclType</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlColumnName">oosqlColumnName</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1864,7 +2181,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the value of a column of the current result row of a prepared statement as a floating point number.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1872,10 +2189,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>column [required]</term>
+      <listitem>
+      <para>
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1884,30 +2209,32 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The value as a number. Text that starts with a number is converted to that number; a NULL value, and a column that
+    is out of range, return 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="rtn-oosqlColumnBlob">oosqlColumnBlob</link> for when the values of a row can be
+    retrieved.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlColumnDouble</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_double</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthColumnDouble">columnDouble</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlColumnType">oosqlColumnType</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1923,7 +2250,7 @@
 </mediaobject>
 
 <para>
-  Returns the index of the column with the specified column name in the result set of a SELECT statement.
+  Returns the number of the result column of a prepared statement with the given name.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1934,16 +2261,17 @@
       <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        The <link linkend="defHandle">handle</link> to the <link linkend="rtn-oosqlPrepare">prepared</link> statement to
-        be queried. The handle must not be <link linkend="rtn-oosqlIsHandleNull">null</link> and the statement must not
-        have been <link linkend="rtn-oosqlFinalize">finalized</link>.
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
       </para>
       </listitem></varlistentry>
       <varlistentry><term>columnName [required]</term>
       <listitem>
       <para>
-        The name of the column whose index is desired. The name is case-insensitive because SQLite does not allow column
-        names that differ only by case.
+        The name of the result column, as returned by <link linkend="rtn-oosqlColumnName">oosqlColumnName</link>: for a
+        column with an <computeroutput>AS</computeroutput> clause, it is the name given there. The comparison is case
+        insensitive.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1952,35 +2280,45 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    Returns the one-based index of the column that matches the specified name, or 0 if there is no match.
+    The number of the column, 1 for the first column, or 0 if the result set has no column with that name. When several
+    columns have the same name, the number of the first one is returned.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    The column names are known as soon as the statement is prepared: this routine can be invoked before <link
+    linkend="rtn-oosqlStep">oosqlStep</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    This function does not access any of the SQLite APIs. It is specific to ooSQLite.
+    This routine is an ooSQLite enhancement, there is no similar SQLite API.
+  </para>
+  <para>
+    The <link linkend="mthColumnIndex">columnIndex</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example uses the <emphasis role="italic">oosqlColumnIndex</emphasis> function to get the index of the <emphasis
-    role="italic">name</emphasis> column in the <emphasis role="italic">foods</emphasis> table:
+    This example finds the columns it needs by name, so that it does not depend on their order in the query:
 <programlisting language="rexx">
-
-  dbConn = ''
-  ret = oosqlOpen('ooFoods.rdbx', 'dbConn')
-
-  stmt = ''
-  ret = oosqlPrepare(dbConn, "SELECT * FROM foods", 'stmt')
-  index = oosqlColumnIndex(stmt, 'name')
-
+  rc = oosqlPrepare(db, "SELECT id, name, price FROM foods ORDER BY price DESC;", 'stmt')
+  nameCol  = oosqlColumnIndex(stmt, 'name')
+  priceCol = oosqlColumnIndex(stmt, 'PRICE')
   do while oosqlStep(stmt) == .ooSQLite~ROW
-    say oosqlColumnText(stmt, index)
+    say oosqlColumnText(stmt, nameCol)~left(20) oosqlColumnText(stmt, priceCol, '')
   end
-
-  dbConn~close
-  stmt~finalize
+  call oosqlFinalize stmt
+  /* Output:
+  Bacon                3.75
+  Bagels, raisin       1.5
+  Bagels               1.25
+  Cheese
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1998,7 +2336,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the value of a column of the current result row of a prepared statement as a 32-bit integer.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2006,10 +2344,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>column [required]</term>
+      <listitem>
+      <para>
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2018,30 +2364,34 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The value as a whole number. A floating point value is truncated, so 3.9 is 3, and text that starts with a number is
+    converted to that number. A NULL value, and a column that is out of range, return 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    When the value does not fit in 32 bits, only its lower 32 bits are returned, and the result is not meaningful: use
+    <link linkend="rtn-oosqlColumnInt64">oosqlColumnInt64</link> for values that can be that large. See the remarks of
+    <link linkend="rtn-oosqlColumnBlob">oosqlColumnBlob</link> for when the values of a row can be retrieved.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlColumnInt</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_int</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthColumnInt">columnInt</link> method of the <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link>
+    class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the examples of <link linkend="rtn-oosqlPrepare">oosqlPrepare</link> and <link
+    linkend="rtn-oosqlReset">oosqlReset</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -2058,7 +2408,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the value of a column of the current result row of a prepared statement as a 64-bit integer.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2066,10 +2416,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>column [required]</term>
+      <listitem>
+      <para>
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2078,30 +2436,26 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The value as a whole number, converted as <link linkend="rtn-oosqlColumnInt">oosqlColumnInt</link> does. A NULL
+    value, and a column that is out of range, return 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="rtn-oosqlColumnBlob">oosqlColumnBlob</link> for when the values of a row can be
+    retrieved.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlColumnInt64</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_int64</ulink> API.
   </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
-  <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    The <link linkend="mthColumnInt64">columnInt64</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -2118,7 +2472,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the name of a result column of a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2126,10 +2480,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>column [required]</term>
+      <listitem>
+      <para>
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2138,29 +2500,50 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The name of the column: for a column with an <computeroutput>AS</computeroutput> clause, the name given there;
+    otherwise, the name SQLite gives it, which for a column of a table is normally the name of the table column, and for
+    an expression is normally the text of the expression. For a column that is out of range, the string
+    <computeroutput>NULL</computeroutput> is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The names are known as soon as the statement is prepared: this routine can be invoked before <link
+    linkend="rtn-oosqlStep">oosqlStep</link>. SQLite does not guarantee the name of a column without an
+    <computeroutput>AS</computeroutput> clause, so a program that depends on the names should give them.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlColumnName</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/column_name.html">sqlite3_column_name</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthColumnName">columnName</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example displays, for each column of a query, its name, the column, table and database it comes from, and its
+    declared type. The last column is an expression, so it comes from no table:
+<programlisting language="rexx">
+  rc = oosqlPrepare(db, "SELECT id, name AS food, price, price * 2 FROM foods;", 'stmt')
+  do i = 1 to oosqlColumnCount(stmt)
+    say i oosqlColumnName(stmt, i)~left(10) oosqlColumnOriginName(stmt, i)~left(8) -
+          oosqlColumnTableName(stmt, i)~left(8) oosqlColumnDatabaseName(stmt, i)~left(6) -
+          oosqlColumnDeclType(stmt, i)
+  end
+  call oosqlFinalize stmt
+  /* Output:
+  1 id         id       foods    main   INTEGER
+  2 food       name     foods    main   TEXT
+  3 price      price    foods    main   REAL
+  4 price * 2  NULL     NULL     NULL
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2178,7 +2561,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the name of the table column that a result column of a prepared statement comes from.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2186,10 +2569,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>column [required]</term>
+      <listitem>
+      <para>
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2198,30 +2589,33 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The name of the column in its table, without the alias that an <computeroutput>AS</computeroutput> clause may give
+    it. When the result column is an expression, not a column of a table, and when the column is out of range, the
+    string <computeroutput>NULL</computeroutput> is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The name is known as soon as the statement is prepared: this routine can be invoked before <link
+    linkend="rtn-oosqlStep">oosqlStep</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlColumnOriginName</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/column_database_name.html">sqlite3_column_origin_name</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthColumnOriginName">columnOriginName</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlColumnName">oosqlColumnName</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -2238,7 +2632,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the name of the table that a result column of a prepared statement comes from.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2246,10 +2640,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>column [required]</term>
+      <listitem>
+      <para>
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2258,30 +2660,33 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The name of the table, without the alias that the query may give it. When the result column is an expression, not a
+    column of a table, and when the column is out of range, the string <computeroutput>NULL</computeroutput> is
+    returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The name is known as soon as the statement is prepared: this routine can be invoked before <link
+    linkend="rtn-oosqlStep">oosqlStep</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlColumnTableName</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/column_database_name.html">sqlite3_column_table_name</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthColumnTableName">columnTableName</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlColumnName">oosqlColumnName</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -2298,7 +2703,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the value of a column of the current result row of a prepared statement as a string.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2306,10 +2711,24 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>column [required]</term>
+      <listitem>
+      <para>
+        The number of the column in the result row, 1 for the first column.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>nullObj [optional]</term>
+      <listitem>
+      <para>
+        The object to return for a NULL value. The default is the <computeroutput>.nil</computeroutput> object.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2318,29 +2737,48 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The value as a string: text as is, a number as its text representation, and a BLOB with all its bytes, as <link
+    linkend="rtn-oosqlColumnBlob">oosqlColumnBlob</link> returns it. For a NULL value, and for a column that is out of
+    range, <emphasis role="italic">nullObj</emphasis> is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    This is the routine used most to retrieve values, because any value can be represented as a string. See the remarks
+    of <link linkend="rtn-oosqlColumnBlob">oosqlColumnBlob</link> for when the values of a row can be retrieved.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlColumnText</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_text</ulink> API. For a BLOB, SQLite would
+    return only the bytes before the first NUL character; ooSQLite returns all of them.
+  </para>
+  <para>
+    The <link linkend="mthColumnText">columnText</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object; it has no <emphasis
+    role="italic">nullObj</emphasis> argument, but takes the value to return for NULL from the <xref
+    linkend="atrNullClsOOSQLiteStmt"/> attribute of the statement.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example displays the price of each food, or <computeroutput>unknown</computeroutput> if it has no price:
+<programlisting language="rexx">
+  rc = oosqlPrepare(db, "SELECT name, price FROM foods ORDER BY id;", 'stmt')
+  do while oosqlStep(stmt) == .ooSQLite~ROW
+    say oosqlColumnText(stmt, 1)~left(16) oosqlColumnText(stmt, 2, 'unknown')
+  end
+  call oosqlFinalize stmt
+  /* Output:
+  Bagels           1.25
+  Bagels, raisin   1.5
+  Bacon            3.75
+  Cheese           unknown
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2358,7 +2796,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the datatype of the value of a column of the current result row of a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2366,10 +2804,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>column [required]</term>
+      <listitem>
+      <para>
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2378,29 +2824,55 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    One of the <link linkend="sctFundamentalDatatype">Fundamental Datatype</link> constants:
+    <computeroutput>INTEGER</computeroutput>, <computeroutput>FLOAT</computeroutput>,
+    <computeroutput>TEXT</computeroutput>, <computeroutput>BLOB</computeroutput>, or
+    <computeroutput>SQLNULL</computeroutput>. A column that is out of range is <computeroutput>SQLNULL</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    SQLite is dynamically typed: the same column can hold values of different types in different rows, whatever its
+    declared type. Retrieving a value with a routine of another type, such as <link
+    linkend="rtn-oosqlColumnText">oosqlColumnText</link> for an integer, can convert the value in place, and then the
+    type returned by this routine afterwards is undefined: invoke <emphasis role="italic">oosqlColumnType</emphasis>
+    before retrieving the value. See the remarks of <link linkend="rtn-oosqlColumnBlob">oosqlColumnBlob</link> for when
+    the values of a row can be retrieved.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlColumnType</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_type</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthColumnType">columnType</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example formats the price of each food according to its type:
+<programlisting language="rexx">
+  rc = oosqlPrepare(db, "SELECT name, price FROM foods;", 'stmt')
+  do while oosqlStep(stmt) == .ooSQLite~ROW
+    select
+      when oosqlColumnType(stmt, 2) == .ooSQLite~SQLNULL then price = 'n/a'
+      when oosqlColumnType(stmt, 2) == .ooSQLite~FLOAT then price = oosqlColumnDouble(stmt, 2)~format(, 2)
+      otherwise price = '?'
+    end
+    say oosqlColumnText(stmt, 1)~left(20) price
+  end
+  call oosqlFinalize stmt
+  /* Output:
+  Bagels               1.25
+  Bagels, raisin       1.50
+  Bacon                3.75
+  Cheese               n/a
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2418,7 +2890,8 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the value of a column of the current result row of a prepared statement, in the form needed to bind it to a
+  host parameter with <link linkend="rtn-oosqlBindValue">oosqlBindValue</link>.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2426,10 +2899,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>column [required]</term>
+      <listitem>
+      <para>
+        The number of the column in the result row, 1 for the first column.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2438,30 +2919,33 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    A Pointer object, which points to an SQLite <computeroutput>sqlite3_value</computeroutput> structure.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The only use of the value returned is to pass it to <link linkend="rtn-oosqlBindValue">oosqlBindValue</link>, which
+    binds it to a parameter of a statement keeping its datatype. It is only valid while the statement stays on the same
+    result row: see the remarks of <link linkend="rtn-oosqlBindValue">oosqlBindValue</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlColumnValue</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/column_blob.html">sqlite3_column_value</ulink> API. The value is what
+    SQLite calls an unprotected <computeroutput>sqlite3_value</computeroutput>.
+  </para>
+  <para>
+    The <link linkend="mthColumnValue">columnValue</link> method of the <link
+    linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlBindValue">oosqlBindValue</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -2995,18 +3479,20 @@ call oosqlCreateFunction db, "double"
 </mediaobject>
 
 <para>
-  xx
+  Returns the number of columns in the current result row of a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -3015,29 +3501,34 @@ call oosqlCreateFunction db, "double"
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    Additional comments.
+    The number of columns of the current row: the same as <link linkend="rtn-oosqlColumnCount">oosqlColumnCount</link>
+    after <link linkend="rtn-oosqlStep">oosqlStep</link> has returned <computeroutput>ROW</computeroutput>, and 0 when
+    there is no current row: before the statement is stepped, after <emphasis role="italic">oosqlStep</emphasis> has
+    returned <computeroutput>DONE</computeroutput> or an error, and after a reset.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlDataCount</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/data_count.html">sqlite3_data_count</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthDataCount">dataCount</link> method of the <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link>
+    class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example shows the difference between <emphasis role="italic">oosqlDataCount</emphasis> and <emphasis
+    role="italic">oosqlColumnCount</emphasis>:
+<programlisting language="rexx">
+  rc = oosqlPrepare(db, "SELECT id, name FROM foods;", 'stmt')
+  say oosqlColumnCount(stmt) oosqlDataCount(stmt)    -- 2 0
+  rc = oosqlStep(stmt)
+  say oosqlColumnCount(stmt) oosqlDataCount(stmt)    -- 2 2
+  call oosqlFinalize stmt
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -3115,18 +3606,20 @@ call oosqlCreateFunction db, "double"
 </mediaobject>
 
 <para>
-  xx
+  Returns the database connection of a prepared statement.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle must not be null, and the statement must not have
+        been finalized: see the rules for <link linkend="sctClassicStmt">statement handles</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -3135,29 +3628,34 @@ call oosqlCreateFunction db, "double"
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    Additional comments.
+    The <link linkend="defHandle">handle</link> to the database connection that was used to prepare the statement. It is
+    the same handle that was passed to <link linkend="rtn-oosqlPrepare">oosqlPrepare</link>, and it can be used in any
+    routine that needs a database connection.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlDbHandle</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/db_handle.html">sqlite3_db_handle</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthDbHandle">dbHandle</link> method of the <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link>
+    class returns the connection object of a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example uses the connection of the statement to find how many rows it deleted:
+<programlisting language="rexx">
+  rc = oosqlPrepare(db, "DELETE FROM foods WHERE price IS NULL;", 'stmt')
+  rc = oosqlStep(stmt)
+  say oosqlChanges(oosqlDbHandle(stmt)) 'row(s) deleted'
+  call oosqlFinalize stmt
+  /* Output:
+  1 row(s) deleted
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -3878,18 +4376,19 @@ file is encrypted or is not a database
 </mediaobject>
 
 <para>
-  xx
+  Deletes a prepared statement and releases the resources it uses.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>stmt [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a statement prepared by <link
+        linkend="rtn-oosqlPrepare">oosqlPrepare</link>. The handle can be null; then this routine does nothing.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -3898,29 +4397,52 @@ file is encrypted or is not a database
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> if the last execution of the statement had no error, if it was never
+    executed, or if the handle is null. If the last <link linkend="rtn-oosqlStep">oosqlStep</link> failed, the error
+    code it returned is returned again. In all cases, the statement is finalized.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    Every statement prepared without error must be finalized once, and only once. After <emphasis
+    role="italic">oosqlFinalize</emphasis>, the handle is not valid any more: it must not be used in any routine, and it
+    must not be finalized again. ooSQLite can not detect this, and the result is unpredictable; the interpreter can
+    crash. Dropping the variable that holds the handle, as the example does, prevents using it by mistake.
+  </para>
+  <para>
+    All the statements of a connection should be finalized before the connection is closed: while there is any statement
+    that is not finalized, <link linkend="rtn-oosqlClose">oosqlClose</link> returns
+    <computeroutput>BUSY</computeroutput> and the connection stays open. Unlike a statement object of the object
+    orientated interface, a statement handle is never finalized automatically.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlFinalize</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/finalize.html">sqlite3_finalize</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthFinalize">finalize</link> method of the <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link>
+    class does the same for a statement object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example executes an INSERT that fails, because the table already has a row with that id, and then finalizes the
+    statement, which returns the same error code again:
+<programlisting language="rexx">
+  rc = oosqlPrepare(db, "INSERT INTO foods(id, name) VALUES(1, 'Toast');", 'stmt')
+  rc = oosqlStep(stmt)
+  say rc oosqlErrMsg(db)
+  say oosqlFinalize(stmt)
+  drop stmt
+  /* Output:
+  1555 UNIQUE constraint failed: foods.id
+  1555
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>

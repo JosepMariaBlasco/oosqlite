@@ -305,6 +305,17 @@
     the error code. The template section of the value method, an internal debugging aid, was removed.
   </para></listitem>
   <listitem><para>
+    The routines of the classic interface that work on prepared statements are now documented: the oosqlBind and
+    oosqlColumn routines, <link linkend="rtn-oosqlStep">oosqlStep</link>, <link linkend="rtn-oosqlReset">oosqlReset</link>,
+    <link linkend="rtn-oosqlFinalize">oosqlFinalize</link>, and the others, each one with a link to the equivalent method
+    of the ooSQLiteStmt class, and most of them with a tested example. A new section, <link
+    linkend="sctClassicStmt">Prepared Statements</link>, describes how a statement handle is used, and what happens when
+    a handle that is null, or that has been finalized, is used. The examples of <link
+    linkend="rtn-oosqlPrepare">oosqlPrepare</link> and <link linkend="rtn-oosqlColumnIndex">oosqlColumnIndex</link> could
+    not run: they invoked methods on the handles. The <link linkend="tblOOSQLiteRoutines">routine table</link> of the
+    classic interface lists all the routines; it stopped at oosqlFinalize.
+  </para></listitem>
+  <listitem><para>
     The <link linkend="chpOOSQLiteConstants">constants chapter</link> lists all the constants of the class, also the
     ones that were missing from it, such as NOTICE and WARNING. The values of the version constants are those of the
     embedded SQLite, and the NULL datatype is listed with its ooSQLite name, SQLNULL.
