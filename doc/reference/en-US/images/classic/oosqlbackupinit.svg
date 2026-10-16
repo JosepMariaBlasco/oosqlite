@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="773" height="135">
+         <defs>
+            <style type="text/css">
+               @namespace "http://www.w3.org/2000/svg";
+               .line                 {fill: none; stroke: #1F1F1F;}
+               .bold-line            {stroke: #0A0A0A; shape-rendering: crispEdges; stroke-width:
+               2; }
+               .thin-line            {stroke: #0F0F0F; shape-rendering: crispEdges}
+               .filled               {fill: #1F1F1F; stroke: none;}
+               text.terminal         {font-family: Verdana, Sans-serif;
+               font-size: 12px;
+               fill: #0A0A0A;
+               font-weight: bold;
+               }
+               text.nonterminal      {font-family: Verdana, Sans-serif; font-style: italic;
+               font-size: 12px;
+               fill: #0D0D0D;
+               }
+               text.regexp           {font-family: Verdana, Sans-serif;
+               font-size: 12px;
+               fill: #0F0F0F;
+               }
+               rect, circle, polygon {fill: #1F1F1F; stroke: #1F1F1F;}
+               rect.terminal         {fill: #CCCCCC; stroke: #1F1F1F;}
+               rect.nonterminal      {fill: #E3E3E3; stroke: #1F1F1F;}
+               rect.text             {fill: none; stroke: none;}
+               polygon.regexp        {fill: #EFEFEF; stroke: #1F1F1F;}
+
+            </style>
+         </defs>
+
+         <polygon points="9 17 1 13 1 21"></polygon>
+         <polygon points="17 17 9 13 9 21"></polygon>
+         <rect x="31" y="3" width="136" height="32" rx="10"></rect>
+         <rect x="29" y="1" width="136" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="39" y="21">oosqlBackupInit(</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#dstConn" xlink:title="dstConn">
+            <rect x="187" y="3" width="72" height="32"></rect>
+            <rect x="185" y="1" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="195" y="21">dstConn</text></a><rect x="279" y="3" width="24" height="32" rx="10"></rect>
+         <rect x="277" y="1" width="24" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="287" y="21">,</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#srcConn" xlink:title="srcConn">
+            <rect x="323" y="3" width="70" height="32"></rect>
+            <rect x="321" y="1" width="70" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="331" y="21">srcConn</text></a><rect x="433" y="35" width="24" height="32" rx="10"></rect>
+         <rect x="431" y="33" width="24" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="441" y="53">,</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#dstName" xlink:title="dstName">
+            <rect x="477" y="35" width="76" height="32"></rect>
+            <rect x="475" y="33" width="76" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="485" y="53">dstName</text></a><rect x="613" y="35" width="24" height="32" rx="10"></rect>
+         <rect x="611" y="33" width="24" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="621" y="53">,</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#srcName" xlink:title="srcName">
+            <rect x="657" y="35" width="74" height="32"></rect>
+            <rect x="655" y="33" width="74" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="665" y="53">srcName</text></a><rect x="719" y="101" width="26" height="32" rx="10"></rect>
+         <rect x="717" y="99" width="26" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="727" y="119">)</text>
+         <path class="line" d="m17 17 h2 m0 0 h10 m136 0 h10 m0 0 h10 m72 0 h10 m0 0 h10 m24 0 h10 m0 0 h10 m70 0 h10 m20 0 h10 m0 0 h130 m-160 0 h20 m140 0 h20 m-180 0 q10 0 10 10 m160 0 q0 -10 10 -10 m-170 10 v12 m160 0 v-12 m-160 12 q0 10 10 10 m140 0 q10 0 10 -10 m-150 10 h10 m24 0 h10 m0 0 h10 m76 0 h10 m40 -32 h10 m0 0 h128 m-158 0 h20 m138 0 h20 m-178 0 q10 0 10 10 m158 0 q0 -10 10 -10 m-168 10 v12 m158 0 v-12 m-158 12 q0 10 10 10 m138 0 q10 0 10 -10 m-148 10 h10 m24 0 h10 m0 0 h10 m74 0 h10 m22 -32 l2 0 m2 0 l2 0 m2 0 l2 0 m-76 98 l2 0 m2 0 l2 0 m2 0 l2 0 m2 0 h10 m26 0 h10 m3 0 h-3"></path>
+         <polygon points="763 115 771 111 771 119"></polygon>
+         <polygon points="763 115 755 111 755 119"></polygon>
+</svg>
