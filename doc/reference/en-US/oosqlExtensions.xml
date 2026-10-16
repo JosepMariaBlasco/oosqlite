@@ -146,11 +146,11 @@
 <section id="atrLastErrCodeClsExt"><title>lastErrCode (Attribute)</title>
 <indexterm><primary>lastErrCode</primary><secondary>ooSQLExtensions class</secondary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>lastErrCode</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--lastErrCode--------------------------------------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_lasterrcode_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Reflects the last error code set for the <computeroutput>ooSQLExtensions</computeroutput> class.
@@ -199,11 +199,11 @@
 <section id="atrLastErrMsgClsExt"><title>lastErrMsg (Attribute)</title>
 <indexterm><primary>lastErrMsg</primary><secondary>ooSQLExtensions class</secondary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>lastErrMsg</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--lastErrMsg---------------------------------------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_lasterrmsg_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Reflects a human readable explanation, a message, of the last error code recorded
@@ -230,12 +230,11 @@
 <section id="mthAutoBuiltin"><title>autoBuiltin (Class method)</title>
 <indexterm><primary>autoBuiltin</primary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>autoBuiltin</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--autoBuiltin(--+--------+--)----------------------------------------------><
-                  +--name--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_autobuiltin.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Registers one or more ooSQLite builtin extensions as automatic.
@@ -283,12 +282,11 @@
 <section id="mthAutoCollationNeeded"><title>autoCollationNeeded (Class method)</title>
 <indexterm><primary>autoCollationNeeded</primary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>autoCollationNeeded</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--autoCollationNeeded(--+--------+--)--------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_autocollationneeded.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -344,12 +342,11 @@
 <section id="mthAutoCollation"><title>autoCollation</title>
 <indexterm><primary>autoCollation</primary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>autoCollation (Class method)</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--autoCollation(--+--------+--)--------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_autocollation.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -405,12 +402,11 @@
 <section id="mthAutoFunction"><title>autoFunction</title>
 <indexterm><primary>autoFunction</primary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>autoFunction (Class method)</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--autoFunction(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_autofunction.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -466,12 +462,11 @@
 <section id="mthAutoPackage"><title>autoPackage</title>
 <indexterm><primary>autoPackage</primary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>autoPackage (Class method)</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--autoPackage(--+--------+--)----------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_autopackage.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -526,12 +521,11 @@
 <section id="mthCancelAutoBuiltin"><title>cancelAutoBuiltin</title>
 <indexterm><primary>cancelAutoBuiltin</primary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>cancelAutoBuiltin</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--cancelAutoBuiltin(--+--------+--)----------------------------------------><
-                        +--name--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_cancelautobuiltin.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Cancels one or more automatic ooSQLite builtin extensions.
@@ -580,12 +574,11 @@
 <section id="mthGetLibrary"><title>getLibrary</title>
 <indexterm><primary>getLibrary</primary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>getLibrary (Class method)</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--getLibrary(--+--------+--)-----------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_getlibrary.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -641,12 +634,11 @@
 <section id="mthGetPackage"><title>getPackage</title>
 <indexterm><primary>getPackage</primary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>getPackage (Class method)</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--getPackage(--+--------+--)-----------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_getpackage.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -701,12 +693,11 @@
 <section id="mthListBuiltins"><title>listBuiltins</title>
 <indexterm><primary>listBuiltins</primary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>listBuiltins</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--listBuiltins(--+---------+--)--------------------------------------------><
-                   +--print--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_listbuiltins.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Returns a result set, in the current
@@ -783,12 +774,11 @@ wholeNumber Implements the wholenumber virtual table that returns whole numbers 
 <section id="mthLoadLibrary"><title>loadLibrary</title>
 <indexterm><primary>loadLibrary</primary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>loadLibrary (Class method)</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--loadLibrary(--+--------+--)----------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_loadlibrary.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -844,12 +834,11 @@ wholeNumber Implements the wholenumber virtual table that returns whole numbers 
 <section id="mthLoadPackage"><title>loadPackage</title>
 <indexterm><primary>loadPackage</primary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>loadPackage (Class method)</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--loadPackage(--+--------+--)----------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_loadpackage.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -905,12 +894,11 @@ wholeNumber Implements the wholenumber virtual table that returns whole numbers 
 <section id="mthResetAutoBuiltin"><title>resetAutoBuiltin</title>
 <indexterm><primary>resetAutoBuiltin</primary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>resetAutoBuiltin (Class method)</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--resetAutoBuiltin(--+--------+--)-----------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_resetautobuiltin.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -966,12 +954,11 @@ wholeNumber Implements the wholenumber virtual table that returns whole numbers 
 <section id="mthRegisterBuiltin"><title>registerBuiltin</title>
 <indexterm><primary>registerBuiltin</primary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>registerBuiltin (Class method)</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--registerBuiltin(--connection--+---------+--)-----------------------------><
-                                  +-,-name--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_registerbuiltin.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Registers one or more extensions builtin to ooSQLite with the specified

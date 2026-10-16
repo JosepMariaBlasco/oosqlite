@@ -4,6 +4,23 @@ collation_new ::= 'new'
 /* oosqlCollationNeeded.xml */
 collationneeded_new ::= 'new'
 
+/* oosqlExtensions.xml */
+extensions_lasterrcode_get ::= 'lastErrCode'
+extensions_lasterrmsg_get ::= 'lastErrMsg'
+extensions_autobuiltin ::= 'autoBuiltin(' entryPoints? ')'
+extensions_autocollationneeded ::= 'autoCollationNeeded(' packageName ( ',' enable )? ')'
+extensions_autocollation ::= 'autoCollation(' packageName ',' collationName ( ',' enable )? ')'
+extensions_autofunction ::= 'autoFunction(' packageName ',' functionName ( ',' enable )? ')'
+extensions_autopackage ::= 'autoPackage(' packageName ( ',' enable )? ')'
+extensions_cancelautobuiltin ::= 'cancelAutoBuiltin(' entryPoints? ')'
+extensions_getlibrary ::= 'getLibrary(' libraryName ')'
+extensions_getpackage ::= 'getPackage(' packageName ')'
+extensions_listbuiltins ::= 'listBuiltins(' print? ')'
+extensions_loadlibrary ::= 'loadLibrary(' libName ( ',' procedures )? ')'
+extensions_loadpackage ::= 'loadPackage(' libName ( ',' dbConn )? ( ',' makeAuto )? ')'
+extensions_resetautobuiltin ::= 'resetAutoBuiltin'
+extensions_registerbuiltin ::= 'registerBuiltin(' connection ( ',' name )? ')'
+
 /* oosqlFunction.xml */
 function_new ::= 'new'
 
