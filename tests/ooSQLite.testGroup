@@ -1667,6 +1667,56 @@ TestDbFileNameCleanup:
   stmt~finalize
   db~close
 
+--------------------------------------------------------------------------------
+-- recordFormat (statement level)                                             --
+--------------------------------------------------------------------------------
+
+::Method testStmtRecordFormatDefault
+  db = self~openMemoryDB
+  db~recordFormat = db~OO_STEM_OF_STEMS
+  stmt = .ooSQLiteStmt~new(db, "SELECT 1;")
+  self~assertEquals(db~OO_STEM_OF_STEMS, stmt~recordFormat, -
+    "Stmt recordFormat should default to the connection's recordFormat")
+  stmt~finalize
+  db~close
+
+::Method testStmtRecordFormatArg
+  db = self~openMemoryDB
+  stmt = .ooSQLiteStmt~new(db, "SELECT 1;", db~OO_CLASSIC_STEM)
+  self~assertEquals(db~OO_CLASSIC_STEM, stmt~recordFormat, -
+    "Stmt recordFormat should be the format given to new")
+  stmt~finalize
+  db~close
+
+::Method testStmtRecordFormatSet
+  db = self~openMemoryDB
+  stmt = .ooSQLiteStmt~new(db, "SELECT 1;", db~OO_ARRAY_OF_ARRAYS)
+  stmt~recordFormat = db~OO_CLASSIC_STEM
+  self~assertEquals(db~OO_CLASSIC_STEM, stmt~recordFormat, -
+    "Stmt recordFormat should be the format just set")
+  -- Setting it must not touch anything else in the statement
+  self~assertEquals(0, stmt~initCode, "Stmt initCode should still be 0")
+  self~assertEquals(db~OO_ARRAY_OF_DIRECTORIES, db~recordFormat, -
+    "Connection recordFormat should not change")
+  stmt~finalize
+  db~close
+
+::Method testStmtRecordFormatSetInvalid
+  db = self~openMemoryDB
+  stmt = .ooSQLiteStmt~new(db, "SELECT 1;")
+  raised = .false
+  Signal On Syntax Name StmtRecFmtInvalid
+  stmt~recordFormat = 9
+  Signal StmtRecFmtDone
+StmtRecFmtInvalid:
+  raised = .true
+StmtRecFmtDone:
+  Signal Off Syntax
+  self~assertTrue(raised, "Setting recordFormat to 9 should raise a syntax error")
+  self~assertEquals(0, stmt~initCode, "Stmt initCode should still be 0")
+  stmt~finalize
+  db~close
+
 /******************************************************************************/
 /*                                                                            */
 /* Section 18B: Tier 1 — ooSQLite: zeroPointer                                */
