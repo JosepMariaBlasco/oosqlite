@@ -116,11 +116,11 @@
 <section id="mthNewClsOOSQLPackage"><title>new (Class method)</title>
 <indexterm><primary>new</primary><secondary>ooSQLPackage class</secondary></indexterm>
 <indexterm><primary>ooSQLPackage class</primary><secondary>new</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--new------------------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/package_new.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   An <computeroutput>ooSQLPackage</computeroutput> object can not be instantiated from Rexx code. Rather, the programmer uses
@@ -188,13 +188,11 @@
 <section id="atrLastErrCodeClsPack"><title>lastErrCode (Attribute)</title>
 <indexterm><primary>lastErrCode</primary><secondary>ooSQLPackage class</secondary></indexterm>
 <indexterm><primary>ooSQLPackage class</primary><secondary>lastErrCode</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--lastErrCode----------------------------------><
-
->>--lastErrCode = varName------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/package_lasterrcode_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Reflects the last error code set by for the <computeroutput>ooSQLPackage</computeroutput> object.
@@ -247,13 +245,11 @@
 <section id="atrLastErrMsgClsPack"><title>lastErrMsg (Attribute)</title>
 <indexterm><primary>lastErrMsg</primary><secondary>ooSQLPackage class</secondary></indexterm>
 <indexterm><primary>ooSQLPackage class</primary><secondary>lastErrMsg</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--lastErrMsg-----------------------------------><
-
->>--lastErrMsg = varName-------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/package_lasterrmsg_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Reflects a human readable explanation, a message, of the last error code recorded by the connection object.
@@ -306,12 +302,11 @@
 <section id="mthGetCollation"><title>getCollation</title>
 <indexterm><primary>getCollation</primary></indexterm>
 <indexterm><primary>ooSQLPackage class</primary><secondary>getCollation</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--getCollation(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/package_getcollation.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -367,12 +362,11 @@
 <section id="mthGetCollationNeeded"><title>getCollationNeeded</title>
 <indexterm><primary>getCollationNeeded</primary></indexterm>
 <indexterm><primary>ooSQLPackage class</primary><secondary>getCollationNeeded</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--getCollationNeeded(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/package_getcollationneeded.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -428,12 +422,11 @@
 <section id="mthGetFunction"><title>getFunction</title>
 <indexterm><primary>getFunction</primary></indexterm>
 <indexterm><primary>ooSQLPackage class</primary><secondary>getFunction</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--getFunction(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/package_getfunction.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -489,12 +482,11 @@
 <section id="mthRegister"><title>register</title>
 <indexterm><primary>register</primary></indexterm>
 <indexterm><primary>ooSQLPackage class</primary><secondary>register</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--register(--+--------+--)---------------------------------------------><
-                  +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/package_register.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx

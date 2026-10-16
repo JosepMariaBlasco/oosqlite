@@ -11,3 +11,12 @@ function_new ::= 'new'
 library_new ::= 'new'
 library_lasterrcode_get ::= 'lastErrCode'
 library_lasterrmsg_get ::= 'lastErrMsg'
+
+/* oosqlPackage.xml */
+package_new ::= 'new'
+package_lasterrcode_get ::= 'lastErrCode'
+package_lasterrmsg_get ::= 'lastErrMsg'
+package_getcollation ::= 'getCollation(' rxName ')'
+package_getcollationneeded ::= 'getCollationNeeded'
+package_getfunction ::= 'getFunction(' rxName ')'
+package_register ::= 'register(' dbConn ')'
