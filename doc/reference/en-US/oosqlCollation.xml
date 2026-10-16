@@ -56,12 +56,11 @@
 <section id="mthNewClsOOSQLCollation"><title>new (Class method)</title>
 <indexterm><primary>new</primary><secondary>ooSQLCollation class</secondary></indexterm>
 <indexterm><primary>ooSQLCollation class</primary><secondary>new</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--new(--+--------+--)--------------------------><
-          +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/collation_new.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
