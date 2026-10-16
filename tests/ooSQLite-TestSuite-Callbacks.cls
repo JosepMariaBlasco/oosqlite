@@ -720,6 +720,23 @@
 
 ::Class "ResultValueHandler" Public
 
+::Method blobThru Unguarded
+  -- ooSQLValue~blob returns a String; ooSQLResult~blob accepts it
+  Use Arg db, sqlContext, userData, val1
+  .ooSQLResult~blob(sqlContext, .ooSQLValue~blob(val1))
+  Return 0
+
+::Method blobMutableBuffer Unguarded
+  Use Arg db, sqlContext, userData
+  .ooSQLResult~blob(sqlContext, .MutableBuffer~new("00FF10"x))
+  Return 0
+
+::Method blobPartial Unguarded
+  -- size, when given with a String, is the number of bytes to use
+  Use Arg db, sqlContext, userData
+  .ooSQLResult~blob(sqlContext, "ABCDEF", 2)
+  Return 0
+
 ::Method blobHex Unguarded
   Use Arg db, sqlContext, userData, val1
   .ooSQLResult~text(sqlContext, .ooSQLValue~blob(val1)~c2x)

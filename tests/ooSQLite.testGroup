@@ -4718,8 +4718,8 @@ AggregateErrorTrapped:
 /* Section 34: ooSQLResult and ooSQLValue — the methods not used elsewhere    */
 /*                                                                            */
 /* The OO counterparts of the classic tests in Section C7, with UDFs from     */
-/* ResultValueHandler: ooSQLResult int64, zeroBlob, value, error, errorCode,  */
-/* errorNoMem, errorTooBig; ooSQLValue blob, int64, numericType.              */
+/* ResultValueHandler: ooSQLResult blob, int64, zeroBlob, value, error,       */
+/* errorCode, errorNoMem, errorTooBig; ooSQLValue blob, int64, numericType.   */
 /*                                                                            */
 /******************************************************************************/
 
@@ -4731,6 +4731,35 @@ AggregateErrorTrapped:
   Use Strict Arg db, sqlName, countArgs, mthName
   rc = db~createFunction(sqlName, .ResultValueHandler~new, countArgs, mthName)
   self~assertEquals(0, rc, "createFunction for" sqlName "should return OK")
+
+::Method testResultBlobValueBlob
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE t(d BLOB); INSERT INTO t VALUES(X'CAFEBABE');")
+  self~resultValueUDF(db, "oo_blobthru", 1, "blobThru")
+  stmt = .ooSQLiteStmt~new(db, "SELECT oo_blobthru(d) FROM t;")
+  stmt~step
+  self~assertEquals(.ooSQLite~BLOB, stmt~columnType(1), -
+    "ooSQLResult~blob should produce a BLOB")
+  self~assertEquals(4, stmt~columnBytes(1), "the blob should have 4 bytes")
+  self~assertEquals("CAFEBABE", stmt~columnText(1)~c2x, -
+    "ooSQLValue~blob and ooSQLResult~blob should keep the content")
+  stmt~finalize
+  db~close
+
+::Method testResultBlobMutableBuffer
+  db = self~openMemoryDB
+  self~resultValueUDF(db, "oo_blobmb", 0, "blobMutableBuffer")
+  self~resultValueUDF(db, "oo_blobpart", 0, "blobPartial")
+  stmt = .ooSQLiteStmt~new(db, "SELECT oo_blobmb(), oo_blobpart();")
+  stmt~step
+  self~assertEquals(.ooSQLite~BLOB, stmt~columnType(1), -
+    "ooSQLResult~blob with a MutableBuffer should produce a BLOB")
+  self~assertEquals("00FF10", stmt~columnText(1)~c2x, -
+    "the MutableBuffer content should be kept")
+  self~assertEquals("AB", stmt~columnText(2), -
+    "size limits the bytes taken from a String")
+  stmt~finalize
+  db~close
 
 ::Method testValueBlob
   db = self~openMemoryDB
@@ -6923,6 +6952,20 @@ AggregateErrorTrapped:
 -- oosqlResultNull: produces SQL NULL                                        --
 --------------------------------------------------------------------------------
 
+::Method testClassicResultBlobString
+  db = self~classicOpenMemory
+  ret = oosqlCreateFunction(db, "cl_blobstr", 0, "classicResultBlobStringCB")
+  self~assertEquals(0, ret, -
+    "oosqlCreateFunction for cl_blobstr should return OK")
+  rc = oosqlPrepare(db, "SELECT cl_blobstr();", "stmt")
+  Call oosqlStep stmt
+  self~assertEquals(4, oosqlColumnType(stmt, 1), -
+    "oosqlResultBlob with a String should produce a BLOB")
+  self~assertEquals("CAFE", oosqlColumnText(stmt, 1)~c2x, -
+    "oosqlResultBlob with a String should keep the bytes")
+  Call oosqlFinalize stmt
+  Call oosqlClose db
+
 ::Method testClassicResultNull
   db = self~classicOpenMemory
   ret = oosqlCreateFunction(db, "cl_null", 0, "classicResultNullCB")
@@ -7578,6 +7621,11 @@ ResetAutoExtNoRot13:
   blobPtr = oosqlValueBlob(val)
   blobLen = oosqlValueBytes(val)
   Call oosqlResultBlob ctx, blobPtr, blobLen
+  Return 0
+
+::Routine classicResultBlobStringCB Public
+  Use Arg db, ctx, userData
+  Call oosqlResultBlob ctx, "CAFE"x
   Return 0
 
 ::Routine classicValueBlobNullCB Public
