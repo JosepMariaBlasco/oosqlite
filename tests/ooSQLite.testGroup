@@ -4691,7 +4691,7 @@ AggregateErrorTrapped:
 /*                                                                            */
 /* The OO counterparts of the classic tests in Section C7, with UDFs from     */
 /* ResultValueHandler: ooSQLResult int64, zeroBlob, value, error, errorCode,  */
-/* errorNoMem, errorTooBig; ooSQLValue int64, numericType.                    */
+/* errorNoMem, errorTooBig; ooSQLValue blob, int64, numericType.              */
 /*                                                                            */
 /******************************************************************************/
 
@@ -4703,6 +4703,17 @@ AggregateErrorTrapped:
   Use Strict Arg db, sqlName, countArgs, mthName
   rc = db~createFunction(sqlName, .ResultValueHandler~new, countArgs, mthName)
   self~assertEquals(0, rc, "createFunction for" sqlName "should return OK")
+
+::Method testValueBlob
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE t(d BLOB); INSERT INTO t VALUES(X'CAFEBABE');")
+  self~resultValueUDF(db, "oo_blobhex", 1, "blobHex")
+  stmt = .ooSQLiteStmt~new(db, "SELECT oo_blobhex(d) FROM t;")
+  stmt~step
+  self~assertEquals("CAFEBABE", stmt~columnText(1), -
+    "ooSQLValue~blob should return the bytes of the blob as a string")
+  stmt~finalize
+  db~close
 
 ::Method testResultInt64ValueInt64
   db = self~openMemoryDB

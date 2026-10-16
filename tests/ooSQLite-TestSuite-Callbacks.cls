@@ -720,6 +720,11 @@
 
 ::Class "ResultValueHandler" Public
 
+::Method blobHex Unguarded
+  Use Arg db, sqlContext, userData, val1
+  .ooSQLResult~text(sqlContext, .ooSQLValue~blob(val1)~c2x)
+  Return 0
+
 ::Method int64Thru Unguarded
   Use Arg db, sqlContext, userData, val1
   .ooSQLResult~int64(sqlContext, .ooSQLValue~int64(val1))
