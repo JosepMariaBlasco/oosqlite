@@ -154,14 +154,16 @@
 <section id="atrNullClsOOSQLite" xreflabel="null"><title>null (Attribute)</title>
 <indexterm><primary>null</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>null</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--null-----------------------------------------><
-
->>--null = nullObj-------------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_null_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_null_set.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Reflects the default representation for the SQL NULL value that is returned by the interpreter for database values that are
@@ -251,13 +253,16 @@
 <section id="atrRecordFormatClsOOSQLite"><title>recordFormat (Attribute)</title>
 <indexterm><primary>recordFormat</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>recordFormat</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--recordFormat---------------------------------><
-
->>--recordFormat-=-varName-----------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_recordformat_get.svg" scale="55" />
+</imageobject>
+</mediaobject>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_recordformat_set.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Sets or queries the default format for any result set produced by ooSQLite. The default format on startup is <link
@@ -366,11 +371,11 @@ resultSet = dbConn~exec(sql, .true)
 <section id="mthCompileOptionGet"><title>compileOptionGet</title>
 <indexterm><primary>compileOptionGet</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>compileOptionGet</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--compileOptionGet(--nth--)--------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_compileoptionget.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Returns the name of the <emphasis role="italic">nth</emphasis> compile time option if the option was used during the
@@ -488,11 +493,11 @@ Compile option: THREADSAFE=1
 <section id="mthCompileOptionUsed"><title>compileOptionUsed</title>
 <indexterm><primary>compileOptionUsed</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>compileOptionUsed</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--compileOptionUsed(--name--)------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_compileoptionused.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Determines if the named compile-time option was used during the build of ooSQLite.
@@ -565,11 +570,11 @@ Option SQLITE_THREADSAFE : 1
 <section id="mthComplete"><title>complete</title>
 <indexterm><primary>complete</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>complete</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--complete(--text--)---------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_complete.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Determines if the specifie text seems to form a complete SQL statement.
@@ -645,12 +650,11 @@ Value of NOMEM constant: 7
 <section id="mthEnquote"><title>enquote</title>
 <indexterm><primary>enquote</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>enquote</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--enquote(--+----------+--)--------------------><
-              +--values--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_enquote.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Converts the supplied Rexx value(s) into SQL literals. This method is useful to help construct SQL statements. The
@@ -752,11 +756,11 @@ say .ooSQLite~Enquote(str)
 <section id="mthErrStr"><title>errStr</title>
 <indexterm><primary>errStr</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>errStr</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--errStr(--resultCode--)-----------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_errstr.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Retrieves the English language descriptive string for a result code.
@@ -857,11 +861,11 @@ file is encrypted or is not a database
 <section id="mthLibVersion"><title>libVersion</title>
 <indexterm><primary>libVersion</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>libVersion</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--libVersion-----------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_libversion.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Returns the embedded SQLite library version as a string.
@@ -920,11 +924,11 @@ file is encrypted or is not a database
 <section id="mthLibVersionNumber"><title>libVersionNumber</title>
 <indexterm><primary>libVersionNumber</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>libVersionNumber</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--libVersionNumber-----------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_libversionnumber.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Returns the embedded SQLite library version as a number.
@@ -967,12 +971,11 @@ file is encrypted or is not a database
 <section id="mthMemoryHighWater"><title>memoryHighWater</title>
 <indexterm><primary>memoryHighWater</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>memoryHighWater</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--memoryHighWater(--+---------+--)-------------><
-                      +--reset--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_memoryhighwater.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Returns the maximum value of the number of bytes of memory malloced but not freed (memory in use) of the database
@@ -1047,11 +1050,11 @@ Memory high water:         91712
 <section id="mthMemoryUsed"><title>memoryUsed</title>
 <indexterm><primary>memoryUsed</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>memoryUsed</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--memoryUsed-----------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_memoryused.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Returns the number of bytes of memory currently in use by the database engine. That is, the number of bytes allocated
@@ -1084,11 +1087,11 @@ Memory high water:         91712
 <section id="mthReleaseMemory"><title>releaseMemory</title>
 <indexterm><primary>releaseMemory</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>releaseMemory</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--releaseMemory(--count--)---------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_releasememory.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   This method causes the database engine to attempt to free <emphasis role="italic">count</emphasis> bytes of heap
@@ -1137,11 +1140,11 @@ Memory high water:         91712
 <section id="mthSoftHeapLimit64"><title>softHeapLimit64</title>
 <indexterm><primary>softHeapLimit64</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>softHeapLimit64</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--softHeapLimit64(--n--)-----------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_softheaplimit64.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Imposes a limit on the heap size, or queries the current size.
@@ -1221,11 +1224,11 @@ Current memory used:     0
 <section id="mthSourceID"><title>sourceID</title>
 <indexterm><primary>sourceID</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>sourceID</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--sourceID-------------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_sourceid.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Returns the embedded SQLite library source ID string.
@@ -1282,11 +1285,11 @@ Source ID: 2022-12-28 14:03:47 df5c253c0b3dd24916e4ec7cf77d3db5294cc9fd45ae7b9c5
 <section id="mthSqlite3Version"><title>sqlite3Version</title>
 <indexterm><primary>sqlite3Version</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>sqlite3Version</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--sqlite3Version-------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_sqlite3version.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   The <emphasis role="italic">sqlite3Version</emphasis> method returns the value of the SQLite C code sqlite3_version[]
@@ -1341,12 +1344,11 @@ Constant string value:         3.40.1
 <section id="mthStatus"><title>status</title>
 <indexterm><primary>status</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>status</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--status(--optParam-,-result--+----------+--)--><
-                                +-,-reset--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_status.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Retrieves runtime status information about the performance of the database engine, and optionally resets various
@@ -1482,11 +1484,11 @@ STATUS_MALLOC_COUNT      : current: 95         high water: 105
 <section id="mthThreadSafe"><title>threadSafe</title>
 <indexterm><primary>threadSafe</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>threadSafe</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--threadSafe-----------------------------------><
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_threadsafe.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Tests to see if the currently running database engine is using a library that is thread safe.
@@ -1543,12 +1545,11 @@ Thread safe value: 1
 <section id="mthVersion"><title>version</title>
 <indexterm><primary>version</primary></indexterm>
 <indexterm><primary>ooSQLite class</primary><secondary>version</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--version(--+--------+--)----------------------><
-              +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/oosqlite_version.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Produces a version string in the format specified by the <emphasis role="italic">type</emphasis> argument.

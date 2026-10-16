@@ -11,3 +11,25 @@ backup_savedestconn_set ::= 'saveDestConn=' save
 backup_finish ::= 'finish'
 backup_getdestconn ::= 'getDestConn'
 backup_step ::= 'step(' count? ')'
+
+/* oosqliteClass.xml */
+oosqlite_null_get ::= 'null'
+oosqlite_null_set ::= 'null=' nullObj
+oosqlite_recordformat_get ::= 'recordFormat'
+oosqlite_recordformat_set ::= 'recordFormat=' format
+oosqlite_compileoptionget ::= 'compileOptionGet(' nth ')'
+oosqlite_compileoptionused ::= 'compileOptionUsed(' name ')'
+oosqlite_complete ::= 'complete(' text ')'
+oosqlite_enquote ::= 'enquote(' values? ')'
+oosqlite_errstr ::= 'errStr(' resultCode ')'
+oosqlite_libversion ::= 'libVersion'
+oosqlite_libversionnumber ::= 'libVersionNumber'
+oosqlite_memoryhighwater ::= 'memoryHighWater(' reset? ')'
+oosqlite_memoryused ::= 'memoryUsed'
+oosqlite_releasememory ::= 'releaseMemory(' count ')'
+oosqlite_softheaplimit64 ::= 'softHeapLimit64(' n ')'
+oosqlite_sourceid ::= 'sourceID'
+oosqlite_sqlite3version ::= 'sqlite3Version'
+oosqlite_status ::= 'status(' optParam ',' result ( ',' reset )? ')'
+oosqlite_threadsafe ::= 'threadSafe'
+oosqlite_version ::= 'version(' type? ')'
