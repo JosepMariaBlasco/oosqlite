@@ -12119,11 +12119,14 @@ RexxMethod2(RexxObjectPtr, oosqlpack_getCollation, RexxObjectPtr, rxName, CSELF,
     CSTRING cName = context->ObjectToStringValue(rxName);
     result = TheNilObj;
 
+    bool found = false;
+
     pSQLiteCollationEntry e = pEntry->collations;
     while ( e->name != NULL )
     {
         if ( strcmp(e->name, cName) == 0 )
         {
+            found  = true;
             result = createCollationObj(context, e);
             if ( result != TheNilObj )
             {
@@ -12132,6 +12135,11 @@ RexxMethod2(RexxObjectPtr, oosqlpack_getCollation, RexxObjectPtr, rxName, CSELF,
             }
         }
         e++;
+    }
+
+    if ( ! found )
+    {
+        packageFormatLastErr(context, pcp, SQLITE_MISUSE, PACKAGE_NO_SUCH_COLLATION_FMT, cName);
     }
 
     return result;
@@ -12203,11 +12211,14 @@ RexxMethod2(RexxObjectPtr, oosqlpack_getFunction, RexxObjectPtr, rxName, CSELF, 
     CSTRING cName = context->ObjectToStringValue(rxName);
     result = TheNilObj;
 
+    bool found = false;
+
     pSQLiteFunctionEntry e = pEntry->functions;
     while ( e->name != NULL )
     {
         if ( strcmp(e->name, cName) == 0 )
         {
+            found  = true;
             result = createFunctionObj(context, e);
             if ( result != TheNilObj )
             {
@@ -12216,6 +12227,11 @@ RexxMethod2(RexxObjectPtr, oosqlpack_getFunction, RexxObjectPtr, rxName, CSELF, 
             }
         }
         e++;
+    }
+
+    if ( ! found )
+    {
+        packageFormatLastErr(context, pcp, SQLITE_MISUSE, PACKAGE_NO_SUCH_FUNCTION_FMT, cName);
     }
 
     return result;

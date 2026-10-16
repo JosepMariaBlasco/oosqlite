@@ -93,6 +93,8 @@
 #define PACKAGE_NO_COLLATIONS_FMT        "this package (%s) contains no collations"
 #define PACKAGE_NO_COLLATIONNEEDED_FMT   "this package (%s) contains no collation needed callback"
 #define PACKAGE_NO_FUNCTIONS_FMT         "this package (%s) contains no functions"
+#define PACKAGE_NO_SUCH_COLLATION_FMT    "this package contains no collation named %s"
+#define PACKAGE_NO_SUCH_FUNCTION_FMT     "this package contains no function named %s"
 
 #define VALID_VERSION_TYPES "[O]neLine [F]ull [C]ompact [L]ibVersion [N]umber [S]ourceID"
 #define RECORD_FORMATS_LIST "OO_ARRAY_OF_ARRAYS, OO_ARRAY_OF_DIRECTORIES, OO_STEM_OF_STEMS, or OO_CLASSIC_STEM"
