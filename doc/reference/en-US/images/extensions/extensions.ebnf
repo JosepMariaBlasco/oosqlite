@@ -3,3 +3,6 @@ collation_new ::= 'new'
 
 /* oosqlCollationNeeded.xml */
 collationneeded_new ::= 'new'
+
+/* oosqlFunction.xml */
+function_new ::= 'new'

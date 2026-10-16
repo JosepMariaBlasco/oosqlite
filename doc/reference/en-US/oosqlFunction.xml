@@ -59,12 +59,11 @@
 <section id="mthNewClsOOSQLFunction"><title>new (Class method)</title>
 <indexterm><primary>new</primary><secondary>ooSQLFunction class</secondary></indexterm>
 <indexterm><primary>ooSQLFunction class</primary><secondary>new</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--new(--+--------+--)--------------------------><
-          +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/function_new.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
