@@ -529,8 +529,6 @@
 /* xStep(db, sqlContext, aggregateObj, userData, val1)                         */
 /* xFinal(db, sqlContext, aggregateObj, userData)                              */
 /*                                                                            */
-/* NOTE: Do NOT use with empty result sets — causes SIGSEGV (known bug).      */
-/*                                                                            */
 /******************************************************************************/
 
 ::Class "AggregateSumHandler" Public
@@ -559,8 +557,6 @@
 /******************************************************************************/
 /*                                                                            */
 /* AggregateAvgHandler — aggregate UDF: computes average of double values     */
-/*                                                                            */
-/* NOTE: Do NOT use with empty result sets — causes SIGSEGV (known bug).      */
 /*                                                                            */
 /******************************************************************************/
 
