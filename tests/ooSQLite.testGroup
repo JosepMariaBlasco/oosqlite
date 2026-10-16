@@ -4563,6 +4563,17 @@ AggregateErrorTrapped:
     "the package's collation needed callback should work")
   db~close
 
+::Method testCollationNeededPackageWithoutCallback
+  -- examplePackage has no collation needed callback: collationNeeded used to
+  -- crash (SIGSEGV) with it
+  success = .ooSQLExtensions~loadPackage(userExtLib("examplepackage"))
+  self~assertTrue(success, "loadPackage of examplePackage should succeed")
+  package = .ooSQLExtensions~getPackage("examplePackage")
+  db = self~openMemoryDB
+  self~assertEquals(.ooSQLite~MISUSE, db~collationNeeded(package), -
+    "collationNeeded with a package that has no callback should return MISUSE")
+  db~close
+
 --------------------------------------------------------------------------------
 -- autoPackage / autoFunction / autoCollation / autoCollationNeeded            --
 --------------------------------------------------------------------------------
