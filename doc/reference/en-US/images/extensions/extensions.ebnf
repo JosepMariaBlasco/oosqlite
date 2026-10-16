@@ -40,3 +40,6 @@ package_register ::= 'register(' dbConn ')'
 
 /* oosqlResult.xml */
 result_blob ::= 'blob(' sqlCntxt ',' blob ',' size ')'
+
+/* oosqlValue.xml */
+value_blob ::= 'blob(' sqlValue ')'
