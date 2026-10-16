@@ -540,6 +540,9 @@
 ::constant VERSION        "3.52.0"
 ::constant VERSION_NUMBER 3052000
 ::constant SOURCE_ID      "2026-03-06 16:01:44 557aeb43869d3585137b17690cb3b64f7de6921774daae9e56403c3717dceab6"
+::constant SCM_BRANCH     "trunk"
+::constant SCM_TAGS       "release major-release version-3.52.0"
+::constant SCM_DATETIME   "2026-03-06T16:01:44.367Z"
 
 
 -- OO_ prefix indicates constant is not from the SQLite library.
@@ -596,6 +599,12 @@
 
 
 /* beginning-of-extended-error-codes */
+::constant ERROR_MISSING_COLLSEQ      257
+::constant ERROR_RETRY                513
+::constant ERROR_SNAPSHOT             769
+::constant ERROR_RESERVESIZE          1025
+::constant ERROR_KEY                  1281
+::constant ERROR_UNABLE               1537
 ::constant IOERR_READ                 266
 ::constant IOERR_SHORT_READ           522
 ::constant IOERR_WRITE                778
@@ -622,18 +631,36 @@
 ::constant IOERR_MMAP                 6154
 ::constant IOERR_GETTEMPPATH          6410
 ::constant IOERR_CONVPATH             6666
+::constant IOERR_VNODE                6922
+::constant IOERR_AUTH                 7178
+::constant IOERR_BEGIN_ATOMIC         7434
+::constant IOERR_COMMIT_ATOMIC        7690
+::constant IOERR_ROLLBACK_ATOMIC      7946
+::constant IOERR_DATA                 8202
+::constant IOERR_CORRUPTFS            8458
+::constant IOERR_IN_PAGE              8714
+::constant IOERR_BADKEY               8970
+::constant IOERR_CODEC                9226
 ::constant LOCKED_SHAREDCACHE         262
+::constant LOCKED_VTAB                518
 ::constant BUSY_RECOVERY              261
 ::constant BUSY_SNAPSHOT              517
+::constant BUSY_TIMEOUT               773
 ::constant CANTOPEN_NOTEMPDIR         270
 ::constant CANTOPEN_ISDIR             526
 ::constant CANTOPEN_FULLPATH          782
 ::constant CANTOPEN_CONVPATH          1038
+-- ::constant CANTOPEN_DIRTYWAL          1294   /* Not Used */
+::constant CANTOPEN_SYMLINK           1550
 ::constant CORRUPT_VTAB               267
+::constant CORRUPT_SEQUENCE           523
+::constant CORRUPT_INDEX              779
 ::constant READONLY_RECOVERY          264
 ::constant READONLY_CANTLOCK          520
 ::constant READONLY_ROLLBACK          776
 ::constant READONLY_DBMOVED           1032
+::constant READONLY_CANTINIT          1288
+::constant READONLY_DIRECTORY         1544
 ::constant ABORT_ROLLBACK             516
 ::constant CONSTRAINT_CHECK           275
 ::constant CONSTRAINT_COMMITHOOK      531
@@ -644,9 +671,16 @@
 ::constant CONSTRAINT_TRIGGER         1811
 ::constant CONSTRAINT_UNIQUE          2067
 ::constant CONSTRAINT_VTAB            2323
+::constant CONSTRAINT_ROWID           2579
+::constant CONSTRAINT_PINNED          2835
+::constant CONSTRAINT_DATATYPE        3091
 ::constant NOTICE_RECOVER_WAL         283
 ::constant NOTICE_RECOVER_ROLLBACK    539
+::constant NOTICE_RBU                 795
 ::constant WARNING_AUTOINDEX          284
+::constant AUTH_USER                  279
+::constant OK_LOAD_PERMANENTLY        256
+-- ::constant OK_SYMLINK                 512    /* internal use only */
 
 
 /* end-of-extended-error-codes */
@@ -659,6 +693,7 @@
 ::constant OPEN_EXCLUSIVE        16     /* 0x00000010  VFS only */
 ::constant OPEN_AUTOPROXY        32     /* 0x00000020  VFS only */
 ::constant OPEN_URI              64     /* 0x00000040  Ok for sqlite3_open_v2() */
+::constant OPEN_MEMORY           128    /* 0x00000080  Ok for sqlite3_open_v2() */
 ::constant OPEN_MAIN_DB          256    /* 0x00000100  VFS only */
 ::constant OPEN_TEMP_DB          512    /* 0x00000200  VFS only */
 ::constant OPEN_TRANSIENT_DB     1024   /* 0x00000400  VFS only */
@@ -666,11 +701,14 @@
 ::constant OPEN_TEMP_JOURNAL     4096   /* 0x00001000  VFS only */
 ::constant OPEN_SUBJOURNAL       8192   /* 0x00002000  VFS only */
 ::constant OPEN_MASTER_JOURNAL   16384  /* 0x00004000  VFS only */
+::constant OPEN_SUPER_JOURNAL    16384  /* 0x00004000  VFS only */
 ::constant OPEN_NOMUTEX          32768  /* 0x00008000  Ok for sqlite3_open_v2() */
 ::constant OPEN_FULLMUTEX        65536  /* 0x00010000  Ok for sqlite3_open_v2() */
 ::constant OPEN_SHAREDCACHE      131072 /* 0x00020000  Ok for sqlite3_open_v2() */
 ::constant OPEN_PRIVATECACHE     262144 /* 0x00040000  Ok for sqlite3_open_v2() */
 ::constant OPEN_WAL              524288 /* 0x00080000  VFS only */
+::constant OPEN_NOFOLLOW         16777216 /* 0x01000000  Ok for sqlite3_open_v2() */
+::constant OPEN_EXRESCODE        33554432 /* 0x02000000  Extended result codes */
 
 
 /***Authorizer Action Codes********2nd****** 3rd ************ 4th ***********/
@@ -722,9 +760,11 @@
 
 
 /* Checkpoint operation parameters */
-::constant CHECKPOINT_PASSIVE 0
-::constant CHECKPOINT_FULL    1
-::constant CHECKPOINT_RESTART 2
+::constant CHECKPOINT_NOOP     -1
+::constant CHECKPOINT_PASSIVE   0
+::constant CHECKPOINT_FULL      1
+::constant CHECKPOINT_RESTART   2
+::constant CHECKPOINT_TRUNCATE  3
 
 
 /* Configuration Options */
@@ -751,12 +791,41 @@
 ::constant CONFIG_SQLLOG       21  /* xSqllog, void* */
 ::constant CONFIG_MMAP_SIZE    22  /* sqlite3_int64, sqlite3_int64 */
 ::constant CONFIG_WIN32_HEAPSIZE      23  /* int nByte */
+::constant CONFIG_PCACHE_HDRSZ        24  /* int *psz */
+::constant CONFIG_PMASZ               25  /* unsigned int szPma */
+::constant CONFIG_STMTJRNL_SPILL      26  /* int nByte */
+::constant CONFIG_SMALL_MALLOC        27  /* boolean */
+::constant CONFIG_SORTERREF_SIZE      28  /* int nByte */
+::constant CONFIG_MEMDB_MAXSIZE       29  /* sqlite3_int64 */
+::constant CONFIG_ROWID_IN_VIEW       30  /* int* */
 
 
 /* Database Connection Configuration Options */
-::constant DBCONFIG_LOOKASIDE       1001  /* void* int int */
-::constant DBCONFIG_ENABLE_FKEY     1002  /* int int* */
-::constant DBCONFIG_ENABLE_TRIGGER  1003  /* int int* */
+::constant DBCONFIG_MAINDBNAME             1000  /* const char* */
+::constant DBCONFIG_LOOKASIDE              1001  /* void* int int */
+::constant DBCONFIG_ENABLE_FKEY            1002  /* int int* */
+::constant DBCONFIG_ENABLE_TRIGGER         1003  /* int int* */
+::constant DBCONFIG_ENABLE_FTS3_TOKENIZER  1004  /* int int* */
+::constant DBCONFIG_ENABLE_LOAD_EXTENSION  1005  /* int int* */
+::constant DBCONFIG_NO_CKPT_ON_CLOSE       1006  /* int int* */
+::constant DBCONFIG_ENABLE_QPSG            1007  /* int int* */
+::constant DBCONFIG_TRIGGER_EQP            1008  /* int int* */
+::constant DBCONFIG_RESET_DATABASE         1009  /* int int* */
+::constant DBCONFIG_DEFENSIVE              1010  /* int int* */
+::constant DBCONFIG_WRITABLE_SCHEMA        1011  /* int int* */
+::constant DBCONFIG_LEGACY_ALTER_TABLE     1012  /* int int* */
+::constant DBCONFIG_DQS_DML                1013  /* int int* */
+::constant DBCONFIG_DQS_DDL                1014  /* int int* */
+::constant DBCONFIG_ENABLE_VIEW            1015  /* int int* */
+::constant DBCONFIG_LEGACY_FILE_FORMAT     1016  /* int int* */
+::constant DBCONFIG_TRUSTED_SCHEMA         1017  /* int int* */
+::constant DBCONFIG_STMT_SCANSTATUS        1018  /* int int* */
+::constant DBCONFIG_REVERSE_SCANORDER      1019  /* int int* */
+::constant DBCONFIG_ENABLE_ATTACH_CREATE   1020  /* int int* */
+::constant DBCONFIG_ENABLE_ATTACH_WRITE    1021  /* int int* */
+::constant DBCONFIG_ENABLE_COMMENTS        1022  /* int int* */
+::constant DBCONFIG_FP_DIGITS              1023  /* int int* */
+::constant DBCONFIG_MAX                    1023  /* Largest DBCONFIG */
 
 
 /* Status Parameters for database connections */
@@ -771,7 +840,10 @@
 ::constant DBSTATUS_CACHE_MISS           8
 ::constant DBSTATUS_CACHE_WRITE          9
 ::constant DBSTATUS_DEFERRED_FKS        10
-::constant DBSTATUS_MAX                 10   /* Largest defined DBSTATUS */
+::constant DBSTATUS_CACHE_USED_SHARED   11
+::constant DBSTATUS_CACHE_SPILL         12
+::constant DBSTATUS_TEMPBUF_SPILL       13
+::constant DBSTATUS_MAX                 13   /* Largest defined DBSTATUS */
 
 
 /* Standard File Control Opcodes */
@@ -779,6 +851,9 @@
 ::constant GET_LOCKPROXYFILE             2
 ::constant SET_LOCKPROXYFILE             3
 ::constant LAST_ERRNO                    4
+::constant FCNTL_GET_LOCKPROXYFILE       2
+::constant FCNTL_SET_LOCKPROXYFILE       3
+::constant FCNTL_LAST_ERRNO              4
 ::constant FCNTL_SIZE_HINT               5
 ::constant FCNTL_CHUNK_SIZE              6
 ::constant FCNTL_FILE_POINTER            7
@@ -796,6 +871,29 @@
 ::constant FCNTL_HAS_MOVED              20
 ::constant FCNTL_SYNC                   21
 ::constant FCNTL_COMMIT_PHASETWO        22
+::constant FCNTL_WIN32_SET_HANDLE       23
+::constant FCNTL_WAL_BLOCK              24
+::constant FCNTL_ZIPVFS                 25
+::constant FCNTL_RBU                    26
+::constant FCNTL_VFS_POINTER            27
+::constant FCNTL_JOURNAL_POINTER        28
+::constant FCNTL_WIN32_GET_HANDLE       29
+::constant FCNTL_PDB                    30
+::constant FCNTL_BEGIN_ATOMIC_WRITE     31
+::constant FCNTL_COMMIT_ATOMIC_WRITE    32
+::constant FCNTL_ROLLBACK_ATOMIC_WRITE  33
+::constant FCNTL_LOCK_TIMEOUT           34
+::constant FCNTL_DATA_VERSION           35
+::constant FCNTL_SIZE_LIMIT             36
+::constant FCNTL_CKPT_DONE              37
+::constant FCNTL_RESERVE_BYTES          38
+::constant FCNTL_CKPT_START             39
+::constant FCNTL_EXTERNAL_READER        40
+::constant FCNTL_CKSM_FILE              41
+::constant FCNTL_RESET_CACHE            42
+::constant FCNTL_NULL_IO                43
+::constant FCNTL_BLOCK_ON_CONNECT       44
+::constant FCNTL_FILESTAT               45
 
 
 
@@ -821,6 +919,9 @@
 ::constant IOCAP_SEQUENTIAL             1024
 ::constant IOCAP_UNDELETABLE_WHEN_OPEN  2048
 ::constant IOCAP_POWERSAFE_OVERWRITE    4096
+::constant IOCAP_IMMUTABLE              8192
+::constant IOCAP_BATCH_ATOMIC           16384
+::constant IOCAP_SUBPAGE_READ           32768
 
 
 /* Run-Time Limit Categories */
@@ -835,6 +936,8 @@
 ::constant LIMIT_LIKE_PATTERN_LENGTH       8
 ::constant LIMIT_VARIABLE_NUMBER           9
 ::constant LIMIT_TRIGGER_DEPTH            10
+::constant LIMIT_WORKER_THREADS           11
+::constant LIMIT_PARSER_DEPTH             12
 
 
 /* File Locking Levels */
@@ -849,6 +952,7 @@
 ::constant MUTEX_FAST             0
 ::constant MUTEX_RECURSIVE        1
 ::constant MUTEX_STATIC_MASTER    2
+::constant MUTEX_STATIC_MAIN      2
 ::constant MUTEX_STATIC_MEM       3  /* sqlite3_malloc() */
 -- ::constant MUTEX_STATIC_MEM2      4  /* NOT USED */
 ::constant MUTEX_STATIC_OPEN      4  /* sqlite3BtreeOpen() */
@@ -856,6 +960,12 @@
 ::constant MUTEX_STATIC_LRU       6  /* lru page list */
 -- ::constant MUTEX_STATIC_LRU2      7  /* NOT USED */
 ::constant MUTEX_STATIC_PMEM      7  /* sqlite3PageMalloc() */
+::constant MUTEX_STATIC_APP1      8  /* For use by application */
+::constant MUTEX_STATIC_APP2      9  /* For use by application */
+::constant MUTEX_STATIC_APP3     10  /* For use by application */
+::constant MUTEX_STATIC_VFS1     11  /* For use by built-in VFS */
+::constant MUTEX_STATIC_VFS2     12  /* For use by extension VFS */
+::constant MUTEX_STATIC_VFS3     13  /* For use by application VFS */
 
 
 /* Flags for the xShmLock VFS method */
@@ -888,6 +998,11 @@
 ::constant STMTSTATUS_SORT             2
 ::constant STMTSTATUS_AUTOINDEX        3
 ::constant STMTSTATUS_VM_STEP          4
+::constant STMTSTATUS_REPREPARE        5
+::constant STMTSTATUS_RUN              6
+::constant STMTSTATUS_FILTER_MISS      7
+::constant STMTSTATUS_FILTER_HIT       8
+::constant STMTSTATUS_MEMUSED         99
 
 
 /* Synchronization Type Flags */
@@ -903,11 +1018,20 @@
 ::constant UTF16          4    /* Use native byte order */
 ::constant ANY            5    /* Deprecated */
 ::constant UTF16_ALIGNED  8    /* sqlite3_create_collation only */
+::constant UTF8_ZT        16   /* Zero-terminated UTF8 */
 ::constant DETERMINISTIC  2048
+::constant DIRECTONLY     524288
+::constant SUBTYPE        1048576
+::constant INNOCUOUS      2097152
+::constant RESULT_SUBTYPE 16777216
+::constant SELFORDER1     33554432
 
 
 /* Virtual Table Configuration Options */
 ::constant VTAB_CONSTRAINT_SUPPORT 1
+::constant VTAB_INNOCUOUS          2
+::constant VTAB_DIRECTONLY         3
+::constant VTAB_USES_ALL_SCHEMAS   4
 
 
 /** class: __rtn_helper_class
