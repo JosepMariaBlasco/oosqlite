@@ -1,0 +1,2 @@
+/* oosqliteConstants.xml */
+constants_merge ::= 'merge(' value ( ',' value )* ')'

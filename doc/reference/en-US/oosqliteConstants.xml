@@ -3080,14 +3080,11 @@ The "ooFoods.rdbx" database file has been corrupted.
 <section id="mthMerge"><title>merge (Class method)</title>
 <indexterm><primary>merge</primary></indexterm>
 <indexterm><primary>ooSQLiteConstant class</primary><secondary>merge</secondary></indexterm>
-<programlisting>
-<![CDATA[
-             +--,--+
-             V     |
->>--merge(--value--+--)--------------------------><
-
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/constants/constants_merge.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Performs a bit-wise <emphasis role="italic">or</emphasis> operation on the arguments and returns the result.
