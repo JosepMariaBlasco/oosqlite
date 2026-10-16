@@ -1549,6 +1549,25 @@ TestDbFileNameCleanup:
   stmt~finalize
   db~close
 
+::Method testColumnIndexNoLeak
+  db = self~openMemoryDB
+  self~createTestTable(db)
+  stmt = .ooSQLiteStmt~new(db, "SELECT id, name, type_id FROM foods;")
+  -- columnIndex makes upper case copies of the names with sqlite3_malloc;
+  -- all of them must be freed, whether the name is found or not
+  idx = stmt~columnIndex("type_id")
+  idx = stmt~columnIndex("nosuchcolumn")
+  before = .ooSQLite~memoryUsed
+  Do 1000
+    idx = stmt~columnIndex("type_id")
+    idx = stmt~columnIndex("nosuchcolumn")
+  End
+  growth = .ooSQLite~memoryUsed - before
+  self~assertTrue(growth < 1000, -
+    "columnIndex should not leak SQLite memory; growth:" growth "bytes")
+  stmt~finalize
+  db~close
+
 --------------------------------------------------------------------------------
 -- columnInt64                                                                --
 --------------------------------------------------------------------------------
@@ -5697,6 +5716,24 @@ AggregateErrorTrapped:
   -- Non-existent column returns 0
   self~assertEquals(0, oosqlColumnIndex(stmt, "bogus"), -
     "oosqlColumnIndex for non-existent column should return 0")
+  Call oosqlFinalize stmt
+  Call oosqlClose db
+
+::Method testClassicColumnIndexNoLeak
+  db = self~classicOpenMemory
+  Call oosqlExec db, "CREATE TABLE t(id INTEGER, name TEXT);"
+  Call oosqlPrepare db, "SELECT id, name FROM t;", "stmt"
+  -- Same check as testColumnIndexNoLeak, for the classic routine
+  idx = oosqlColumnIndex(stmt, "name")
+  idx = oosqlColumnIndex(stmt, "bogus")
+  before = oosqlMemoryUsed()
+  Do 1000
+    idx = oosqlColumnIndex(stmt, "name")
+    idx = oosqlColumnIndex(stmt, "bogus")
+  End
+  growth = oosqlMemoryUsed() - before
+  self~assertTrue(growth < 1000, -
+    "oosqlColumnIndex should not leak SQLite memory; growth:" growth "bytes")
   Call oosqlFinalize stmt
   Call oosqlClose db
 
