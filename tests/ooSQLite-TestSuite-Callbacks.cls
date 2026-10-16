@@ -591,6 +591,46 @@
 
 /******************************************************************************/
 /*                                                                            */
+/* AggregateFinalNoReplyHandler — aggregate UDF whose xFinal returns nothing  */
+/*                                                                            */
+/* Used to check that the error raised for a bad xFinal reply names xFinal,   */
+/* not xStep.                                                                 */
+/*                                                                            */
+/******************************************************************************/
+
+::Class "AggregateFinalNoReplyHandler" Public
+
+::Method xStep Unguarded
+  Use Arg db, sqlContext, aggregateObj, userData, val1
+  If aggregateObj == .nil Then Return .Directory~new
+  Return aggregateObj
+
+::Method xFinal Unguarded
+  Use Arg db, sqlContext, aggregateObj, userData
+  .ooSQLResult~int(sqlContext, 1)
+  Return
+
+/******************************************************************************/
+/*                                                                            */
+/* AggregateFinalBadReplyHandler — aggregate UDF whose xFinal returns a       */
+/* value that is not a whole number                                           */
+/*                                                                            */
+/******************************************************************************/
+
+::Class "AggregateFinalBadReplyHandler" Public
+
+::Method xStep Unguarded
+  Use Arg db, sqlContext, aggregateObj, userData, val1
+  If aggregateObj == .nil Then Return .Directory~new
+  Return aggregateObj
+
+::Method xFinal Unguarded
+  Use Arg db, sqlContext, aggregateObj, userData
+  .ooSQLResult~int(sqlContext, 1)
+  Return "abc"
+
+/******************************************************************************/
+/*                                                                            */
 /* CollationCaseInsensitiveHandler — case-insensitive collation comparator    */
 /*                                                                            */
 /* collationCallBack(str1, str2, userData) must return negative, 0, or        */

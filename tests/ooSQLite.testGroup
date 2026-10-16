@@ -3247,6 +3247,46 @@ TestResetCleanup:
   db~close
 
 --------------------------------------------------------------------------------
+-- createFunction: a bad xFinal reply raises an error that names xFinal       --
+--------------------------------------------------------------------------------
+
+::Method testCreateFunctionAggregateFinalNoReply
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE nums(x INTEGER);")
+  db~exec("INSERT INTO nums VALUES(1);")
+  db~createFunction("agg_none", .AggregateFinalNoReplyHandler~new, 1,, -
+    "xStep", "xFinal")
+  msg = self~aggregateErrorMessage(db, "SELECT agg_none(x) FROM nums;")
+  self~assertTrue(msg~pos("xFinal") > 0, -
+    "Error for an xFinal with no reply should name xFinal:" msg)
+  self~assertEquals(0, msg~pos("xStep"), -
+    "Error for an xFinal with no reply should not name xStep:" msg)
+  db~close
+
+::Method testCreateFunctionAggregateFinalBadReply
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE nums(x INTEGER);")
+  db~exec("INSERT INTO nums VALUES(1);")
+  db~createFunction("agg_bad", .AggregateFinalBadReplyHandler~new, 1,, -
+    "xStep", "xFinal")
+  msg = self~aggregateErrorMessage(db, "SELECT agg_bad(x) FROM nums;")
+  self~assertTrue(msg~pos("xFinal") > 0, -
+    "Error for a non-numeric xFinal reply should name xFinal:" msg)
+  self~assertEquals(0, msg~pos("xStep"), -
+    "Error for a non-numeric xFinal reply should not name xStep:" msg)
+  db~close
+
+-- Runs sql and returns the message of the SYNTAX condition it raises,
+-- or "" if it raises none.
+::Method aggregateErrorMessage
+  Use Strict Arg db, sql
+  Signal On Syntax Name AggregateErrorTrapped
+  db~exec(sql, .true)
+  Return ""
+AggregateErrorTrapped:
+  Return Condition("O")~message
+
+--------------------------------------------------------------------------------
 -- createFunction: aggregate UDF (average, double result)                     --
 --------------------------------------------------------------------------------
 
