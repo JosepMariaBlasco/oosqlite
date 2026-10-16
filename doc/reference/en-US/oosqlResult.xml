@@ -84,12 +84,11 @@
 <section id="mthBlobClsOOSQLResult"><title>blob (Class method)</title>
 <indexterm><primary>blob</primary><secondary>ooSQLResult class</secondary></indexterm>
 <indexterm><primary>ooSQLResult class</primary><secondary>blob</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--blob(--+--------+--)--------------------------><
-           +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/result_blob.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
