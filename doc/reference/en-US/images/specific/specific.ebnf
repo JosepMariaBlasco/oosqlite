@@ -1,0 +1,5 @@
+/* oosqlFunctions.xml */
+oosqliteenquote ::= 'ooSQLiteEnquote(' values? ')'
+oosqlitemerge ::= 'ooSQLiteMerge(' ( arg ( ',' arg )* )? ')'
+oosqliteregisterbuiltin ::= 'ooSQLiteRegisterBuiltin(' db ',' name ')'
+oosqliteversion ::= 'ooSQLiteVersion(' type? ')'

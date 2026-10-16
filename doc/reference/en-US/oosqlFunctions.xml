@@ -56,12 +56,11 @@
 <section id="rtn-ooSQLiteEnquote"><title>ooSQLiteEnquote</title>
 <indexterm><primary>ooSQLiteEnquote</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>ooSQLiteEnquote</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--ooSQLiteEnquote(--+----------+--)------------><
-                      +--values--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/specific/oosqliteenquote.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   Converts the supplied Rexx value(s) into SQL literals. This function is useful to help construct SQL statements. The
@@ -167,12 +166,11 @@ say ooSQLiteEnquote(str)
 <section id="rtn-ooSQLiteMerge"><title>ooSQLiteMerge</title>
 <indexterm><primary>ooSQLiteMerge</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>ooSQLiteMerge</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--ooSQLiteMerge(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/specific/oosqlitemerge.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -227,12 +225,11 @@ say ooSQLiteEnquote(str)
 <section id="rtn-ooSQLiteRegisterBuiltin"><title>ooSQLiteRegisterBuiltin</title>
 <indexterm><primary>ooSQLiteRegisterBuiltin</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>ooSQLiteRegisterBuiltin</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--ooSQLiteRegisterBuiltin(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/specific/oosqliteregisterbuiltin.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
@@ -287,12 +284,11 @@ say ooSQLiteEnquote(str)
 <section id="rtn-ooSQLiteVersion"><title>ooSQLiteVersion</title>
 <indexterm><primary>ooSQLiteVersion</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>ooSQLiteVersion</secondary></indexterm>
-<programlisting>
-<![CDATA[
->>--ooSQLiteVersion(--+--------+--)---------------------------------------------><
-                 +--type--+
-]]>
-</programlisting>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/specific/oosqliteversion.svg" scale="55" />
+</imageobject>
+</mediaobject>
 
 <para>
   xx
