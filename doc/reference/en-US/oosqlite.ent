@@ -2,8 +2,8 @@
 <!ENTITY BOOKID "oosqlite">
 <!ENTITY YEAR "2005-2026">
 <!ENTITY HOLDER "Rexx Language Association. All rights reserved.">
-<!ENTITY VERSION "1.0.1">
-<!ENTITY EDITION "2026.05.17 (last revised on 20121016 with r8516)">
+<!ENTITY VERSION "1.1.0">
+<!ENTITY EDITION "2026.10.16">
 
 <!-- Marks for what is new or changed in ooSQLite 1.1, as in rexxref.ent -->
 <!ENTITY added11 " *NEW* ">
