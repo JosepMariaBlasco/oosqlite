@@ -1007,6 +1007,34 @@ RexxObjectPtr genErrStr(RexxThreadContext *c, int resultCode)
                 str = OO_WRONG_ARG_TYPE_STR;
                 break;
 
+            case OO_NO_CSELF :
+                str = OO_NO_CSELF_DESC;
+                break;
+
+            case OO_PACKAGE_NOT_VALID :
+                str = OO_PACKAGE_NOT_VALID_STR;
+                break;
+
+            case OO_NO_SUCH_PACKAGE :
+                str = OO_NO_SUCH_PACKAGE_DESC;
+                break;
+
+            case OO_NO_SUCH_LIBRARY :
+                str = OO_NO_SUCH_LIBRARY_DESC;
+                break;
+
+            case OO_PACKAGE_NOT_AUTOMATIC :
+                str = OO_PACKAGE_NOT_AUTOMATIC_DESC;
+                break;
+
+            case OO_COLLATION_NOT_AUTOMATIC :
+                str = OO_COLLATION_NOT_AUTOMATIC_DESC;
+                break;
+
+            case OO_FUNCTION_NOT_AUTOMATIC :
+                str = OO_FUNCTION_NOT_AUTOMATIC_DESC;
+                break;
+
             default :
                 break;
         }

@@ -86,8 +86,16 @@
 #define OO_NO_SUCH_PACKAGE_STR           "package %s is not loaded"
 #define OO_NO_SUCH_LIBRARY_STR           "library %s is not loaded"
 #define OO_PACKAGE_NOT_AUTOMATIC_STR     "package %s is not an automatically registered package"
-#define OO_COLLATION_NOT_AUTOMATIC_STR   "collations %s is not an automatically registered collation"
+#define OO_COLLATION_NOT_AUTOMATIC_STR   "collation %s is not an automatically registered collation"
 #define OO_FUNCTION_NOT_AUTOMATIC_STR    "function %s is not an automatically registered function"
+
+// Descriptions of the codes above whose messages need a name, for errStr()
+#define OO_NO_CSELF_DESC                 "internal error, failed to get the C self of an object"
+#define OO_NO_SUCH_PACKAGE_DESC          "the package is not loaded"
+#define OO_NO_SUCH_LIBRARY_DESC          "the library is not loaded"
+#define OO_PACKAGE_NOT_AUTOMATIC_DESC    "the package is not an automatically registered package"
+#define OO_COLLATION_NOT_AUTOMATIC_DESC  "the collation is not an automatically registered collation"
+#define OO_FUNCTION_NOT_AUTOMATIC_DESC   "the function is not an automatically registered function"
 
 // Use SQLITE_MISUSE for these:
 #define PACKAGE_NO_COLLATIONS_FMT        "this package (%s) contains no collations"

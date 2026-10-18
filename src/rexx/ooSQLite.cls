@@ -554,6 +554,13 @@
 ::constant OO_UNEXPECTED_RESULT             1002
 ::constant OO_BACKUP_IN_PROGRESS            1003
 ::constant OO_BACKUP_DB_ERRSTATE            1004
+::constant OO_NO_CSELF                      1005
+::constant OO_PACKAGE_NOT_VALID             1006
+::constant OO_NO_SUCH_PACKAGE               1007
+::constant OO_NO_SUCH_LIBRARY               1008
+::constant OO_PACKAGE_NOT_AUTOMATIC         1009
+::constant OO_COLLATION_NOT_AUTOMATIC       1010
+::constant OO_FUNCTION_NOT_AUTOMATIC        1011
 
 -- Specifies how a result set is returned to Rexx
 ::constant OO_ARRAY_OF_ARRAYS               1
