@@ -482,116 +482,44 @@ static RexxObjectPtr enquoteResult(RexxThreadContext *c, char *s)
     return result;
 }
 
-static inline RexxObjectPtr enquote1(RexxThreadContext *c, RexxArrayObject v)
-{
-    char *s = sqlite3_mprintf("%Q", obj2str(c, c->ArrayAt(v, 1)));
-    return enquoteResult(c, s);
-}
-
-static inline RexxObjectPtr enquote2(RexxThreadContext *c, RexxArrayObject v)
-{
-    char *s = sqlite3_mprintf("%Q, %Q",
-                              obj2str(c, c->ArrayAt(v, 1)),
-                              obj2str(c, c->ArrayAt(v, 2)));
-
-    return enquoteResult(c, s);
-}
-
-static inline RexxObjectPtr enquote3(RexxThreadContext *c, RexxArrayObject v)
-{
-    char *s = sqlite3_mprintf("%Q, %Q, %Q",
-                              obj2str(c, c->ArrayAt(v, 1)),
-                              obj2str(c, c->ArrayAt(v, 2)),
-                              obj2str(c, c->ArrayAt(v, 3)));
-
-    return enquoteResult(c, s);
-}
-
-static inline RexxObjectPtr enquote4(RexxThreadContext *c, RexxArrayObject v)
-{
-    char *s = sqlite3_mprintf("%Q, %Q, %Q, %Q",
-                              obj2str(c, c->ArrayAt(v, 1)),
-                              obj2str(c, c->ArrayAt(v, 2)),
-                              obj2str(c, c->ArrayAt(v, 3)),
-                              obj2str(c, c->ArrayAt(v, 4)));
-
-    return enquoteResult(c, s);
-}
-
-static inline RexxObjectPtr enquote5(RexxThreadContext *c, RexxArrayObject v)
-{
-    char *s = sqlite3_mprintf("%Q, %Q, %Q, %Q, %Q",
-                              obj2str(c, c->ArrayAt(v, 1)),
-                              obj2str(c, c->ArrayAt(v, 2)),
-                              obj2str(c, c->ArrayAt(v, 3)),
-                              obj2str(c, c->ArrayAt(v, 4)),
-                              obj2str(c, c->ArrayAt(v, 5)));
-
-    return enquoteResult(c, s);
-}
-
-static inline RexxObjectPtr enquote6(RexxThreadContext *c, RexxArrayObject v)
-{
-    char *s = sqlite3_mprintf("%Q, %Q, %Q, %Q, %Q, %Q",
-                              obj2str(c, c->ArrayAt(v, 1)),
-                              obj2str(c, c->ArrayAt(v, 2)),
-                              obj2str(c, c->ArrayAt(v, 3)),
-                              obj2str(c, c->ArrayAt(v, 4)),
-                              obj2str(c, c->ArrayAt(v, 5)),
-                              obj2str(c, c->ArrayAt(v, 6)));
-
-    return enquoteResult(c, s);
-}
-
 /**
- * Uses sqlite3_mprintf on an number of items in the supplied array.
+ * Returns the SQL literals of count values, separated by ", ", for the enquote
+ * method (an Array) and for ooSQLiteEnquote() (a stem in array format).  The
+ * list is built with sqlite3_str, so it has no length limit.
  *
- * The returned string has an upper bound on its length, currently 4095.  A Rexx
- * string is always returned, produced from a zero terminated string.
+ * Before ooSQLite 1.1 the list was built in a fixed buffer of 4095
+ * characters on the stack: it was cut at 4095 characters, without an error
+ * when the last value went over, and ooSQLiteEnquote() returned the contents
+ * of the uninitialized buffer for a stem with a single value.
  *
- * @author Administrator (6/23/2012)
+ * @param src      The Array, or the stem.
+ * @param count    The number of values, 1-based: ArraySize(), or stem.0.
+ * @param isStem   True if src is a stem.
  *
- * @param c
- * @param v
- * @param size
- *
- * @return RexxObjectPtr
- *
- * @assumes  That the caller has checked the size of the array and it is at
- *           least 7 in size.
+ * @return The list, or NULL for no values, as for an omitted argument.
  */
-static RexxObjectPtr enquoteN(RexxThreadContext *c, RexxArrayObject v, size_t size)
+static RexxObjectPtr enquoteList(RexxThreadContext *c, RexxObjectPtr src, size_t count, bool isStem)
 {
-    char *s = sqlite3_mprintf("%Q, %Q, %Q, %Q, %Q, %Q",
-                              obj2str(c, c->ArrayAt(v, 1)),
-                              obj2str(c, c->ArrayAt(v, 2)),
-                              obj2str(c, c->ArrayAt(v, 3)),
-                              obj2str(c, c->ArrayAt(v, 4)),
-                              obj2str(c, c->ArrayAt(v, 5)),
-                              obj2str(c, c->ArrayAt(v, 6)));
-
-    if ( s == NULL )
+    if ( count == 0 )
     {
+        return c->String("NULL");
+    }
+
+    sqlite3_str *str = sqlite3_str_new(NULL);
+    for ( size_t i = 1; i <= count; i++ )
+    {
+        RexxObjectPtr o = isStem ? c->GetStemArrayElement((RexxStemObject)src, i)
+                                 : c->ArrayAt((RexxArrayObject)src, i);
+        sqlite3_str_appendf(str, i == 1 ? "%Q" : ", %Q", obj2str(c, o));
+    }
+
+    if ( sqlite3_str_errcode(str) != SQLITE_OK )
+    {
+        sqlite3_free(sqlite3_str_finish(str));
         outOfMemoryException(c);
         return c->NullString();
     }
-
-    char  buf[MAX_ENQUOTE_STRING + 1];
-    char *lead = s;
-
-    for ( size_t i = 7; i <= size; i++)
-    {
-        lead = sqlite3_snprintf(sizeof(buf), buf, "%s, %Q", lead, obj2str(c, c->ArrayAt(v, i)));
-
-        if ( i < size && strlen(lead) == MAX_ENQUOTE_STRING )
-        {
-            stringTooLongException(c, "enquote", true, MAX_ENQUOTE_STRING);
-            break;
-        }
-    }
-
-    sqlite3_free(s);
-    return c->String(buf);
+    return enquoteResult(c, sqlite3_str_finish(str));
 }
 
 /**
@@ -3799,28 +3727,7 @@ RexxMethod1(RexxObjectPtr, oosql_enquote_cls, OPTIONAL_RexxObjectPtr, values)
     else
     {
         RexxArrayObject a = (RexxArrayObject)values;
-        size_t          s = context->ArraySize(a);
-
-        switch ( s )
-        {
-            case 0 :
-                return context->String("NULL");
-            case 1 :
-                return enquote1(context->threadContext, a);
-            case 2 :
-                return enquote2(context->threadContext, a);
-            case 3 :
-                return enquote3(context->threadContext, a);
-            case 4 :
-                return enquote4(context->threadContext, a);
-            case 5 :
-                return enquote5(context->threadContext, a);
-            case 6 :
-                return enquote6(context->threadContext, a);
-            default :
-                return enquoteN(context->threadContext, a, s);
-
-        }
+        return enquoteList(context->threadContext, a, context->ArraySize(a), false);
     }
 }
 
@@ -13124,30 +13031,7 @@ RexxRoutine1(RexxObjectPtr, ooSQLiteEnquote_rtn, OPTIONAL_RexxObjectPtr, values)
             return NULLOBJECT;
         }
 
-        char *s = sqlite3_mprintf("%Q", obj2str(c, c->GetStemArrayElement(stem, 1)));
-
-        if ( s == NULL )
-        {
-            outOfMemoryException(c);
-            return NULLOBJECT;
-        }
-
-        char  buf[MAX_ENQUOTE_STRING + 1];
-        char *lead = s;
-
-        for ( size_t i = 2; i <= count; i++)
-        {
-            lead = sqlite3_snprintf(sizeof(buf), buf, "%s, %Q", lead, obj2str(c, c->GetStemArrayElement(stem, i)));
-
-            if ( i < count && strlen(lead) == MAX_ENQUOTE_STRING )
-            {
-                stringTooLongException(c, "ooSQLiteEnquote", false, MAX_ENQUOTE_STRING);
-                break;
-            }
-        }
-
-        sqlite3_free(s);
-        return c->String(buf);
+        return enquoteList(c, stem, count, true);
     }
 }
 

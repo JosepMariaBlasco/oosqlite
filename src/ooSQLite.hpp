@@ -102,7 +102,6 @@
 #define NO_LOCAL_ENVIRONMENT_MSG  "the .local environment was not found"
 
 // Buffer size must be plus one -> 4096
-#define MAX_ENQUOTE_STRING  4095
 
 #define MAX_AUTO_PACKAGES         10
 #define MAX_AUTO_FUNCTIONS        10
