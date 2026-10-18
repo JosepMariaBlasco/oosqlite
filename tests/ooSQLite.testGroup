@@ -5366,12 +5366,22 @@ ConstantMissing:
 --------------------------------------------------------------------------------
 
 ::Method testClassicCompileOptionGet
-  opt = oosqlCompileOptionGet(0)
-  self~assertNotNull(opt, -
-    "oosqlCompileOptionGet(0) should return a compile option")
-  self~assertTrue(opt~pos("=") > 0 | opt~length > 0, -
-    "First compile option should be a non-empty string")
-  -- Out-of-range index returns "NULL" string
+  -- The index is 1-based, as in compileOptionGet and the rest of the
+  -- classic interface; 0 and out of range indexes return "NULL"
+  self~assertEquals("NULL", oosqlCompileOptionGet(0), -
+    "oosqlCompileOptionGet(0) is out of range")
+  opt = oosqlCompileOptionGet(1)
+  self~assertTrue(opt \== "NULL" & opt~length > 0, -
+    "oosqlCompileOptionGet(1) should return the first compile option")
+  n = 1
+  Do While oosqlCompileOptionGet(n) \== "NULL"
+    self~assertEquals(.ooSQLite~compileOptionGet(n), oosqlCompileOptionGet(n), -
+      "oosqlCompileOptionGet and compileOptionGet should agree on option" n)
+    n += 1
+  End
+  self~assertTrue(n > 2, "There should be several compile options")
+  self~assertEquals("NULL", .ooSQLite~compileOptionGet(n), -
+    "compileOptionGet should end where oosqlCompileOptionGet ends")
   self~assertEquals("NULL", oosqlCompileOptionGet(999), -
     "oosqlCompileOptionGet(999) should return 'NULL' string")
 
