@@ -350,7 +350,9 @@
     linkend="rtn-oosqlExec">oosqlExec</link>, with its result set formats and its callback routine, <link
     linkend="rtn-oosqlClose">oosqlClose</link>, <link linkend="rtn-oosqlErrCode">oosqlErrCode</link>, <link
     linkend="rtn-oosqlErrMsg">oosqlErrMsg</link>, <link linkend="rtn-oosqlNextStmt">oosqlNextStmt</link>, <link
-    linkend="rtn-oosqlLoadExtension">oosqlLoadExtension</link>, and the others, most of them with a tested example. The
+    linkend="rtn-oosqlLoadExtension">oosqlLoadExtension</link>, and the others, most of them with a tested example.
+    oosqlLoadExtension and <link linkend="rtn-ooSQLiteRegisterBuiltin">ooSQLiteRegisterBuiltin</link> describe where they
+    leave the error message of SQLite, which is not recorded in the connection: <computeroutput>.routineErrorMessage</computeroutput>. The
     section of <link linkend="mthNextStmt">nextStmt</link> said that a finalized statement could be the starting point of
     the search; the search then starts from the beginning.
   </para></listitem>

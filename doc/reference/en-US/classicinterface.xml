@@ -84,7 +84,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-ooSQLiteRegisterBuiltin">ooSQLiteRegisterBuiltin()</link></entry>
-<entry>description</entry>
+<entry>Registers one of the extensions built into ooSQLite with a database connection.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-ooSQLiteVersion">ooSQLiteVersion()</link></entry>

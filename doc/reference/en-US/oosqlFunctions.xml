@@ -227,12 +227,12 @@ say ooSQLiteEnquote(str)
 <indexterm><primary>Classic Rexx Interface</primary><secondary>ooSQLiteRegisterBuiltin</secondary></indexterm>
 <mediaobject>
 <imageobject>
-<imagedata fileref="images/specific/oosqliteregisterbuiltin.svg" scale="55" />
+<imagedata fileref="images/classic/oosqliteregisterbuiltin.svg" scale="55" />
 </imageobject>
 </mediaobject>
 
 <para>
-  xx
+  Registers one of the extensions built into ooSQLite with a database connection.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -240,10 +240,22 @@ say ooSQLiteEnquote(str)
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>name [required]</term>
+      <listitem>
+      <para>
+        The name of the extension: <computeroutput>base64</computeroutput>, <computeroutput>csv</computeroutput>,
+        <computeroutput>ieee754</computeroutput>, <computeroutput>nextChar</computeroutput>,
+        <computeroutput>percentile</computeroutput>, <computeroutput>regExp</computeroutput>,
+        <computeroutput>rot13</computeroutput>, <computeroutput>spellFix</computeroutput>,
+        <computeroutput>toType</computeroutput>, or <computeroutput>wholeNumber</computeroutput>. Case is not
+        significant.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -252,29 +264,55 @@ say ooSQLiteEnquote(str)
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The extensions come from the SQLite source tree, and are linked into the ooSQLite library: they do not need to be
+    loaded with <link linkend="rtn-oosqlLoadExtension">oosqlLoadExtension</link>. An extension registered with this
+    routine is available only on the given connection, until it is closed.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error if <emphasis role="italic">name</emphasis> is not the name of a builtin extension.
+  </para>
+  <para>
+    The error message of the extension, if it gives one, is not recorded in the connection, so <link
+    linkend="rtn-oosqlErrMsg">oosqlErrMsg</link> does not return it. It is stored in the
+    <computeroutput>.local</computeroutput> directory, with the index
+    <computeroutput>ROUTINEERRORMESSAGE</computeroutput>, and can be retrieved as
+    <computeroutput>.routineErrorMessage</computeroutput>. Each call to <emphasis
+    role="italic">ooSQLiteRegisterBuiltin</emphasis> sets it to the empty string first. <link
+    linkend="rtn-oosqlLoadExtension">oosqlLoadExtension</link> uses the same entry. Being in
+    <computeroutput>.local</computeroutput>, it is shared by all the threads of the interpreter instance.
+  </para>
+  <para>
+    The <link linkend="mthRegisterBuiltin">registerBuiltin</link> method of the <link
+    linkend="clsOOSQLExtensions">ooSQLExtensions</link> class does the same, and can register several extensions at
+    once.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example registers the <computeroutput>base64</computeroutput> extension, and uses its SQL function to decode a
+    string:
+<programlisting language="rexx">
+  rc = ooSQLiteRegisterBuiltin(db, 'base64')
+  if rc &lt;&gt; .ooSQLite~OK then do
+    say 'Error' rc':' .routineErrorMessage
+    return rc
+  end
+  rows. = oosqlExec(db, "SELECT base64('SGVsbG8gd29ybGQh') AS text;", .true)
+  say rows.1['TEXT']
+  /* Output:
+  Hello world!
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>

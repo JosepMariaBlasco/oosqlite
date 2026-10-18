@@ -611,7 +611,9 @@
     return it. It is stored in the <computeroutput>.local</computeroutput> directory, with the index
     <computeroutput>ROUTINEERRORMESSAGE</computeroutput>, and can be retrieved as
     <computeroutput>.routineErrorMessage</computeroutput>. Each call to <emphasis
-    role="italic">oosqlLoadExtension</emphasis> sets it to the empty string first.
+    role="italic">oosqlLoadExtension</emphasis> sets it to the empty string first. <link
+    linkend="rtn-ooSQLiteRegisterBuiltin">ooSQLiteRegisterBuiltin</link> uses the same entry. Being in <computeroutput>.local</computeroutput>,
+    it is shared by all the threads of the interpreter instance.
   </para>
   <para>
     The functionality of the <emphasis role="italic">oosqlLoadExtension</emphasis> routine is similar to that of the
