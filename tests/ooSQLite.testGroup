@@ -6257,8 +6257,38 @@ NullStmtRaised:
   Signal Off Syntax
   co = Condition("O")
   self~assertEquals(88.900, co~code, "Error code")
-  self~assertEquals("Argument 1, the prepared statement object, must not be null.", co~message, "Error message")
+  self~assertEquals("Argument 1, the prepared statement handle, must not be null.", co~message, "Error message")
   Call oosqlClose db
+
+::Method testClassicNullHandleMessages
+  -- The classic interface has handles, not objects: each kind of null
+  -- handle is named as such in the message of the syntax error 88.900
+  db = self~classicOpenMemory
+  Call oosqlPrepare db, "", "null"                  -- a null Pointer
+  self~assertTrue(oosqlIsHandleNull(null), "Empty SQL gives a null handle")
+  self~assertEquals("88.900 Argument 1, the database connection handle, must not be null.", -
+    self~nullHandleError("oosqlChanges", .array~of(null)), "null connection")
+  self~assertEquals("88.900 Argument 2, the database connection handle, must not be null.", -
+    self~nullHandleError("oosqlBackupInit", .array~of(db, null)), "null source connection")
+  self~assertEquals("88.900 Argument 1, the prepared statement handle, must not be null.", -
+    self~nullHandleError("oosqlReset", .array~of(null)), "null statement")
+  self~assertEquals("88.900 Argument 1, the mutex handle, must not be null.", -
+    self~nullHandleError("oosqlMutexEnter", .array~of(null)), "null mutex")
+  self~assertEquals("88.900 Argument 1, the backup handle, must not be null.", -
+    self~nullHandleError("oosqlBackupStep", .array~of(null)), "null backup")
+  Call oosqlClose db
+
+::Method nullHandleError
+  -- Calls the routine name with args, returns the code and message of the
+  -- syntax error it raises
+  Use Strict Arg name, args
+  rtn = .context~package~findRoutine(name)
+  Signal On Syntax
+  rtn~callWith(args)
+  Return "no error"
+Syntax:
+  co = Condition("O")
+  Return co~code co~message
 
 /******************************************************************************/
 /*                                                                            */
