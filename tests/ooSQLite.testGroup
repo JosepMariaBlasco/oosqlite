@@ -2757,13 +2757,13 @@ TestBusyDeregCleanup:
 /* linked into liboosqlite.so. These tests cover listBuiltins,                */
 /* registerBuiltin, autoBuiltin, cancelAutoBuiltin, and resetAutoBuiltin.      */
 /*                                                                            */
-/* NOTE: The running binary (SQLite 3.29.0) has 8 builtins, not 10.           */
-/* base64 and csv require SQLite 3.52+ and are not available here.            */
+/* All ten builtins are available (with SQLite 3.29.0 only eight were, base64 */
+/* and csv were missing).                                                     */
 /*                                                                            */
 /******************************************************************************/
 
 --------------------------------------------------------------------------------
--- listBuiltins: returns an Array with 8 entries, each a Directory            --
+-- listBuiltins: returns an Array with 10 entries, each a Directory           --
 --------------------------------------------------------------------------------
 
 ::Method testListBuiltins
@@ -2851,19 +2851,14 @@ TestBusyDeregCleanup:
 
 --------------------------------------------------------------------------------
 -- registerBuiltin: register an array of extensions                           --
---                                                                            --
--- NOTE: registerBuiltin(db, array) returns SQLITE_MISUSE (21) despite the    --
--- functions being registered successfully. This appears to be a bug in the   --
--- C++ layer. We test the actual registration works, and document the         --
--- anomalous return code.                                                     --
 --------------------------------------------------------------------------------
 
 ::Method testRegisterBuiltinArray
   db = self~openMemoryDB
   names = .Array~of("rot13", "ieee754")
   rc = .ooSQLExtensions~registerBuiltin(db, names)
-  -- NOTE: rc is 21 (SQLITE_MISUSE) despite functions being registered.
-  -- This is a known anomaly — the functions DO get registered.
+  self~assertEquals(0, rc, -
+    "registerBuiltin(db, array) should return SQLITE_OK")
   -- rot13 should work
   rows = db~exec("SELECT rot13('xyz') AS val;", .true)
   self~assertEquals("klm", rows[1]["VAL"], -
@@ -4900,9 +4895,127 @@ AggregateErrorTrapped:
   self~assertTrue(.ooSQLExtensions~lastErrMsg~pos("noSuchCollation") > 0, -
     "lastErrMsg should name the collation:" .ooSQLExtensions~lastErrMsg)
 
+--------------------------------------------------------------------------------
+-- Found while documenting the ooSQLExtensions and ooSQLPackage classes (v27) --
+--------------------------------------------------------------------------------
+
+::Method syntaxErrorOf
+  -- Sends msgName with args to receiver; returns the code and message of the
+  -- syntax error, or "no error"
+  Use Arg receiver, msgName, ...
+  Signal On Syntax
+  receiver~sendWith(msgName, Arg(3, "A"))
+  Return "no error"
+Syntax:
+  co = Condition("O")
+  Return co~code co~message
+
+::Method testPackageRegisterClosedConnection
+  -- register with a closed connection crashed (SIGSEGV)
+  package = self~loadTestPackage
+  db = self~openMemoryDB
+  db~close
+  err = self~syntaxErrorOf(package, "REGISTER", db)
+  self~assertEquals("98.900", err~word(1), -
+    "register with a closed connection should raise error 98.900:" err)
+  self~assertTrue(err~pos("is not open") > 0, -
+    "the message should say the connection is not open:" err)
+
+::Method testPackageRegisterNotAConnection
+  -- register with an object that is not a connection raised the error, but
+  -- went on and used it as a connection (SIGSEGV)
+  package = self~loadTestPackage
+  err = self~syntaxErrorOf(package, "REGISTER", .Object~new)
+  self~assertEquals("88", err~word(1)~left(2), -
+    "register with a non-connection should raise error 88:" err)
+  self~assertTrue(err~pos("ooSQLiteConnection") > 0, -
+    "the message should name the class:" err)
+
+::Method testAutoCollationNeededNoCallback
+  -- the error was set where lastErrCode / lastErrMsg do not look, so they
+  -- said "no error"
+  success = .ooSQLExtensions~loadPackage(userExtLib("examplepackage"))
+  self~assertTrue(success, "loadPackage of examplePackage should succeed")
+  self~assertFalse(.ooSQLExtensions~autoCollationNeeded("examplePackage"), -
+    "autoCollationNeeded with a package without a callback should fail")
+  self~assertEquals(.ooSQLite~MISUSE, .ooSQLExtensions~lastErrCode, -
+    "lastErrCode should be MISUSE")
+  self~assertTrue(.ooSQLExtensions~lastErrMsg~pos("no collation needed") > 0, -
+    "lastErrMsg should say why:" .ooSQLExtensions~lastErrMsg)
+
+::Method testLoadLibraryResetsLastErr
+  -- a successful loadLibrary left the error of the previous call
+  self~assertFalse(.ooSQLExtensions~loadLibrary(userExtLib("nosuchlibrary")), -
+    "loadLibrary of a missing file should fail")
+  self~assertTrue(.ooSQLExtensions~loadLibrary(userExtLib("testlibrary")), -
+    "loadLibrary should succeed")
+  self~assertEquals(0, .ooSQLExtensions~lastErrCode, -
+    "lastErrCode should be 0 after a successful loadLibrary")
+
+::Method testResetAutoBuiltinResetsLastErr
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "noExiste")
+  db~close
+  self~assertEquals(0, .ooSQLExtensions~resetAutoBuiltin, -
+    "resetAutoBuiltin should return OK")
+  self~assertEquals(0, .ooSQLExtensions~lastErrCode, -
+    "lastErrCode should be 0 after resetAutoBuiltin")
+
+::Method testCancelAutoBuiltinAll
+  -- cancelling ALL returned MISUSE, with a wrong message, when some builtin
+  -- was not automatic
+  Signal On Syntax Name TestCancelAllCleanup
+  .ooSQLExtensions~resetAutoBuiltin
+  self~assertEquals(0, .ooSQLExtensions~cancelAutoBuiltin, -
+    "cancelAutoBuiltin() with nothing automatic should return OK")
+  .ooSQLExtensions~autoBuiltin("rot13")
+  self~assertEquals(0, .ooSQLExtensions~cancelAutoBuiltin("ALL"), -
+    "cancelAutoBuiltin('ALL') should return OK")
+  self~assertEquals(0, .ooSQLExtensions~lastErrCode, -
+    "lastErrCode should be 0 after cancelAutoBuiltin('ALL')")
+  db = .ooSQLiteConnection~new(":memory:")
+  rc = db~exec("SELECT rot13('test');")
+  db~close
+  self~assertEquals(1, rc, "rot13 should not be automatic any more")
+  .ooSQLExtensions~resetAutoBuiltin
+  Return
+TestCancelAllCleanup:
+  .ooSQLExtensions~resetAutoBuiltin
+  Raise Propagate
+
+::Method testAutoMarkedTwice
+  -- marking an automatic function, collation or package again added it again,
+  -- and unmarking it once left it automatic
+  self~loadTestPackage
+  e = .ooSQLExtensions
+  self~assertTrue(e~autoFunction("testPackage", "half"), "autoFunction")
+  self~assertTrue(e~autoFunction("testPackage", "half"), "autoFunction again")
+  self~assertTrue(e~autoCollation("testPackage", "reverse"), "autoCollation")
+  self~assertTrue(e~autoCollation("testPackage", "reverse"), "autoCollation again")
+  self~assertTrue(e~autoFunction("testPackage", "half", .false), "unmark the function")
+  self~assertTrue(e~autoCollation("testPackage", "reverse", .false), "unmark the collation")
+  db = self~namesDB
+  half = self~queryValue(db, "SELECT half(1) AS v;")
+  names = self~orderedNames(db, "reverse")
+  db~close
+  self~assertNull(half, "the function should not be automatic any more")
+  self~assertTrue(names~pos("no such collation") > 0, -
+    "the collation should not be automatic any more:" names)
+  self~assertFalse(e~autoFunction("testPackage", "half", .false), -
+    "unmarking a function that is not automatic should fail")
+  self~assertTrue(e~autoPackage("testPackage"), "autoPackage")
+  self~assertTrue(e~autoPackage("testPackage"), "autoPackage again")
+  self~assertTrue(e~autoPackage("testPackage", .false), "unmark the package")
+  db = self~openMemoryDB
+  half = self~queryValue(db, "SELECT half(1) AS v;")
+  db~close
+  self~assertNull(half, "the package should not be automatic any more")
+  self~assertFalse(e~autoPackage("testPackage", .false), -
+    "unmarking a package that is not automatic should fail")
+
 /******************************************************************************/
 /*                                                                            */
-/* Section 34: ooSQLResult and ooSQLValue — the methods not used elsewhere    */
+/* Section 34:ooSQLResult and ooSQLValue — the methods not used elsewhere    */
 /*                                                                            */
 /* The OO counterparts of the classic tests in Section C7, with UDFs from     */
 /* ResultValueHandler: ooSQLResult blob, int64, zeroBlob, value, error,       */
