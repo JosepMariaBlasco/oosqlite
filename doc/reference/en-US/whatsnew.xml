@@ -580,6 +580,14 @@
     chapter describes each class.
   </para></listitem>
   <listitem><para>
+    The chapter on the <link linkend="clsOOSQLite">ooSQLite</link> class was rewritten, with tested examples. It now
+    documents the <link linkend="mthStrGlob">strGlob</link> and <link
+    linkend="mthEncryptionAvailable">encryptionAvailable</link> methods and the <link
+    linkend="atrZeroPointerClsOOSQLite">zeroPointer</link> attribute, which were in ooSQLite but not in the book. Its
+    text said that libVersion should match .ooSQLite~VERSION, but that invokes the version method: the constant is
+    .ooSQLiteConstants~VERSION.
+  </para></listitem>
+  <listitem><para>
     The <link linkend="chpOOSQLiteConstants">constants chapter</link> lists all the constants of the class, also the
     ones that were missing from it, such as NOTICE and WARNING. The values of the version constants are those of the
     embedded SQLite, and the NULL datatype is listed with its ooSQLite name, SQLNULL.

@@ -826,7 +826,7 @@
     <ulink url="http://www.sqlite.org/c3ref/strglob.html">sqlite3_strglob</ulink> API.
   </para>
   <para>
-    The strGlob method of the <link linkend="clsOOSQLite">ooSQLite</link> class does the same.
+    The <link linkend="mthStrGlob">strGlob</link> method of the ooSQLite class does the same.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>

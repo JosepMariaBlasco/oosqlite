@@ -92,7 +92,7 @@
     This routine is an ooSQLite enhancement, there is no similar SQLite API.
   </para>
   <para>
-    The encryptionAvailable method of the <link linkend="clsOOSQLite">ooSQLite</link> class does the same.
+    The <link linkend="mthEncryptionAvailable">encryptionAvailable</link> method of the ooSQLite class does the same.
   </para>
   <para>
     This routine was in ooSQLite before version 1.1, but it was not documented.
