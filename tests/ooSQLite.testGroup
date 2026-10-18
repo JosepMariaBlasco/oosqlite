@@ -5747,6 +5747,42 @@ ConstantMissing:
   self~assertEquals(0, oosqlClose(db))
 
 --------------------------------------------------------------------------------
+-- Argument positions in the syntax errors of the classic routines            --
+--                                                                            --
+-- The classic routines take the connection as their first argument, so the  --
+-- positions are one more than in the methods they were copied from.          --
+--------------------------------------------------------------------------------
+
+::Method syntaxMessage
+  Use Strict Arg code
+  Signal On Syntax Name SyntaxRaised
+  Interpret "Call" code
+  Return ""
+SyntaxRaised:
+  Return Condition("O")~message
+
+::Method testClassicExecFormatArgPosition
+  .local~argPosDb = self~classicOpenMemory
+  msg = self~syntaxMessage("oosqlExec .argPosDb, 'SELECT 1;', .true, 9")
+  self~assertEquals("Argument 4", msg~left(10), "Position of format in oosqlExec:" msg)
+  self~assertEquals(0, oosqlClose(.argPosDb))
+
+::Method testClassicExecRtnNameArgPosition
+  .local~argPosDb = self~classicOpenMemory
+  msg = self~syntaxMessage("oosqlExec .argPosDb, 'SELECT 1;', .true, , 'noSuchRoutineAnywhere'")
+  self~assertEquals("Argument 5", msg~left(10), "Position of rtnName in oosqlExec:" msg)
+  self~assertEquals(0, oosqlClose(.argPosDb))
+
+::Method testClassicBackupInitSrcArgPosition
+  .local~argPosDb = self~classicOpenMemory
+  Call oosqlPrepare .argPosDb, "", "nullHandle"
+  .local~argPosNull = nullHandle
+  self~assertTrue(oosqlIsHandleNull(.argPosNull), "Empty SQL gives a null handle")
+  msg = self~syntaxMessage("oosqlBackupInit .argPosDb, .argPosNull")
+  self~assertEquals("Argument 2", msg~left(10), "Position of srcConn in oosqlBackupInit:" msg)
+  self~assertEquals(0, oosqlClose(.argPosDb))
+
+--------------------------------------------------------------------------------
 -- oosqlNextStmt                                                              --
 --------------------------------------------------------------------------------
 
