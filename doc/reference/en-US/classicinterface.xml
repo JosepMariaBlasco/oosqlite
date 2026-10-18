@@ -75,12 +75,16 @@
 </thead>
 <tbody>
 <row>
+<entry><link linkend="rtn-ooSQLiteEncryptionAvailable">ooSQLiteEncryptionAvailable()</link></entry>
+<entry>&added11;Tells whether the SQLite library that ooSQLite uses can encrypt databases.</entry>
+</row>
+<row>
 <entry><link linkend="rtn-ooSQLiteEnquote">ooSQLiteEnquote()</link></entry>
 <entry>Converts the supplied Rexx value(s) into SQL literals.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-ooSQLiteMerge">ooSQLiteMerge()</link></entry>
-<entry>.</entry>
+<entry>Combines several flags into one value, with a bitwise or.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-ooSQLiteRegisterBuiltin">ooSQLiteRegisterBuiltin()</link></entry>
@@ -88,7 +92,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-ooSQLiteVersion">ooSQLiteVersion()</link></entry>
-<entry>.</entry>
+<entry>Returns the version of ooSQLite, or of the SQLite library it uses, in one of several formats.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlAutoExtension">oosqlAutoExtension()</link></entry>

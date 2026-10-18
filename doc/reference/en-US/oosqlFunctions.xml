@@ -53,6 +53,65 @@
   in this chapter.
 </para>
 
+<section id="rtn-ooSQLiteEncryptionAvailable" revisionflag="added"><title>&added11;ooSQLiteEncryptionAvailable</title>
+<indexterm><primary>ooSQLiteEncryptionAvailable</primary></indexterm>
+<indexterm><primary>Classic Rexx Interface</primary><secondary>ooSQLiteEncryptionAvailable</secondary></indexterm>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/specific/oosqliteencryptionavailable.svg" scale="55" />
+</imageobject>
+</mediaobject>
+
+<para>
+  Tells whether the SQLite library that ooSQLite uses can encrypt databases.
+</para>
+<variablelist>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
+  <listitem>
+  <para>
+    There are no arguments.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
+  <listitem>
+  <para>
+    Returns true if SQLite was built with an encryption extension, and false otherwise. The SQLite embedded in ooSQLite
+    is built without one, so the routine returns false.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    The routine tests the <computeroutput>SQLITE_HAS_CODEC</computeroutput> compile-time option, which the encryption
+    extensions for SQLite used to define. Plain SQLite has no encryption.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Details</emphasis></term>
+  <listitem>
+  <para>
+    This routine is an ooSQLite enhancement, there is no similar SQLite API.
+  </para>
+  <para>
+    The encryptionAvailable method of the <link linkend="clsOOSQLite">ooSQLite</link> class does the same.
+  </para>
+  <para>
+    This routine was in ooSQLite before version 1.1, but it was not documented.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
+  <listitem>
+  <para>
+    This example tests whether encryption is available:
+<programlisting language="rexx">
+  say 'Encryption available:' ooSQLiteEncryptionAvailable()
+  /* Output:
+  Encryption available: 0
+  */
+</programlisting>
+  </para>
+  </listitem></varlistentry>
+</variablelist>
+</section>  <!-- End ooSQLiteEncryptionAvailable() -->
 <section id="rtn-ooSQLiteEnquote"><title>ooSQLiteEnquote</title>
 <indexterm><primary>ooSQLiteEnquote</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>ooSQLiteEnquote</secondary></indexterm>
@@ -173,18 +232,21 @@ say ooSQLiteEnquote(str)
 </mediaobject>
 
 <para>
-  xx
+  Combines several flags into one value, with a bitwise or.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>arg [optional]</term>
       <listitem>
       <para>
-        xx
+        Any number of whole numbers, normally constants of the <link
+        linkend="chpOOSQLiteConstants">ooSQLiteConstants</link> class, such as the
+        <computeroutput>OPEN_</computeroutput> flags. None of them can be omitted between the first one and the last
+        one.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -193,29 +255,48 @@ say ooSQLiteEnquote(str)
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The bitwise or of all the arguments: a number with every bit that is set in any of them. With no arguments, 0 is
+    returned; with one, that argument.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    Rexx has no operator for a bitwise or of numbers. The flags of SQLite are powers of 2, so adding distinct flags
+    gives the same result, but adding a flag twice does not; <emphasis role="italic">ooSQLiteMerge</emphasis> is always
+    right.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error, 88.900, if an argument is not a whole number, and 88.901 if one is omitted, as in
+    <computeroutput>ooSQLiteMerge(a, , b)</computeroutput>.
+  </para>
+  <para>
+    This routine is an ooSQLite enhancement, there is no similar SQLite API.
+  </para>
+  <para>
+    The <link linkend="mthMerge">merge</link> method of the <link
+    linkend="chpOOSQLiteConstants">ooSQLiteConstants</link> class does the same.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example opens the database of the connection <computeroutput>db</computeroutput> a second time, read only and
+    without the mutex of the connection, and tries to change it:
+<programlisting language="rexx">
+  file  = oosqlDbFileName(db, 'main')
+  flags = ooSQLiteMerge(.ooSQLite~OPEN_READONLY, .ooSQLite~OPEN_NOMUTEX)
+  say 'Flags:' flags
+  rc = oosqlOpen(file, 'readOnly', flags)
+  say 'Delete:' oosqlExec(readOnly, "DELETE FROM foods;")
+  call oosqlClose readOnly
+  /* Output:
+  Flags: 32769
+  Delete: SQLite Error: rc = 8, attempt to write a readonly database
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -329,18 +410,30 @@ say ooSQLiteEnquote(str)
 </mediaobject>
 
 <para>
-  xx
+  Returns the version of ooSQLite, or of the SQLite library it uses, in one of several formats.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>type [optional]</term>
       <listitem>
       <para>
-        xx
+        The format, one of these keywords. Only the first letter is checked, and case is not
+        significant:<itemizedlist><listitem><para><computeroutput>OneLine</computeroutput>: the version of ooSQLite on
+        one line, such as <computeroutput>ooSQLite Version 1.0.2.13107 (64 bit)</computeroutput>. This is the
+        default.</para></listitem><listitem><para><computeroutput>Compact</computeroutput>: the version number of
+        ooSQLite, such as
+        <computeroutput>1.0.2.13107</computeroutput>.</para></listitem><listitem><para><computeroutput>Full</computeroutput>:
+        several lines, with the versions of ooSQLite, ooRexx, and SQLite, the date ooSQLite was built, and its
+        copyright.</para></listitem><listitem><para><computeroutput>LibVersion</computeroutput>: the version of SQLite,
+        as <link linkend="rtn-oosqlLibVersion">oosqlLibVersion</link> returns
+        it.</para></listitem><listitem><para><computeroutput>Number</computeroutput>: the version of SQLite as a number,
+        as <link linkend="rtn-oosqlLibVersionNumber">oosqlLibVersionNumber</link> returns
+        it.</para></listitem><listitem><para><computeroutput>SourceID</computeroutput>: the source identifier of SQLite,
+        as <link linkend="rtn-oosqlSourceID">oosqlSourceID</link> returns it.</para></listitem></itemizedlist>
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -349,29 +442,53 @@ say ooSQLiteEnquote(str)
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The version, in the format asked for.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    This is the routine that returns the version of ooSQLite; <link linkend="rtn-oosqlVersion">oosqlVersion</link>,
+    despite its name, returns the version of SQLite. The <computeroutput>Full</computeroutput> format is useful in
+    problem reports.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error, 88.900, if <emphasis role="italic">type</emphasis> does not start with one of the letters O,
+    C, F, L, N, or S.
+  </para>
+  <para>
+    This routine is an ooSQLite enhancement, there is no similar SQLite API.
+  </para>
+  <para>
+    The <link linkend="mthVersion">version</link> method of the <link linkend="clsOOSQLite">ooSQLite</link> class does
+    the same.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example displays the version in several formats. The output depends on the build:
+<programlisting language="rexx">
+  say ooSQLiteVersion()
+  say ooSQLiteVersion('Compact')
+  say ooSQLiteVersion('LibVersion')
+  say ooSQLiteVersion('F')
+  /* Output might be:
+  ooSQLite Version 1.0.2.13107 (64 bit)
+  1.0.2.13107
+  3.52.0
+  ooSQLite: ooSQLite Version 1.0.2.13107 (64 bit)
+            Built Oct 18 2026 13:47:21
+            Copyright (c) 2012-2026 Rexx Language Association. All rights reserved.
 
-]]>
+  Rexx:     Open Object Rexx Version 5.3.0
+
+  SQLite:   SQLite Library Version 3.52.0
+            2026-03-06 16:01:44
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
