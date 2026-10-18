@@ -1291,7 +1291,7 @@
 </section>  <!-- End oosqlUpdateHook() -->
 
 
-<section id="rtn-oosqlValueBlob"><title>oosqlValueBlob</title>
+<section id="rtn-oosqlValueBlob" revisionflag="changed"><title>&changed11;oosqlValueBlob</title>
 <indexterm><primary>oosqlValueBlob</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlValueBlob</secondary></indexterm>
 <mediaobject>
@@ -1301,18 +1301,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns one of the values passed to a user defined SQL function as a blob.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlValue [required]</term>
       <listitem>
       <para>
-        xx
+        One of the values that SQLite passes to the routine: the fourth and following arguments of the routine of a
+        function, or the fifth and following arguments of the step routine of an aggregate. See the remarks of <link
+        linkend="rtn-oosqlValueBlob">oosqlValueBlob</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1321,29 +1323,75 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    A string with the bytes of the value, including any NUL characters. A value that is not a blob is converted: text is
+    returned as is, and a number as its text representation. An empty blob returns the empty string, and a NULL value
+    returns the .nil object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    What is said here applies to all the <emphasis role="italic">oosqlValue</emphasis> routines. They are used inside
+    the routines of the functions and aggregates defined with <link
+    linkend="rtn-oosqlCreateFunction">oosqlCreateFunction</link>. SQLite passes each argument of the SQL function to the
+    routine as a Pointer object, the <emphasis role="italic">sqlValue</emphasis>: the fourth and following arguments of
+    the routine of a function, and the fifth and following arguments of the step routine of an aggregate. The <emphasis
+    role="italic">oosqlValue</emphasis> routines return the value in the form that is asked for, converting it if
+    needed. <link linkend="rtn-oosqlValueType">oosqlValueType</link> tells which type the value has.
+  </para>
+  <para>
+    A <emphasis role="italic">sqlValue</emphasis> is only valid during the invocation of the routine that received it.
+    Passing any other object, or a Pointer that is no longer valid, has unpredictable results, and can crash the
+    interpreter.
+  </para>
+  <para>
+    <link linkend="rtn-oosqlValueInt">oosqlValueInt</link>, <link linkend="rtn-oosqlValueInt64">oosqlValueInt64</link>,
+    <link linkend="rtn-oosqlValueDouble">oosqlValueDouble</link>, <link
+    linkend="rtn-oosqlValueText">oosqlValueText</link>, and <emphasis role="italic">oosqlValueBlob</emphasis> return
+    .nil for a NULL value. Use <link linkend="rtn-oosqlValueType">oosqlValueType</link> to test for NULL before asking
+    for the value.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlValueBlob</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_blob</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">blob</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class does
+    the same in the object orientated interface.
+  </para>
+  <para>
+    Before ooSQLite 1.1, this routine returned a Pointer to the data, which was only useful to pass it, with its size,
+    to <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link>, and .nil for both an empty blob and NULL.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example defines a <computeroutput>describe</computeroutput> function that tells an empty blob from NULL, and
+    displays the bytes of any other value:
+<programlisting language="rexx">
+  rc = oosqlCreateFunction(db, "describe", 1, "describeRtn")
+  sql = "SELECT describe(x'CAFE'), describe(x''), describe(NULL)," -
+        "describe('ab');"
+  rows = oosqlExec(db, sql, .true, .ooSQLite~OO_ARRAY_OF_ARRAYS)
+  say rows[2]~toString('l', ' / ')
+  /* Output:
+  2 byte(s): CAFE / empty / NULL / 2 byte(s): 6162
+  */
 
-]]>
+  ::routine describeRtn public
+    use arg db, context, userData, value
+    data = oosqlValueBlob(value)
+    select
+      when data == .nil then text = 'NULL'
+      when data == '' then text = 'empty'
+      otherwise text = oosqlValueBytes(value) 'byte(s):' data~c2x
+    end
+    call oosqlResultText context, text
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1361,18 +1409,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the size in bytes of one of the values passed to a user defined SQL function.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlValue [required]</term>
       <listitem>
       <para>
-        xx
+        One of the values that SQLite passes to the routine: the fourth and following arguments of the routine of a
+        function, or the fifth and following arguments of the step routine of an aggregate. See the remarks of <link
+        linkend="rtn-oosqlValueBlob">oosqlValueBlob</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1381,37 +1431,41 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The size of a blob, or of the UTF-8 text of any other value: the number <computeroutput>3.9</computeroutput> has 3
+    bytes. A NULL value has 0 bytes.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The size is that of the value as it is when the routine is invoked: <link
+    linkend="rtn-oosqlValueNumericType">oosqlValueNumericType</link> can convert a text to a number, and then its size
+    changes. See the remarks of <link linkend="rtn-oosqlValueBlob">oosqlValueBlob</link> for where the values come from,
+    and when they are valid.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlValueBytes</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_bytes</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">bytes</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class
+    does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlValueBlob">oosqlValueBlob</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End oosqlValueBytes() -->
 
 
-<section id="rtn-oosqlValueDouble"><title>oosqlValueDouble</title>
+<section id="rtn-oosqlValueDouble" revisionflag="changed"><title>&changed11;oosqlValueDouble</title>
 <indexterm><primary>oosqlValueDouble</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlValueDouble</secondary></indexterm>
 <mediaobject>
@@ -1421,18 +1475,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns one of the values passed to a user defined SQL function as a floating point number.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlValue [required]</term>
       <listitem>
       <para>
-        xx
+        One of the values that SQLite passes to the routine: the fourth and following arguments of the routine of a
+        function, or the fifth and following arguments of the step routine of an aggregate. See the remarks of <link
+        linkend="rtn-oosqlValueBlob">oosqlValueBlob</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1441,29 +1497,51 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The value as a number, with all its precision: the shortest number, of up to 17 significant digits, that is
+    converted back to the same floating point value. Text that starts with a number is converted to that number; a blob,
+    and text that does not start with a number, return 0. For a NULL value, the .nil object is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A Rexx program computes with 9 digits unless it sets <computeroutput>NUMERIC DIGITS</computeroutput>: the number
+    keeps its precision, but an arithmetic operation on it is rounded to the current setting. See the remarks of <link
+    linkend="rtn-oosqlValueBlob">oosqlValueBlob</link> for where the values come from, and when they are valid.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlValueDouble</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_double</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">double</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class
+    does the same in the object orientated interface.
+  </para>
+  <para>
+    Before ooSQLite 1.1, the number was returned with 9 significant digits only: 3.141592653589793 was returned as
+    3.14159265.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example defines a function that returns, as text, the number that the Rexx routine receives:
+<programlisting language="rexx">
+  rc = oosqlCreateFunction(db, "asSeenByRexx", 1, "asSeenByRexxRtn")
+  sql = "SELECT asSeenByRexx(pi()), asSeenByRexx(0.1), asSeenByRexx('2.50');"
+  rows = oosqlExec(db, sql, .true, .ooSQLite~OO_ARRAY_OF_ARRAYS)
+  say rows[2]~toString('l', ' ')
+  /* Output:
+  3.141592653589793 0.1 2.5
+  */
 
-]]>
+  ::routine asSeenByRexxRtn public
+    use arg db, context, userData, value
+    call oosqlResultText context, oosqlValueDouble(value)
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1481,18 +1559,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns one of the values passed to a user defined SQL function as a 32-bit integer.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlValue [required]</term>
       <listitem>
       <para>
-        xx
+        One of the values that SQLite passes to the routine: the fourth and following arguments of the routine of a
+        function, or the fifth and following arguments of the step routine of an aggregate. See the remarks of <link
+        linkend="rtn-oosqlValueBlob">oosqlValueBlob</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1501,34 +1581,125 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The value as a whole number. A floating point value is truncated, so 3.9 is 3, and text that starts with a number is
+    converted to that number; a blob, and text that does not start with a number, return 0. For a NULL value, the .nil
+    object is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    When the value does not fit in 32 bits, only its lower 32 bits are returned, and the result is not meaningful: use
+    <link linkend="rtn-oosqlValueInt64">oosqlValueInt64</link> for values that can be that large. See the remarks of
+    <link linkend="rtn-oosqlValueBlob">oosqlValueBlob</link> for where the values come from, and when they are valid.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlValueInt</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_int</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">int</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class does
+    the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the examples of <link linkend="rtn-oosqlResultInt64">oosqlResultInt64</link> and <link
+    linkend="rtn-oosqlResultZeroBlob">oosqlResultZeroBlob</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End oosqlValueInt() -->
+<section id="rtn-oosqlValueInt64" revisionflag="added"><title>&added11;oosqlValueInt64</title>
+<indexterm><primary>oosqlValueInt64</primary></indexterm>
+<indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlValueInt64</secondary></indexterm>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/classic/oosqlvalueint64.svg" scale="55" />
+</imageobject>
+</mediaobject>
+
+<para>
+  Returns one of the values passed to a user defined SQL function as a 64-bit integer.
+</para>
+<variablelist>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
+  <listitem>
+  <para>
+    The only argument is:
+    <variablelist>
+      <varlistentry><term>sqlValue [required]</term>
+      <listitem>
+      <para>
+        One of the values that SQLite passes to the routine: the fourth and following arguments of the routine of a
+        function, or the fifth and following arguments of the step routine of an aggregate. See the remarks of <link
+        linkend="rtn-oosqlValueBlob">oosqlValueBlob</link>.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
+  <listitem>
+  <para>
+    The value as a whole number, converted as <link linkend="rtn-oosqlValueInt">oosqlValueInt</link> does. For a NULL
+    value, the .nil object is returned.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    The routine that computes with the value may need a higher <computeroutput>NUMERIC DIGITS</computeroutput> setting
+    than the default of 9, as the example does. See the remarks of <link
+    linkend="rtn-oosqlValueBlob">oosqlValueBlob</link> for where the values come from, and when they are valid.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Details</emphasis></term>
+  <listitem>
+  <para>
+    The functionality of the <emphasis role="italic">oosqlValueInt64</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_int64</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">int64</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class
+    does the same in the object orientated interface.
+  </para>
+  <para>
+    This routine is new in ooSQLite 1.1. Before, the classic interface could not read an argument that does not fit in
+    32 bits as a whole number.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
+  <listitem>
+  <para>
+    This example defines a <computeroutput>half</computeroutput> function, which works with numbers that do not fit in
+    32 bits:
+<programlisting language="rexx">
+  rc = oosqlCreateFunction(db, "half", 1, "halfRtn")
+  sql = "SELECT half(9000000000) AS a, half(7) AS b, half('41') AS c," -
+        "quote(half(NULL)) AS d;"
+  rows = oosqlExec(db, sql, .true, .ooSQLite~OO_ARRAY_OF_ARRAYS)
+  say rows[2]~toString('l', ' ')
+  /* Output:
+  4500000000 3 20 NULL
+  */
+
+  ::routine halfRtn public
+    use arg db, context, userData, value
+    numeric digits 19
+    n = oosqlValueInt64(value)
+    if n == .nil then call oosqlResultNull context
+    else call oosqlResultInt64 context, n % 2
+    return 0
+</programlisting>
+  </para>
+  </listitem></varlistentry>
+</variablelist>
+</section>  <!-- End oosqlValueInt64() -->
 
 
 <section id="rtn-oosqlValueNumericType"><title>oosqlValueNumericType</title>
@@ -1541,18 +1712,21 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the datatype of one of the values passed to a user defined SQL function, after converting a text that looks
+  like a number to that number.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlValue [required]</term>
       <listitem>
       <para>
-        xx
+        One of the values that SQLite passes to the routine: the fourth and following arguments of the routine of a
+        function, or the fifth and following arguments of the step routine of an aggregate. See the remarks of <link
+        linkend="rtn-oosqlValueBlob">oosqlValueBlob</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1561,29 +1735,56 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    One of the <link linkend="sctFundamentalDatatype">Fundamental Datatype</link> constants, as <link
+    linkend="rtn-oosqlValueType">oosqlValueType</link> returns. For a text that is a well formed number, possibly with
+    spaces around it, the type is <computeroutput>INTEGER</computeroutput> or <computeroutput>FLOAT</computeroutput>
+    instead of <computeroutput>TEXT</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The conversion is done in place: once this routine has converted a text, the value is that number, for <link
+    linkend="rtn-oosqlValueType">oosqlValueType</link>, <link linkend="rtn-oosqlValueText">oosqlValueText</link>, <link
+    linkend="rtn-oosqlValueBytes">oosqlValueBytes</link>, and the other routines. Use <emphasis
+    role="italic">oosqlValueType</emphasis> first when the original type matters. A text that only starts with a number,
+    such as <computeroutput>'12abc'</computeroutput>, is not converted. See the remarks of <link
+    linkend="rtn-oosqlValueBlob">oosqlValueBlob</link> for where the values come from, and when they are valid.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlValueNumericType</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_numeric_type</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">numericType</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link>
+    class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example displays, for some texts, the type before the conversion, the type that <emphasis
+    role="italic">oosqlValueNumericType</emphasis> returns, and the type after it:
+<programlisting language="rexx">
+  rc = oosqlCreateFunction(db, "kinds", 1, "kindsRtn")
+  sql = "SELECT kinds('12'), kinds(' 3.5 '), kinds('12abc');"
+  rows = oosqlExec(db, sql, .true, .ooSQLite~OO_ARRAY_OF_ARRAYS)
+  say rows[2]~toString('l', ' / ')
+  /* Output:
+  TEXT INTEGER INTEGER / TEXT FLOAT FLOAT / TEXT TEXT TEXT
+  */
 
-]]>
+  ::routine kindsRtn public
+    use arg db, context, userData, value
+    names = .array~of('INTEGER', 'FLOAT', 'TEXT', 'BLOB', 'NULL')
+    before  = names[oosqlValueType(value)]
+    numeric = names[oosqlValueNumericType(value)]
+    after   = names[oosqlValueType(value)]
+    call oosqlResultText context, before numeric after
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1601,18 +1802,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns one of the values passed to a user defined SQL function as a string.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlValue [required]</term>
       <listitem>
       <para>
-        xx
+        One of the values that SQLite passes to the routine: the fourth and following arguments of the routine of a
+        function, or the fifth and following arguments of the step routine of an aggregate. See the remarks of <link
+        linkend="rtn-oosqlValueBlob">oosqlValueBlob</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1621,30 +1824,35 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The value as a string: text as is, and a number as its text representation. For a blob, the bytes before its first
+    NUL character are returned: use <link linkend="rtn-oosqlValueBlob">oosqlValueBlob</link> for all of them. For a NULL
+    value, the .nil object is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    This is the routine used most to read the arguments of a function, because any value can be represented as a string.
+    See the remarks of <link linkend="rtn-oosqlValueBlob">oosqlValueBlob</link> for where the values come from, and when
+    they are valid.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlValueText</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_text</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">text</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class does
+    the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the examples of <link linkend="rtn-oosqlResultText">oosqlResultText</link> and <link
+    linkend="rtn-oosqlResultInt">oosqlResultInt</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1661,18 +1869,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the datatype of one of the values passed to a user defined SQL function.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlValue [required]</term>
       <listitem>
       <para>
-        xx
+        One of the values that SQLite passes to the routine: the fourth and following arguments of the routine of a
+        function, or the fifth and following arguments of the step routine of an aggregate. See the remarks of <link
+        linkend="rtn-oosqlValueBlob">oosqlValueBlob</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1681,29 +1891,52 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    One of the <link linkend="sctFundamentalDatatype">Fundamental Datatype</link> constants:
+    <computeroutput>INTEGER</computeroutput>, <computeroutput>FLOAT</computeroutput>,
+    <computeroutput>TEXT</computeroutput>, <computeroutput>BLOB</computeroutput>, or
+    <computeroutput>SQLNULL</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    SQLite is dynamically typed: the same function can get values of different types in different invocations, whatever
+    the declared types of the columns they come from. <link
+    linkend="rtn-oosqlValueNumericType">oosqlValueNumericType</link> also tells whether a text looks like a number. See
+    the remarks of <link linkend="rtn-oosqlValueBlob">oosqlValueBlob</link> for where the values come from, and when
+    they are valid.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlValueType</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_type</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">type</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class does
+    the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example defines a <computeroutput>kind</computeroutput> function that returns the name of the type of its
+    argument:
+<programlisting language="rexx">
+  rc = oosqlCreateFunction(db, "kind", 1, "kindRtn")
+  sql = "SELECT kind(12), kind(1.5), kind('12'), kind(x'00'), kind(NULL);"
+  rows = oosqlExec(db, sql, .true, .ooSQLite~OO_ARRAY_OF_ARRAYS)
+  say rows[2]~toString('l', ' ')
+  /* Output:
+  INTEGER FLOAT TEXT BLOB NULL
+  */
 
-]]>
+  ::routine kindRtn public
+    use arg db, context, userData, value
+    names = .array~of('INTEGER', 'FLOAT', 'TEXT', 'BLOB', 'NULL')
+    call oosqlResultText context, names[oosqlValueType(value)]
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>

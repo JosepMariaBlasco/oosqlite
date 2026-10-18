@@ -2273,7 +2273,7 @@
 </section>  <!-- End oosqlColumnDeclType() -->
 
 
-<section id="rtn-oosqlColumnDouble"><title>oosqlColumnDouble</title>
+<section id="rtn-oosqlColumnDouble" revisionflag="changed"><title>&changed11;oosqlColumnDouble</title>
 <indexterm><primary>oosqlColumnDouble</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlColumnDouble</secondary></indexterm>
 <mediaobject>
@@ -2311,12 +2311,19 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    The value as a number. Text that starts with a number is converted to that number; a NULL value, and a column that
-    is out of range, return 0.
+    The value as a number, with all its precision: the shortest number, of up to 17 significant digits, that is
+    converted back to the same floating point value. Text that starts with a number is converted to that number; a NULL
+    value, and a column that is out of range, return 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
+  <para revisionflag="changed">
+    &changed11;Before ooSQLite 1.1, the number was returned with 9 significant digits only: 3.141592653589793 was
+    returned as 3.14159265. A Rexx program computes with 9 digits unless it sets <computeroutput>NUMERIC
+    DIGITS</computeroutput>: the number keeps its precision, but an arithmetic operation on it is rounded to the current
+    setting.
+  </para>
   <para>
     See the remarks of <link linkend="rtn-oosqlColumnBlob">oosqlColumnBlob</link> for when the values of a row can be
     retrieved.

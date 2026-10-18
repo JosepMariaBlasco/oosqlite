@@ -138,6 +138,37 @@
     with routines were not affected.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Floating point numbers keep their precision</emphasis></term>
+  <listitem>
+  <para>
+    <link linkend="mthColumnDouble">columnDouble</link> of the ooSQLiteStmt class, <link
+    linkend="rtn-oosqlColumnDouble">oosqlColumnDouble</link>, <link linkend="rtn-oosqlValueDouble">oosqlValueDouble</link>,
+    and the double method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class returned the number with 9
+    significant digits only, whatever the precision of the value: 3.141592653589793 was returned as 3.14159265, and
+    123456789012.5 as 1.23456789E+11. The conversion of ooRexx used by the native code keeps 9 digits.
+  </para>
+  <para>
+    Now they return the shortest number, of up to 17 significant digits, that is converted back to the same floating
+    point value: 3.141592653589793 keeps all its digits, 0.1 is still 0.1, and 0.1 + 0.2 is 0.30000000000000004. A
+    program that displays these numbers, or compares them as strings, sees the additional digits. Arithmetic in Rexx is
+    still done with the current <computeroutput>NUMERIC DIGITS</computeroutput> setting.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Blob values: an empty blob is not NULL, and the classic routine returns the bytes</emphasis></term>
+  <listitem>
+  <para>
+    In a user defined function, the classic <link linkend="rtn-oosqlValueBlob">oosqlValueBlob</link> returned a Pointer
+    to the data, which Rexx code could only pass, with its size, to <link
+    linkend="rtn-oosqlResultBlob">oosqlResultBlob</link>, and .nil for both an empty blob and NULL. The <link
+    linkend="mthBlobClsOOSQLValue">blob</link> method of the ooSQLValue class returned the empty string for both.
+  </para>
+  <para>
+    Now both return the bytes of the value as a String, the empty string for an empty blob, and .nil for NULL, as the
+    other value routines and methods already did for NULL. Code that passes the result of oosqlValueBlob and its size to
+    oosqlResultBlob keeps working, because oosqlResultBlob accepts a String; code that tested the result for .nil to
+    detect an empty blob must test for the empty string instead.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">The recordFormat attribute of a statement works</emphasis></term>
   <listitem>
   <para>
@@ -179,12 +210,21 @@
     library, but the class did not define the method.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">New routine oosqlValueInt64</emphasis></term>
+  <listitem>
+  <para>
+    The classic interface had <link linkend="rtn-oosqlResultInt64">oosqlResultInt64</link>, but not <link
+    linkend="rtn-oosqlValueInt64">oosqlValueInt64</link>, so a user defined function could not read an argument that does
+    not fit in 32 bits as a whole number. The int64 method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class
+    existed. Its native code was already in the library, but under another name, and the routine was not defined.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">ooSQLResult~blob and oosqlResultBlob accept Rexx data</emphasis></term>
   <listitem>
   <para>
     <link linkend="mthBlobClsOOSQLResult">blob</link> of the ooSQLResult class and <link
     linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> only accepted a Pointer and a size. The classic <link
-    linkend="rtn-oosqlValueBlob">oosqlValueBlob</link> returns a Pointer, so the classic interface could pass a blob
+    linkend="rtn-oosqlValueBlob">oosqlValueBlob</link> returned a Pointer, so the classic interface could pass a blob
     argument through, but the <link linkend="mthBlobClsOOSQLValue">blob</link> method of the ooSQLValue class returns a
     String, and Rexx code has no Pointer to its own data: a user defined function written with the object orientated
     interface could not return a blob at all.
@@ -378,6 +418,16 @@
     a tested example. A new section, <link linkend="sctClassicCallbacks">Callback Routines</link>, gives the rules common
     to all of them: in particular, the routine must be a public routine of the calling program; those of the packages
     it requires are not found.
+  </para></listitem>
+  <listitem><para>
+    The routines of the classic interface used inside user defined functions are now documented: the oosqlResult
+    routines, which set the result of the function, such as <link linkend="rtn-oosqlResultInt">oosqlResultInt</link>
+    and <link linkend="rtn-oosqlResultError">oosqlResultError</link>, and the oosqlValue routines, which read its
+    arguments, such as <link linkend="rtn-oosqlValueText">oosqlValueText</link> and <link
+    linkend="rtn-oosqlValueType">oosqlValueType</link>, each one with a tested example. The remarks of <link
+    linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> and <link linkend="rtn-oosqlValueBlob">oosqlValueBlob</link>
+    give the rules common to each group. <link linkend="rtn-oosqlValueNumericType">oosqlValueNumericType</link>
+    converts a text to a number in place, which changes what the other routines see afterwards.
   </para></listitem>
   <listitem><para>
     The <link linkend="chpOOSQLiteConstants">constants chapter</link> lists all the constants of the class, also the

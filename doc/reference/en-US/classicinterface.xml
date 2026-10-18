@@ -428,47 +428,47 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlResultDouble">oosqlResultDouble()</link></entry>
-<entry>.</entry>
+<entry>Sets the result of a user defined SQL function, or of the final step of an aggregate, to a floating point number.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlResultError">oosqlResultError()</link></entry>
-<entry>.</entry>
+<entry>Makes a user defined SQL function, or the final step of an aggregate, fail with an error message.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlResultErrorCode">oosqlResultErrorCode()</link></entry>
-<entry>.</entry>
+<entry>Makes a user defined SQL function, or the final step of an aggregate, fail with an error code.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlResultErrorNoMem">oosqlResultErrorNoMem()</link></entry>
-<entry>.</entry>
+<entry>Makes a user defined SQL function, or the final step of an aggregate, fail because it ran out of memory.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlResultErrorTooBig">oosqlResultErrorTooBig()</link></entry>
-<entry>.</entry>
+<entry>Makes a user defined SQL function, or the final step of an aggregate, fail because a string or a blob is too big.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlResultInt">oosqlResultInt()</link></entry>
-<entry>.</entry>
+<entry>Sets the result of a user defined SQL function, or of the final step of an aggregate, to a 32-bit integer.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlResultInt64">oosqlResultInt64()</link></entry>
-<entry>.</entry>
+<entry>Sets the result of a user defined SQL function, or of the final step of an aggregate, to a 64-bit integer.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlResultNull">oosqlResultNull()</link></entry>
-<entry>.</entry>
+<entry>Sets the result of a user defined SQL function, or of the final step of an aggregate, to NULL.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlResultText">oosqlResultText()</link></entry>
-<entry>.</entry>
+<entry>Sets the result of a user defined SQL function, or of the final step of an aggregate, to a text.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlResultValue">oosqlResultValue()</link></entry>
-<entry>.</entry>
+<entry>Sets the result of a user defined SQL function, or of the final step of an aggregate, to a copy of one of the values passed to the function. The result keeps the datatype of the value.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlResultZeroBlob">oosqlResultZeroBlob()</link></entry>
-<entry>.</entry>
+<entry>Sets the result of a user defined SQL function, or of the final step of an aggregate, to a blob filled with zeros.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlRollbackHook">oosqlRollbackHook()</link></entry>
@@ -536,31 +536,35 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlValueBlob">oosqlValueBlob()</link></entry>
-<entry>.</entry>
+<entry>Returns one of the values passed to a user defined SQL function as a blob.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlValueBytes">oosqlValueBytes()</link></entry>
-<entry>.</entry>
+<entry>Returns the size in bytes of one of the values passed to a user defined SQL function.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlValueDouble">oosqlValueDouble()</link></entry>
-<entry>.</entry>
+<entry>Returns one of the values passed to a user defined SQL function as a floating point number.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlValueInt">oosqlValueInt()</link></entry>
-<entry>.</entry>
+<entry>Returns one of the values passed to a user defined SQL function as a 32-bit integer.</entry>
+</row>
+<row>
+<entry><link linkend="rtn-oosqlValueInt64">oosqlValueInt64()</link></entry>
+<entry>&added11;Returns one of the values passed to a user defined SQL function as a 64-bit integer.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlValueNumericType">oosqlValueNumericType()</link></entry>
-<entry>.</entry>
+<entry>Returns the datatype of one of the values passed to a user defined SQL function, after converting a text that looks like a number to that number.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlValueText">oosqlValueText()</link></entry>
-<entry>.</entry>
+<entry>Returns one of the values passed to a user defined SQL function as a string.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlValueType">oosqlValueType()</link></entry>
-<entry>.</entry>
+<entry>Returns the datatype of one of the values passed to a user defined SQL function.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlVersion">oosqlVersion()</link></entry>

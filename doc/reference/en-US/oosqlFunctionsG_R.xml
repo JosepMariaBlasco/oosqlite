@@ -1849,8 +1849,9 @@
       <listitem>
       <para>
         The data of the blob: a String, a Buffer, or a MutableBuffer object, as for <link
-        linkend="rtn-oosqlBindBlob">oosqlBindBlob</link>, or a Pointer object to the data, such as the one returned by
-        <link linkend="rtn-oosqlValueBlob">oosqlValueBlob</link>. Before ooSQLite 1.1 only a Pointer was accepted.
+        linkend="rtn-oosqlBindBlob">oosqlBindBlob</link>, such as the one returned by <link
+        linkend="rtn-oosqlValueBlob">oosqlValueBlob</link>, or a Pointer object to the data. Before ooSQLite 1.1 only a
+        Pointer was accepted.
       </para>
       </listitem></varlistentry>
       <varlistentry revisionflag="changed"><term>&changed11;size [optional with a String, Buffer, or MutableBuffer, required with a Pointer]</term>
@@ -1858,8 +1859,7 @@
       <para>
         The number of bytes of the blob. With a String, a Buffer, or a MutableBuffer, the blob is made of the first
         <emphasis role="italic">size</emphasis> bytes of the data, which must be from 0 to the length of the data; if
-        it is omitted, all the data is used. With a Pointer it is the number of bytes to copy from that address, for
-        example the value returned by <link linkend="rtn-oosqlValueBytes">oosqlValueBytes</link>.
+        it is omitted, all the data is used. With a Pointer it is the number of bytes to copy from that address.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1868,6 +1868,21 @@
   <listitem>
   <para>
     Returns 0. SQLite copies the data, so it can be discarded after the call.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    What is said here applies to all the <emphasis role="italic">oosqlResult</emphasis> routines. They set the value
+    that a user defined SQL function returns to the statement that invoked it, and they are used inside the routines
+    registered with <link linkend="rtn-oosqlCreateFunction">oosqlCreateFunction</link>: the routine of a function, and
+    the final routine of an aggregate. The <emphasis role="italic">sqlCntxt</emphasis> is the second argument of that
+    routine, a Pointer object that is only valid during that invocation of the routine.
+  </para>
+  <para>
+    The routine can set the result more than once: the last value set is the one returned. If it sets no result, the
+    function returns NULL. The routines that set an error, such as <link
+    linkend="rtn-oosqlResultError">oosqlResultError</link>, make the statement that invoked the function fail.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
@@ -1911,7 +1926,7 @@ call oosqlClose db
 </mediaobject>
 
 <para>
-  xx
+  Sets the result of a user defined SQL function, or of the final step of an aggregate, to a floating point number.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1919,10 +1934,17 @@ call oosqlClose db
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlCntxt [required]</term>
       <listitem>
       <para>
-        xx
+        The SQLite context, the second argument of the function routine, or of the final routine of an aggregate. See
+        the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>value [required]</term>
+      <listitem>
+      <para>
+        The number. It is converted to a double precision floating point number.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1931,29 +1953,55 @@ call oosqlClose db
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> for when and how the result is set.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error if <emphasis role="italic">value</emphasis> is not a number.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">oosqlResultDouble</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_double</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">double</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link> class
+    does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example defines a <computeroutput>withTax</computeroutput> function that adds a 21 percent tax to a price. A
+    NULL price gives a NULL result:
+<programlisting language="rexx">
+  rc = oosqlCreateFunction(db, "withTax", 1, "withTaxRtn")
+  sql = "SELECT name, quote(withTax(price)) AS p FROM foods;"
+  rows = oosqlExec(db, sql, .true, .ooSQLite~OO_ARRAY_OF_ARRAYS)
+  do i = 2 to rows~items
+    say rows[i][1]':' rows[i][2]
+  end
+  /* Output:
+  Bagels: 1.5125
+  Bagels, raisin: 1.815
+  Bacon: 4.5375
+  Cheese: NULL
+  */
 
-]]>
+  ::routine withTaxRtn public
+    use arg db, context, userData, price
+    if oosqlValueType(price) == .ooSQLite~SQLNULL then
+      call oosqlResultNull context
+    else
+      call oosqlResultDouble context, oosqlValueDouble(price) * 1.21
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1971,7 +2019,7 @@ call oosqlClose db
 </mediaobject>
 
 <para>
-  xx
+  Makes a user defined SQL function, or the final step of an aggregate, fail with an error message.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1979,10 +2027,17 @@ call oosqlClose db
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlCntxt [required]</term>
       <listitem>
       <para>
-        xx
+        The SQLite context, the second argument of the function routine, or of the final routine of an aggregate. See
+        the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>errMsg [required]</term>
+      <listitem>
+      <para>
+        The text of the error message.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1991,29 +2046,51 @@ call oosqlClose db
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The statement that invoked the function fails: <link linkend="rtn-oosqlStep">oosqlStep</link> returns
+    <computeroutput>ERROR</computeroutput>, and <link linkend="rtn-oosqlErrMsg">oosqlErrMsg</link> returns <emphasis
+    role="italic">errMsg</emphasis>. <link linkend="rtn-oosqlResultErrorCode">oosqlResultErrorCode</link> sets another
+    error code; when it is invoked after <emphasis role="italic">oosqlResultError</emphasis>, the message is kept. See
+    the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> for when and how the result is set.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlResultError</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_error</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">error</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link> class
+    does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example defines a <computeroutput>checkPrice</computeroutput> function that fails when a food has no price:
+<programlisting language="rexx">
+  rc = oosqlCreateFunction(db, "checkPrice", 2, "checkPriceRtn")
+  say oosqlExec(db, "SELECT checkPrice(name, price) FROM foods;")
+  say oosqlErrCode(db) oosqlErrMsg(db)
+  /* Output:
+  SQLite Error: rc = 1, Cheese has no price
+  1 Cheese has no price
+  */
 
-]]>
+  ::routine checkPriceRtn public
+    use arg db, context, userData, name, price
+    if oosqlValueType(price) == .ooSQLite~SQLNULL then do
+      call oosqlResultError context, oosqlValueText(name) 'has no price'
+      return 0
+    end
+    call oosqlResultValue context, price
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2031,7 +2108,7 @@ call oosqlClose db
 </mediaobject>
 
 <para>
-  xx
+  Makes a user defined SQL function, or the final step of an aggregate, fail with an error code.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2039,10 +2116,18 @@ call oosqlClose db
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlCntxt [required]</term>
       <listitem>
       <para>
-        xx
+        The SQLite context, the second argument of the function routine, or of the final routine of an aggregate. See
+        the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>errCode [required]</term>
+      <listitem>
+      <para>
+        The error code, one of the <link linkend="sctResultCode">Result Code</link> constants, such as
+        <computeroutput>CONSTRAINT</computeroutput>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2051,29 +2136,50 @@ call oosqlClose db
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The statement that invoked the function fails with <emphasis role="italic">errCode</emphasis>. The error message is
+    the one set by <link linkend="rtn-oosqlResultError">oosqlResultError</link>, if it was invoked before; otherwise, it
+    is the standard message for the code, the one that <link linkend="rtn-oosqlErrStr">oosqlErrStr</link> returns. See
+    the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> for when and how the result is set.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlResultErrorCode</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_error_code</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">errorCode</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link>
+    class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example makes a function fail with the code <computeroutput>CONSTRAINT</computeroutput> and its own message:
+<programlisting language="rexx">
+  rc = oosqlCreateFunction(db, "costly", 1, "costlyRtn")
+  say oosqlExec(db, "SELECT costly(price) FROM foods;")
+  say oosqlErrCode(db) oosqlErrMsg(db)
+  /* Output:
+  SQLite Error: rc = 19, Bacon is too expensive
+  19 Bacon is too expensive
+  */
 
-]]>
+  ::routine costlyRtn public
+    use arg db, context, userData, price
+    if oosqlValueDouble(price) &gt; 3 then do
+      call oosqlResultError context, 'Bacon is too expensive'
+      call oosqlResultErrorCode context, .ooSQLite~CONSTRAINT
+    end
+    else call oosqlResultValue context, price
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2091,18 +2197,19 @@ call oosqlClose db
 </mediaobject>
 
 <para>
-  xx
+  Makes a user defined SQL function, or the final step of an aggregate, fail because it ran out of memory.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlCntxt [required]</term>
       <listitem>
       <para>
-        xx
+        The SQLite context, the second argument of the function routine, or of the final routine of an aggregate. See
+        the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2111,30 +2218,33 @@ call oosqlClose db
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The statement that invoked the function fails with the code <computeroutput>NOMEM</computeroutput> and the message
+    <computeroutput>out of memory</computeroutput>. See the remarks of <link
+    linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> for when and how the result is set.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlResultErrorNoMem</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_error_nomem</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">errorNoMem</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link>
+    class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlResultErrorTooBig">oosqlResultErrorTooBig</link>, which works in the same
+    way.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -2151,18 +2261,19 @@ call oosqlClose db
 </mediaobject>
 
 <para>
-  xx
+  Makes a user defined SQL function, or the final step of an aggregate, fail because a string or a blob is too big.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlCntxt [required]</term>
       <listitem>
       <para>
-        xx
+        The SQLite context, the second argument of the function routine, or of the final routine of an aggregate. See
+        the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2171,29 +2282,46 @@ call oosqlClose db
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The statement that invoked the function fails with the code <computeroutput>TOOBIG</computeroutput> and the message
+    <computeroutput>string or blob too big</computeroutput>. See the remarks of <link
+    linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> for when and how the result is set.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlResultErrorTooBig</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_error_toobig</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">errorTooBig</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link>
+    class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example defines a <computeroutput>shortName</computeroutput> function that does not accept names longer than 10
+    characters:
+<programlisting language="rexx">
+  rc = oosqlCreateFunction(db, "shortName", 1, "shortNameRtn")
+  say oosqlExec(db, "SELECT shortName(name) FROM foods;")
+  /* Output:
+  SQLite Error: rc = 18, string or blob too big
+  */
 
-]]>
+  ::routine shortNameRtn public
+    use arg db, context, userData, name
+    text = oosqlValueText(name)
+    if length(text) &gt; 10 then call oosqlResultErrorTooBig context
+    else call oosqlResultText context, text
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2211,7 +2339,7 @@ call oosqlClose db
 </mediaobject>
 
 <para>
-  xx
+  Sets the result of a user defined SQL function, or of the final step of an aggregate, to a 32-bit integer.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2219,10 +2347,18 @@ call oosqlClose db
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlCntxt [required]</term>
       <listitem>
       <para>
-        xx
+        The SQLite context, the second argument of the function routine, or of the final routine of an aggregate. See
+        the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>value [required]</term>
+      <listitem>
+      <para>
+        The whole number, which must fit in 32 bits: from -2147483648 to 2147483647. Use <link
+        linkend="rtn-oosqlResultInt64">oosqlResultInt64</link> for larger numbers.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2231,29 +2367,47 @@ call oosqlClose db
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> for when and how the result is set.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error if <emphasis role="italic">value</emphasis> is not a whole number that fits in 32 bits.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">oosqlResultInt</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_int</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">int</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link> class
+    does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example defines a <computeroutput>words</computeroutput> function that counts the words of a text, and uses it
+    in a WHERE clause:
+<programlisting language="rexx">
+  rc = oosqlCreateFunction(db, "words", 1, "wordsRtn")
+  sql = "SELECT name, words(name) AS w FROM foods WHERE words(name) &gt; 1;"
+  rows = oosqlExec(db, sql, .true, .ooSQLite~OO_ARRAY_OF_ARRAYS)
+  say rows[2][1]':' rows[2][2] 'words'
+  /* Output:
+  Bagels, raisin: 2 words
+  */
 
-]]>
+  ::routine wordsRtn public
+    use arg db, context, userData, text
+    call oosqlResultInt context, words(oosqlValueText(text))
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2271,7 +2425,7 @@ call oosqlClose db
 </mediaobject>
 
 <para>
-  xx
+  Sets the result of a user defined SQL function, or of the final step of an aggregate, to a 64-bit integer.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2279,10 +2433,17 @@ call oosqlClose db
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlCntxt [required]</term>
       <listitem>
       <para>
-        xx
+        The SQLite context, the second argument of the function routine, or of the final routine of an aggregate. See
+        the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>value [required]</term>
+      <listitem>
+      <para>
+        The whole number, which must fit in 64 bits: from -9223372036854775808 to 9223372036854775807.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2291,29 +2452,55 @@ call oosqlClose db
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The routine that computes the value may need a higher <computeroutput>NUMERIC DIGITS</computeroutput> setting than
+    the default of 9, as the example does. See the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link>
+    for when and how the result is set. The example of <link linkend="rtn-oosqlValueInt64">oosqlValueInt64</link> also
+    uses <emphasis role="italic">oosqlResultInt64</emphasis>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error if <emphasis role="italic">value</emphasis> is not a whole number that fits in 64 bits.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">oosqlResultInt64</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_int64</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">int64</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link> class
+    does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example defines a <computeroutput>factorial</computeroutput> function. The factorial of 20 does not fit in 32
+    bits:
+<programlisting language="rexx">
+  rc = oosqlCreateFunction(db, "factorial", 1, "factorialRtn")
+  sql = "SELECT factorial(20) AS f, typeof(factorial(20)) AS t;"
+  rows = oosqlExec(db, sql, .true, .ooSQLite~OO_ARRAY_OF_ARRAYS)
+  say rows[2][1] rows[2][2]
+  /* Output:
+  2432902008176640000 integer
+  */
 
-]]>
+  ::routine factorialRtn public
+    use arg db, context, userData, n
+    numeric digits 20
+    f = 1
+    do i = 2 to oosqlValueInt(n)
+      f = f * i
+    end
+    call oosqlResultInt64 context, f
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2331,18 +2518,19 @@ call oosqlClose db
 </mediaobject>
 
 <para>
-  xx
+  Sets the result of a user defined SQL function, or of the final step of an aggregate, to NULL.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlCntxt [required]</term>
       <listitem>
       <para>
-        xx
+        The SQLite context, the second argument of the function routine, or of the final routine of an aggregate. See
+        the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2351,30 +2539,32 @@ call oosqlClose db
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A function whose routine sets no result also returns NULL, but setting it explicitly makes the intent clear. See the
+    remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> for when and how the result is set.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlResultNull</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_null</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">null</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link> class
+    does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the examples of <link linkend="rtn-oosqlResultDouble">oosqlResultDouble</link> and <link
+    linkend="rtn-oosqlResultValue">oosqlResultValue</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -2391,7 +2581,7 @@ call oosqlClose db
 </mediaobject>
 
 <para>
-  xx
+  Sets the result of a user defined SQL function, or of the final step of an aggregate, to a text.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2399,10 +2589,18 @@ call oosqlClose db
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlCntxt [required]</term>
       <listitem>
       <para>
-        xx
+        The SQLite context, the second argument of the function routine, or of the final routine of an aggregate. See
+        the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>txt [required]</term>
+      <listitem>
+      <para>
+        The string. SQLite expects the text to be UTF-8. The text ends at its first NUL character, if it has one: use
+        <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> for data that can contain NUL characters.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2411,29 +2609,55 @@ call oosqlClose db
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    SQLite copies the text. See the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> for when and
+    how the result is set.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlResultText</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_text</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">text</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link> class
+    does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example defines an <computeroutput>initials</computeroutput> function that returns the first letter of each
+    word of a name:
+<programlisting language="rexx">
+  rc = oosqlCreateFunction(db, "initials", 1, "initialsRtn")
+  sql = "SELECT name, initials(name) AS i FROM foods;"
+  rows = oosqlExec(db, sql, .true, .ooSQLite~OO_ARRAY_OF_ARRAYS)
+  do i = 2 to rows~items
+    say rows[i][1]':' rows[i][2]
+  end
+  /* Output:
+  Bagels: B
+  Bagels, raisin: BR
+  Bacon: B
+  Cheese: C
+  */
 
-]]>
+  ::routine initialsRtn public
+    use arg db, context, userData, name
+    text = oosqlValueText(name)
+    initials = ''
+    do i = 1 to words(text)
+      initials ||= left(word(text, i), 1)~upper
+    end
+    call oosqlResultText context, initials
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2451,7 +2675,8 @@ call oosqlClose db
 </mediaobject>
 
 <para>
-  xx
+  Sets the result of a user defined SQL function, or of the final step of an aggregate, to a copy of one of the values
+  passed to the function. The result keeps the datatype of the value.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2459,10 +2684,19 @@ call oosqlClose db
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlCntxt [required]</term>
       <listitem>
       <para>
-        xx
+        The SQLite context, the second argument of the function routine, or of the final routine of an aggregate. See
+        the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>value [required]</term>
+      <listitem>
+      <para>
+        One of the values that SQLite passes to the routine: the fourth and following arguments of the routine of a
+        function, or the fifth and following arguments of the step routine of an aggregate. See the remarks of <link
+        linkend="rtn-oosqlValueBlob">oosqlValueBlob</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2471,29 +2705,59 @@ call oosqlClose db
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The value must be one of the values passed to the current invocation of the routine. Passing any other Pointer has
+    unpredictable results, and can crash the interpreter. See the remarks of <link
+    linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> for when and how the result is set.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error if <emphasis role="italic">value</emphasis> is not a Pointer object.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">oosqlResultValue</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_value</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">value</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link> class
+    does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example defines a <computeroutput>firstOf</computeroutput> function, with any number of arguments, that returns
+    the first one that is not NULL. The result keeps its type:
+<programlisting language="rexx">
+  rc = oosqlCreateFunction(db, "firstOf", -1, "firstOfRtn")
+  sql = "SELECT name, firstOf(price, type_id, 'none') AS v," -
+        "typeof(firstOf(price, type_id, 'none')) AS t FROM foods WHERE id &gt; 2;"
+  rows = oosqlExec(db, sql, .true, .ooSQLite~OO_ARRAY_OF_ARRAYS)
+  do i = 2 to rows~items
+    say rows[i][1]':' rows[i][2] '('rows[i][3]')'
+  end
+  /* Output:
+  Bacon: 3.75 (real)
+  Cheese: 3 (integer)
+  */
 
-]]>
+  ::routine firstOfRtn public
+    use arg db, context, userData, ...
+    do i = 4 to arg()
+      if oosqlValueType(arg(i)) \== .ooSQLite~SQLNULL then do
+        call oosqlResultValue context, arg(i)
+        return 0
+      end
+    end
+    call oosqlResultNull context
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -2511,7 +2775,7 @@ call oosqlClose db
 </mediaobject>
 
 <para>
-  xx
+  Sets the result of a user defined SQL function, or of the final step of an aggregate, to a blob filled with zeros.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -2519,10 +2783,17 @@ call oosqlClose db
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>sqlCntxt [required]</term>
       <listitem>
       <para>
-        xx
+        The SQLite context, the second argument of the function routine, or of the final routine of an aggregate. See
+        the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>size [required]</term>
+      <listitem>
+      <para>
+        The size of the blob, in bytes. A negative size is the same as 0.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -2531,29 +2802,46 @@ call oosqlClose db
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> for when and how the result is set.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlResultZeroBlob</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_zeroblob</ulink> API.
+  </para>
+  <para>
+    The <emphasis role="italic">zeroBlob</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link>
+    class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example defines a <computeroutput>blank</computeroutput> function, and uses it to set the picture of a food to
+    8 zero bytes:
+<programlisting language="rexx">
+  rc = oosqlCreateFunction(db, "blank", 1, "blankRtn")
+  rc = oosqlExec(db, "UPDATE foods SET picture = blank(8) WHERE id = 1;")
+  sql = "SELECT length(picture) AS l, hex(picture) AS h FROM foods WHERE id =" -
+        "1;"
+  rows = oosqlExec(db, sql, .true, .ooSQLite~OO_ARRAY_OF_ARRAYS)
+  say rows[2][1] rows[2][2]
+  /* Output:
+  8 0000000000000000
+  */
 
-]]>
+  ::routine blankRtn public
+    use arg db, context, userData, size
+    call oosqlResultZeroBlob context, oosqlValueInt(size)
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
