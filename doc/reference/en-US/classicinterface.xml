@@ -252,7 +252,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlCompileOptionGet">oosqlCompileOptionGet()</link></entry>
-<entry>.</entry>
+<entry>Returns one of the options that were used at compile time when the SQLite library that ooSQLite uses was built.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlCompileOptionUsed">oosqlCompileOptionUsed()</link></entry>

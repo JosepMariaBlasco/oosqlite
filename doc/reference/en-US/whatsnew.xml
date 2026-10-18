@@ -169,6 +169,16 @@
     detect an empty blob must test for the empty string instead.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">oosqlCompileOptionGet counts from 1</emphasis></term>
+  <listitem>
+  <para>
+    <link linkend="rtn-oosqlCompileOptionGet">oosqlCompileOptionGet</link> passed its index to SQLite unchanged, so the
+    first option was number 0, while the <link linkend="mthCompileOptionGet">compileOptionGet</link> method of the
+    ooSQLite class, and the column and parameter numbers of the classic interface, count from 1. Now the routine also
+    counts from 1, and returns the same option as the method for every index; 0 returns the string NULL. A loop that
+    starts at 0 and stops at NULL must start at 1, or it lists nothing.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">The recordFormat attribute of a statement works</emphasis></term>
   <listitem>
   <para>
@@ -442,6 +452,14 @@
     linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link>, <link linkend="rtn-oosqlMutexEnter">oosqlMutexEnter</link>,
     <link linkend="rtn-oosqlMutexTry">oosqlMutexTry</link>, <link linkend="rtn-oosqlMutexLeave">oosqlMutexLeave</link>,
     and <link linkend="rtn-oosqlMutexFree">oosqlMutexFree</link>, with examples that use several Rexx threads.
+  </para></listitem>
+  <listitem><para>
+    The classic routines that query the library are now documented: the versions (<link
+    linkend="rtn-oosqlLibVersion">oosqlLibVersion</link> and others), the compile options, <link
+    linkend="rtn-oosqlComplete">oosqlComplete</link>, <link linkend="rtn-oosqlStrGlob">oosqlStrGlob</link>, which
+    returns 0 for a match, and the memory routines. The section of <link
+    linkend="rtn-oosqlLibVersion">oosqlLibVersion</link> notes that <computeroutput>.ooSQLite~VERSION</computeroutput>
+    invokes the version method of the ooSQLite class, which hides the VERSION constant: the constant is <computeroutput>.ooSQLiteConstants~VERSION</computeroutput>.
   </para></listitem>
   <listitem><para>
     The <link linkend="chpOOSQLiteConstants">constants chapter</link> lists all the constants of the class, also the
