@@ -2136,8 +2136,8 @@ call oosqlClose db
     SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_double</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">double</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link> class
-    does the same in the object orientated interface.
+    The <link linkend="mthDoubleClsOOSQLResult">double</link> method of the <link
+    linkend="clsOOSQLResult">ooSQLResult</link> class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
@@ -2230,8 +2230,8 @@ call oosqlClose db
     SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_error</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">error</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link> class
-    does the same in the object orientated interface.
+    The <link linkend="mthErrorClsOOSQLResult">error</link> method of the <link
+    linkend="clsOOSQLResult">ooSQLResult</link> class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
@@ -2319,8 +2319,8 @@ call oosqlClose db
     SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_error_code</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">errorCode</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link>
-    class does the same in the object orientated interface.
+    The <link linkend="mthErrorCodeClsOOSQLResult">errorCode</link> method of the <link
+    linkend="clsOOSQLResult">ooSQLResult</link> class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
@@ -2400,8 +2400,8 @@ call oosqlClose db
     SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_error_nomem</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">errorNoMem</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link>
-    class does the same in the object orientated interface.
+    The <link linkend="mthErrorNoMemClsOOSQLResult">errorNoMem</link> method of the <link
+    linkend="clsOOSQLResult">ooSQLResult</link> class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
@@ -2464,8 +2464,8 @@ call oosqlClose db
     SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_error_toobig</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">errorTooBig</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link>
-    class does the same in the object orientated interface.
+    The <link linkend="mthErrorTooBigClsOOSQLResult">errorTooBig</link> method of the <link
+    linkend="clsOOSQLResult">ooSQLResult</link> class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
@@ -2550,8 +2550,8 @@ call oosqlClose db
     <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_int</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">int</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link> class
-    does the same in the object orientated interface.
+    The <link linkend="mthIntClsOOSQLResult">int</link> method of the <link linkend="clsOOSQLResult">ooSQLResult</link>
+    class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
@@ -2638,8 +2638,8 @@ call oosqlClose db
     SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_int64</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">int64</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link> class
-    does the same in the object orientated interface.
+    The <link linkend="mthInt64ClsOOSQLResult">int64</link> method of the <link
+    linkend="clsOOSQLResult">ooSQLResult</link> class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
@@ -2720,8 +2720,8 @@ call oosqlClose db
     <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_null</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">null</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link> class
-    does the same in the object orientated interface.
+    The <link linkend="mthNullClsOOSQLResult">null</link> method of the <link
+    linkend="clsOOSQLResult">ooSQLResult</link> class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
@@ -2790,8 +2790,8 @@ call oosqlClose db
     <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_text</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">text</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link> class
-    does the same in the object orientated interface.
+    The <link linkend="mthTextClsOOSQLResult">text</link> method of the <link
+    linkend="clsOOSQLResult">ooSQLResult</link> class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
@@ -2890,8 +2890,8 @@ call oosqlClose db
     SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_value</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">value</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link> class
-    does the same in the object orientated interface.
+    The <link linkend="mthValueClsOOSQLResult">value</link> method of the <link
+    linkend="clsOOSQLResult">ooSQLResult</link> class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
@@ -2982,8 +2982,8 @@ call oosqlClose db
     SQLite <ulink url="http://www.sqlite.org/c3ref/result_blob.html">sqlite3_result_zeroblob</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">zeroBlob</emphasis> method of the <link linkend="clsOOSQLResult">ooSQLResult</link>
-    class does the same in the object orientated interface.
+    The <link linkend="mthZeroBlobClsOOSQLResult">zeroBlob</link> method of the <link
+    linkend="clsOOSQLResult">ooSQLResult</link> class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>

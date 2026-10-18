@@ -1393,8 +1393,8 @@
     <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_blob</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">blob</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class does
-    the same in the object orientated interface.
+    The <link linkend="mthBlobClsOOSQLValue">blob</link> method of the <link linkend="clsOOSQLValue">ooSQLValue</link>
+    class does the same in the object orientated interface.
   </para>
   <para>
     Before ooSQLite 1.1, this routine returned a Pointer to the data, which was only useful to pass it, with its size,
@@ -1485,8 +1485,8 @@
     <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_bytes</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">bytes</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class
-    does the same in the object orientated interface.
+    The <link linkend="mthBytesClsOOSQLValue">bytes</link> method of the <link linkend="clsOOSQLValue">ooSQLValue</link>
+    class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
@@ -1551,8 +1551,8 @@
     SQLite <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_double</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">double</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class
-    does the same in the object orientated interface.
+    The <link linkend="mthDoubleClsOOSQLValue">double</link> method of the <link
+    linkend="clsOOSQLValue">ooSQLValue</link> class does the same in the object orientated interface.
   </para>
   <para>
     Before ooSQLite 1.1, the number was returned with 9 significant digits only: 3.141592653589793 was returned as
@@ -1635,8 +1635,8 @@
     <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_int</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">int</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class does
-    the same in the object orientated interface.
+    The <link linkend="mthIntClsOOSQLValue">int</link> method of the <link linkend="clsOOSQLValue">ooSQLValue</link>
+    class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
@@ -1699,8 +1699,8 @@
     <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_int64</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">int64</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class
-    does the same in the object orientated interface.
+    The <link linkend="mthInt64ClsOOSQLValue">int64</link> method of the <link linkend="clsOOSQLValue">ooSQLValue</link>
+    class does the same in the object orientated interface.
   </para>
   <para>
     This routine is new in ooSQLite 1.1. Before, the classic interface could not read an argument that does not fit in
@@ -1793,8 +1793,8 @@
     SQLite <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_numeric_type</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">numericType</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link>
-    class does the same in the object orientated interface.
+    The <link linkend="mthNumericTypeClsOOSQLValue">numericType</link> method of the <link
+    linkend="clsOOSQLValue">ooSQLValue</link> class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
@@ -1878,8 +1878,8 @@
     <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_text</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">text</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class does
-    the same in the object orientated interface.
+    The <link linkend="mthTextClsOOSQLValue">text</link> method of the <link linkend="clsOOSQLValue">ooSQLValue</link>
+    class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
@@ -1948,8 +1948,8 @@
     <ulink url="http://www.sqlite.org/c3ref/value_blob.html">sqlite3_value_type</ulink> API.
   </para>
   <para>
-    The <emphasis role="italic">type</emphasis> method of the <link linkend="clsOOSQLValue">ooSQLValue</link> class does
-    the same in the object orientated interface.
+    The <link linkend="mthTypeClsOOSQLValue">type</link> method of the <link linkend="clsOOSQLValue">ooSQLValue</link>
+    class does the same in the object orientated interface.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
