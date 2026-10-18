@@ -10584,7 +10584,7 @@ static void tooManyAutoRegistrations(RexxMethodContext *c, pCooSQLExtensions pce
  *        decided to set the last error attributes instead.  This could change
  *        in the future.
  */
-bool validPackageVersion(RexxMethodContext *c, pCooSQLPackage pcp)
+bool validPackageVersion(RexxMethodContext *c, pCooSQLExtensions pcext, pCooSQLPackage pcp)
 {
     ooSQLitePackageEntry *pa = pcp->packageEntry;
 
@@ -10603,7 +10603,9 @@ bool validPackageVersion(RexxMethodContext *c, pCooSQLPackage pcp)
                      pa->packageName, pa->reqSQLiteVersion, sqlite3_libversion_number());
         }
 
-        extensionsSetLastErr(c, c->String(buf), c->UnsignedInt32(OO_PACKAGE_NOT_VALID));
+        // With pcext: the attributes of the class read the C struct.  (Without
+        // it, the error was lost and they said "no error".)
+        extensionsSetLastErr(c, pcext, buf, OO_PACKAGE_NOT_VALID);
         return false;
     }
     return true;
@@ -12070,7 +12072,7 @@ RexxMethod4(RexxObjectPtr, oosqlext_loadPackage_cls, CSTRING, libName, OPTIONAL_
         goto done_out;
     }
 
-    if ( ! validPackageVersion(context, pcp) )
+    if ( ! validPackageVersion(context, pcext, pcp) )
     {
         goto done_out;
     }
