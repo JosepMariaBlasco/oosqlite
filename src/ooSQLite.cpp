@@ -12658,12 +12658,27 @@ RexxMethod2(RexxObjectPtr, oosqlfunc_init, RexxObjectPtr, functionEntry, OSELF, 
 #define ooSQLite_Routines_Section
 
 
+/**
+ * Raises 88.900 for a null handle passed to a classic routine.  The classic
+ * interface has handles, not objects, so nullObjectException() of APICommon,
+ * which says "the ... object", is not used.
+ *
+ * @param name  What the handle is for, e.g. "mutex": the message is
+ *              "Argument 1, the mutex handle, must not be null."
+ */
+static void nullHandleException(RexxThreadContext *c, CSTRING name, size_t pos)
+{
+    char buffer[256];
+    snprintf(buffer, sizeof(buffer), "Argument %zd, the %s handle, must not be null", pos, name);
+    userDefinedMsgException(c, buffer);
+}
+
 static inline sqlite3_backup *routineBu(RexxCallContext *c, void *_bu, size_t pos)
 {
     sqlite3_backup *bu = (sqlite3_backup *)_bu;
     if ( bu == NULL )
     {
-        nullObjectException(c->threadContext, "backup handle", pos);
+        nullHandleException(c->threadContext, "backup", pos);
     }
     return bu;
 }
@@ -12673,7 +12688,7 @@ static inline sqlite3 *routineDB(RexxCallContext *c, void *_db, size_t pos)
     sqlite3 *db = (sqlite3 *)_db;
     if ( db == NULL )
     {
-        nullObjectException(c->threadContext, "database connection", pos);
+        nullHandleException(c->threadContext, "database connection", pos);
     }
     return db;
 }
@@ -12683,7 +12698,7 @@ static inline sqlite3_stmt *routineStmt(RexxCallContext *c, void *_stmt)
     sqlite3_stmt *stmt = (sqlite3_stmt *)_stmt;
     if ( stmt == NULL )
     {
-        nullObjectException(c->threadContext, "prepared statement", 1);
+        nullHandleException(c->threadContext, "prepared statement", 1);
     }
     return stmt;
 }
@@ -12693,7 +12708,7 @@ static inline sqlite3_mutex *routineMutex(RexxCallContext *c, void *_mtx)
     sqlite3_mutex *mtx = (sqlite3_mutex *)_mtx;
     if ( mtx == NULL )
     {
-        nullObjectException(c->threadContext, "mutex", 1);
+        nullHandleException(c->threadContext, "mutex", 1);
     }
     return mtx;
 }
