@@ -264,6 +264,15 @@
 
 <section id="sctWhatsChangedOther"><title>Other Fixes</title>
 <variablelist>
+  <varlistentry><term><emphasis role="bold">Argument positions in the errors of oosqlExec and oosqlBackupInit</emphasis></term>
+  <listitem>
+  <para>
+    The syntax errors of <link linkend="rtn-oosqlExec">oosqlExec</link> named the wrong argument: argument 3 for an
+    invalid format, which is argument 4, and argument 4 for a callback routine that does not exist, which is argument 5.
+    <link linkend="rtn-oosqlBackupInit">oosqlBackupInit</link> named argument 3 for a null source connection, which is
+    argument 2.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">stmtStatus and oosqlStmtStatus with an invalid op</emphasis></term>
   <listitem>
   <para>
