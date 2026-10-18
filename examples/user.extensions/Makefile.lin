@@ -49,7 +49,7 @@ SO_LLIBS=-ldl
 CFLAGS=-c -fPIC $(BASEFLAGS)
 
 # What we want to build.
-all: libsimpleextension.so libexamplepackage.so libexamplelibrary.so libtestlibrary.so libtestpackage.so
+all: libsimpleextension.so libexamplepackage.so libexamplelibrary.so libtestlibrary.so libtestpackage.so libtoonewpackage.so
 
 simpleExtension.o: simpleExtension.c Makefile.lin
 	gcc $(CFLAGS) $(EXTRA_INCLUDE) -o simpleExtension.o simpleExtension.c
@@ -80,6 +80,12 @@ testPackage.o: testPackage.cpp Makefile.lin
 
 libtestpackage.so: testPackage.o
 	gcc $(SO_LFLAGS) -o libtestpackage.so testPackage.o $(SO_LLIBS)
+
+tooNewPackage.o: tooNewPackage.cpp Makefile.lin
+	gcc $(CFLAGS) $(EXTRA_INCLUDE) -o tooNewPackage.o tooNewPackage.cpp
+
+libtoonewpackage.so: tooNewPackage.o
+	gcc $(SO_LFLAGS) -o libtoonewpackage.so tooNewPackage.o $(SO_LLIBS)
 
 clean:
 	rm -f *.so *.o

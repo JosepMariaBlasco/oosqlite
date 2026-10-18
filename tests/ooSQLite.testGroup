@@ -5037,6 +5037,18 @@ TestCancelAllCleanup:
   self~assertEquals("[unknown error]", "[".ooSQLite~errStr(1012)"]", -
     "errStr of a code after the last one")
 
+::Method testLoadPackageTooNew
+  -- tooNewPackage needs ooSQLite 99.0.0: the package was refused, but the
+  -- error was recorded where lastErrCode / lastErrMsg do not look
+  self~assertFalse(.ooSQLExtensions~loadPackage(userExtLib("toonewpackage")), -
+    "loadPackage of a package that needs a newer ooSQLite should fail")
+  self~assertEquals(.ooSQLite~OO_PACKAGE_NOT_VALID, .ooSQLExtensions~lastErrCode, -
+    "lastErrCode should be OO_PACKAGE_NOT_VALID")
+  self~assertTrue(.ooSQLExtensions~lastErrMsg~pos("requires ooSQLite version") > 0, -
+    "lastErrMsg should say why:" .ooSQLExtensions~lastErrMsg)
+  self~assertNull(.ooSQLExtensions~getPackage("tooNewPackage"), -
+    "the package should not be kept")
+
 ::Method testAutoCollationNotAutomaticMessage
   -- the message said "collations X is not ..."
   self~loadTestPackage
