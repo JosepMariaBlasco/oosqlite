@@ -10735,27 +10735,22 @@ static int autoBuiltin(RexxMethodContext *c, CSTRING name, pCooSQLExtensions pce
  *
  * @param c
  *
- * @return int
+ * @return SQLITE_OK always.
  *
- * @note  This funtion walks through the array of builtin extensions and cancels
- *        every one.  If there is an error for any one builtin we call it
- *        SQLITE_MISUSE, format the last error, but continue.  That means if
- *        there is an error for more than one builtin, only the last error is
- *        reported.
+ * @note  This function walks through the array of builtin extensions and
+ *        cancels every one.  sqlite3_cancel_auto_extension() returns false for
+ *        a builtin that was not automatic; that is not an error here, the
+ *        result asked for, no builtin automatic, is reached anyway.  (It used
+ *        to return SQLITE_MISUSE, with a wrong message, whenever some builtin
+ *        was not automatic.)
  */
 static int cancelAllAutoBuiltins(RexxMethodContext *c, pCooSQLExtensions pcext)
 {
-    int rc = SQLITE_OK;
-
     for ( size_t i = 0; i < BUILTINS_COUNT; i++ )
     {
-        if ( ! sqlite3_cancel_auto_extension((fnXInit)builtins[i]) )
-        {
-            rc = SQLITE_MISUSE;
-            extensionsFormatLastErr(c, pcext, rc, BUILTIN_AUTO_ERR_FMT, builtinNames[i]);
-        }
+        sqlite3_cancel_auto_extension((fnXInit)builtins[i]);
     }
-    return rc;
+    return SQLITE_OK;
 }
 
 /**
@@ -10945,6 +10940,16 @@ static bool makeAutoCollation(RexxMethodContext *c, pCooSQLExtensions pcext, pSQ
         }
     }
 
+    // Already automatic: nothing to do.  (It used to be added again, so that
+    // unmarking it once left it automatic.)
+    for ( size_t i = 0; i < pCsc->countCollations; i++ )
+    {
+        if ( pCsc->autoCollations[i] == psce )
+        {
+            return true;
+        }
+    }
+
     if ( pCsc->countCollations >= MAX_AUTO_COLLATIONS )
     {
         tooManyAutoRegistrations(c, pcext, "collations", MAX_AUTO_COLLATIONS);
@@ -10979,6 +10984,16 @@ static bool makeAutoFunction(RexxMethodContext *c, pCooSQLExtensions pcext, pSQL
         }
     }
 
+    // Already automatic: nothing to do.  (It used to be added again, so that
+    // unmarking it once left it automatic.)
+    for ( size_t i = 0; i < pCsc->countFunctions; i++ )
+    {
+        if ( pCsc->autoFunctions[i] == psfe )
+        {
+            return true;
+        }
+    }
+
     if ( pCsc->countFunctions >= MAX_AUTO_FUNCTIONS )
     {
         tooManyAutoRegistrations(c, pcext, "functions", MAX_AUTO_FUNCTIONS);
@@ -11009,6 +11024,16 @@ static bool makeAutoPackage(RexxMethodContext *c, pCooSQLExtensions pcext, pCooS
         {
             outOfMemoryException(c->threadContext);
             return false;
+        }
+    }
+
+    // Already automatic: nothing to do.  (It used to be added again, so that
+    // unmarking it once left it automatic.)
+    for ( size_t i = 0; i < pCsc->countPackages; i++ )
+    {
+        if ( pCsc->autoPackages[i] == pcp )
+        {
+            return true;
         }
     }
 
@@ -11436,8 +11461,8 @@ RexxMethod3(RexxObjectPtr, oosqlext_autoCollationNeeded_cls, RexxObjectPtr, pack
     {
         char buf[256];
 
-        snprintf(buf, 256, "this package (%s) contains no collation needed callback", pcp->packageEntry->packageName);
-        extensionsSetLastErr(context, context->String(buf), context->Int32(SQLITE_MISUSE));
+        snprintf(buf, 256, PACKAGE_NO_COLLATIONNEEDED_FMT, pcp->packageEntry->packageName);
+        extensionsSetLastErr(context, pcext, buf, SQLITE_MISUSE);
 
         return TheFalseObj;
     }
@@ -11655,15 +11680,13 @@ RexxMethod3(RexxObjectPtr, oosqlext_autoPackage_cls, RexxObjectPtr, packageName,
  *
  *  @return An ooSQLite result code.
  *
- *  @notes  When canceling ALL builtins, an attempt it made to cancel *every*
- *          builtin.  If an error is encountered for an single builtin, it is
- *          recorded in the last error message and last error code attributes,
- *          but it is ignored until all builtins have been canceled.  This means
- *          that if there is an error for more than one builtin, only the last
- *          error is recorded.
+ *  @notes  When canceling ALL builtins, every builtin is canceled, and the
+ *          result is always SQLITE_OK: a builtin that was not automatic is not
+ *          an error.
  *
- *          On the other hand, if an array of builtins is passed as entryNames,
- *          the method quits on the first error.
+ *          A single name, or each name of an array, that is not automatic
+ *          gives SQLITE_MISUSE.  With an array the method quits on the first
+ *          error.
  */
 RexxMethod2(int, oosqlext_cancelAutoBuiltin, OPTIONAL_RexxObjectPtr, entryPoints, CSELF, pCSelf)
 {
@@ -11858,6 +11881,8 @@ RexxMethod3(RexxObjectPtr, oosqlext_loadLibrary_cls, RexxObjectPtr, libName, OPT
     pCooSQLLibrary  pcl     = NULLOBJECT;
     RexxObjectPtr   result  = TheFalseObj;
 
+    resetExtensionsLastErr(context, pcext);
+
     libCls = rxGetContextClass(context, "ooSQLLibrary");
     if ( libCls == NULLOBJECT )
     {
@@ -12051,8 +12076,9 @@ done_out:
  *
  *  @notes
  */
-RexxMethod0(int, oosqlext_resetAutoBuiltin)
+RexxMethod1(int, oosqlext_resetAutoBuiltin, CSELF, pCSelf)
 {
+    resetExtensionsLastErr(context, (pCooSQLExtensions)pCSelf);
     sqlite3_reset_auto_extension();
     return SQLITE_OK;
 }
@@ -12401,12 +12427,13 @@ RexxMethod2(int, oosqlpack_register, RexxObjectPtr, dbConn, CSELF, pCSelf)
 
     resetPackageLastErr(context, pcp);
 
-    if ( ! c->IsOfType(dbConn, "OOSQLITECONNECTION") )
+    // An open connection: anything else raises an error (it used to go on
+    // and crash, with a non-connection or with a closed connection).
+    pCooSQLiteConn pConn = requiredDBConnectionArg(context, dbConn, 1);
+    if ( pConn == NULL )
     {
-        wrongClassException(context->threadContext, 1, "ooSQLiteConnection", dbConn);
+        return SQLITE_MISUSE;
     }
-
-    pCooSQLiteConn pConn = dbToCSelf(context, dbConn);
 
     if ( ! packageRegister(context, pcp, pConn) )
     {
