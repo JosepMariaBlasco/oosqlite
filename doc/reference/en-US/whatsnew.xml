@@ -333,12 +333,17 @@
     argument 2.
   </para>
   </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Null handles are called handles in the error messages</emphasis></term>
+  <varlistentry><term><emphasis role="bold">Error messages of routines: handles, arguments, routines</emphasis></term>
   <listitem>
   <para>
     The syntax error 88.900 that the classic routines raise for a null handle called it an object, as in "Argument 1,
     the mutex object, must not be null.", and for a backup "the backup handle object". The message now says "handle":
     "Argument 1, the mutex handle, must not be null." Only the text changed; the error code is the same.
+  </para>
+  <para>
+    In the same way, the errors 88.900 for an invalid option, as in <computeroutput>ooSQLiteVersion('X')</computeroutput>,
+    said "Method argument" also for routines; they now say "Argument". The error for a result of <link
+    linkend="rtn-ooSQLiteEnquote">ooSQLiteEnquote</link> that is too long calls it a routine instead of a function.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">stmtStatus and oosqlStmtStatus with an invalid op</emphasis></term>
