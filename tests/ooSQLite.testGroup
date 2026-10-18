@@ -5013,6 +5013,40 @@ TestCancelAllCleanup:
   self~assertFalse(e~autoPackage("testPackage", .false), -
     "unmarking a package that is not automatic should fail")
 
+::Method testExtensionResultCodeConstants
+  -- the codes 1005 to 1011 had no constants
+  codes = .Array~of("OO_NO_CSELF", "OO_PACKAGE_NOT_VALID", "OO_NO_SUCH_PACKAGE", -
+    "OO_NO_SUCH_LIBRARY", "OO_PACKAGE_NOT_AUTOMATIC", "OO_COLLATION_NOT_AUTOMATIC", -
+    "OO_FUNCTION_NOT_AUTOMATIC")
+  Do i = 1 To codes~items
+    self~assertEquals(1004 + i, .ooSQLite~send(codes[i]), -
+      "the constant" codes[i])
+  End
+  .ooSQLExtensions~getPackage("noSuchPackage")
+  self~assertEquals(.ooSQLite~OO_NO_SUCH_PACKAGE, .ooSQLExtensions~lastErrCode, -
+    "getPackage of an unknown package gives OO_NO_SUCH_PACKAGE")
+
+::Method testExtensionResultCodeErrStr
+  -- errStr returned "unknown error" for the codes 1005 to 1011
+  Do code = 1005 To 1011
+    self~assertTrue(.ooSQLite~errStr(code) \== "unknown error", -
+      "errStr should describe" code":" .ooSQLite~errStr(code))
+    self~assertEquals("[".ooSQLite~errStr(code)"]", "["oosqlErrStr(code)"]", -
+      "oosqlErrStr should give the same description for" code)
+  End
+  self~assertEquals("[unknown error]", "[".ooSQLite~errStr(1012)"]", -
+    "errStr of a code after the last one")
+
+::Method testAutoCollationNotAutomaticMessage
+  -- the message said "collations X is not ..."
+  self~loadTestPackage
+  self~assertFalse(.ooSQLExtensions~autoCollation("testPackage", "reverse", .false), -
+    "unmarking a collation that is not automatic should fail")
+  self~assertEquals(.ooSQLite~OO_COLLATION_NOT_AUTOMATIC, .ooSQLExtensions~lastErrCode, -
+    "lastErrCode should be OO_COLLATION_NOT_AUTOMATIC")
+  self~assertEquals("[collation reverse is not an automatically registered collation]", -
+    "[".ooSQLExtensions~lastErrMsg"]", "lastErrMsg")
+
 /******************************************************************************/
 /*                                                                            */
 /* Section 34:ooSQLResult and ooSQLValue — the methods not used elsewhere    */
