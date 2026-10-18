@@ -3042,7 +3042,7 @@ void invalidMutexException(RexxThreadContext *context, pCooSQLiteMutex pCmtx)
     }
     else
     {
-        snprintf(buffer, sizeof(buffer), "The ooSQLite mutex is not valid, it was not opened without error");
+        snprintf(buffer, sizeof(buffer), "The ooSQLite mutex is not valid, it could not be created");
     }
     executionErrorException(context, buffer);
 }
@@ -5467,6 +5467,39 @@ RexxMethod5(RexxObjectPtr, oosqlconn_init, RexxObjectPtr, rxFile, OPTIONAL_int32
  *  database should close on another thread before the call to interrupt
  *  returns, something to keep in mind.
  */
+/**
+ * Invalidates the ooSQLiteMutex objects returned by dbMutex() for this
+ * connection.  It is called when the connection has been closed: SQLite has
+ * freed the mutex of the connection, so the objects are marked as closed and
+ * their pointer is cleared, and any later use raises an error instead of using
+ * the freed mutex.  Before ooSQLite 1.1 they kept the dangling pointer.
+ */
+static void invalidateDbMutexes(RexxMethodContext *c)
+{
+    RexxObjectPtr dbMutexes = c->GetObjectVariable(DB_MUTEXES_VAR);
+    if ( dbMutexes == NULLOBJECT || ! c->IsArray(dbMutexes) )
+    {
+        return;
+    }
+
+    RexxArrayObject a = (RexxArrayObject)dbMutexes;
+    size_t count = c->ArrayItems(a);
+    for ( size_t i = 1; i <= count; i++ )
+    {
+        RexxObjectPtr mtxObj = c->ArrayAt(a, i);
+        if ( mtxObj != NULLOBJECT )
+        {
+            pCooSQLiteMutex pCmtx = (pCooSQLiteMutex)c->ObjectToCSelf(mtxObj);
+            if ( pCmtx != NULL )
+            {
+                pCmtx->mutex  = NULL;
+                pCmtx->closed = true;
+            }
+        }
+    }
+    c->DropObjectVariable(DB_MUTEXES_VAR);
+}
+
 RexxMethod1(RexxObjectPtr, oosqlconn_uninit, CSELF, pCSelf)
 {
     if ( pCSelf != NULLOBJECT )
@@ -5497,6 +5530,7 @@ RexxMethod1(RexxObjectPtr, oosqlconn_uninit, CSELF, pCSelf)
 
                 pConn->db = NULL;
                 pConn->closed = true;
+                invalidateDbMutexes(context);
                 return TheZeroObj;
             }
 
@@ -5517,6 +5551,7 @@ RexxMethod1(RexxObjectPtr, oosqlconn_uninit, CSELF, pCSelf)
             {
                 pConn->db = NULL;
                 pConn->closed = true;
+                invalidateDbMutexes(context);
             }
 #if OOSQLDBG == 1
             else
@@ -5671,6 +5706,7 @@ RexxMethod1(int, oosqlconn_close, CSELF, pCSelf)
         {
             pConn->db     = NULL;
             pConn->closed = true;
+            invalidateDbMutexes(context);
         }
 #if OOSQLDBG == 1
         else if ( rc == SQLITE_BUSY )
@@ -6429,7 +6465,21 @@ RexxMethod1(RexxObjectPtr, oosqlconn_dbMutex, CSELF, pCSelf)
                                                  context->NewPointer((POINTER)MutexMagic),
                                                  context->NewPointer((POINTER)mtx));
 
-    return context->SendMessage(TheOOSQLiteMutexClass, "NEW", args);
+    RexxObjectPtr mtxObj = context->SendMessage(TheOOSQLiteMutexClass, "NEW", args);
+
+    // Remember the object, so that close() and uninit() can invalidate it:
+    // SQLite frees the mutex of a connection when the connection is closed.
+    if ( mtxObj != NULLOBJECT )
+    {
+        RexxObjectPtr dbMutexes = context->GetObjectVariable(DB_MUTEXES_VAR);
+        if ( dbMutexes == NULLOBJECT || ! context->IsArray(dbMutexes) )
+        {
+            dbMutexes = context->NewArray(1);
+            context->SetObjectVariable(DB_MUTEXES_VAR, dbMutexes);
+        }
+        context->ArrayAppend((RexxArrayObject)dbMutexes, mtxObj);
+    }
+    return mtxObj;
 }
 
 
@@ -10180,7 +10230,7 @@ RexxMethod1(RexxObjectPtr, oosqlmtx_uninit, CSELF, pCSelf)
  */
 RexxMethod1(int, oosqlmtx_enter, CSELF, pCSelf)
 {
-    pCooSQLiteMutex pCmtx = requiredMtxCSelf(context, pCSelf);
+    pCooSQLiteMutex pCmtx = requiredMtx(context, pCSelf);
     if ( pCmtx == NULL )
     {
         return 1;
@@ -10227,7 +10277,7 @@ RexxMethod1(int, oosqlmtx_free, CSELF, pCSelf)
  */
 RexxMethod1(int, oosqlmtx_leave, CSELF, pCSelf)
 {
-    pCooSQLiteMutex pCmtx = requiredMtxCSelf(context, pCSelf);
+    pCooSQLiteMutex pCmtx = requiredMtx(context, pCSelf);
     if ( pCmtx == NULL )
     {
         return 1;
@@ -10248,7 +10298,7 @@ RexxMethod1(int, oosqlmtx_leave, CSELF, pCSelf)
  */
 RexxMethod1(int, oosqlmtx_try, CSELF, pCSelf)
 {
-    pCooSQLiteMutex pCmtx = requiredMtxCSelf(context, pCSelf);
+    pCooSQLiteMutex pCmtx = requiredMtx(context, pCSelf);
     if ( pCmtx == NULL )
     {
         return 1;

@@ -329,6 +329,7 @@ typedef struct _oosqlmutexCSelf {
 typedef CooSQLiteMutex *pCooSQLiteMutex;
 
 #define MutexMagic                  0xFD74CA32
+#define DB_MUTEXES_VAR              "DBMUTEXES"  // the ooSQLiteMutex objects returned by dbMutex()
 #define SQLITE_MUTEX_RECURSIVE_DB   999    // Our own mutex define to indicate the mutex is the sqlite3_db_mutex()
 
 /* Struct for the ooSQLPackage object CSelf. */
