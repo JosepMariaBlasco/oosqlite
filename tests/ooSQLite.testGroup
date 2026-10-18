@@ -2087,6 +2087,43 @@ TestBuEMCleanup:
 -- mutex try                                                                  --
 --------------------------------------------------------------------------------
 
+::Method testMutexAfterFree
+  -- A freed mutex can not be used: enter, leave and try raise 98.900;
+  -- freeing it again does nothing
+  mtx = .ooSQLiteMutex~new
+  self~assertEquals(0, mtx~free, "free")
+  Do m Over .array~of("ENTER", "LEAVE", "TRY")
+    self~assertEquals("98.900 The ooSQLite mutex is not valid, it has been closed.", -
+      self~mutexError(mtx, m), m "of a freed mutex")
+  End
+  self~assertEquals(0, mtx~free, "freeing a freed mutex does nothing")
+
+::Method testDbMutexAfterClose
+  -- The mutex objects of a connection are closed when the connection is
+  -- closed: SQLite frees the mutex, so they can not be used any more
+  db = self~openMemoryDB
+  m1 = db~dbMutex
+  m2 = db~dbMutex
+  self~assertEquals(0, m1~enter, "enter while the connection is open")
+  self~assertEquals(0, m1~leave, "leave while the connection is open")
+  self~assertEquals(0, db~close, "close")
+  Do m Over .array~of(m1, m2)
+    self~assertTrue(m~closed, "the mutex of a closed connection is closed")
+    self~assertTrue(m~isNull, "the mutex of a closed connection is null")
+    self~assertEquals("98.900 The ooSQLite mutex is not valid, it has been closed.", -
+      self~mutexError(m, "ENTER"), "enter after the connection is closed")
+  End
+
+::Method mutexError
+  -- Sends msgName to mtx, returns the code and message of the syntax error
+  Use Strict Arg mtx, msgName
+  Signal On Syntax
+  mtx~send(msgName)
+  Return "no error"
+Syntax:
+  co = Condition("O")
+  Return co~code co~message
+
 ::Method testMutexTry
   mtx = .ooSQLiteMutex~new
   -- try should succeed on a free mutex (returns SQLITE_OK = 0)
