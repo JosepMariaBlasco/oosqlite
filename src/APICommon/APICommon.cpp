@@ -521,7 +521,7 @@ void stringTooLongException(RexxThreadContext *c, CSTRING name, bool isMethod, s
 {
     char buffer[256];
     snprintf(buffer, sizeof(buffer), "String produced by the %s %s is longer than allowed; (max == %zd)",
-             name, isMethod ? "method" : "function", max);
+             name, isMethod ? "method" : "routine", max);
     userDefinedMsgException(c, buffer);
 }
 
@@ -888,9 +888,12 @@ RexxObjectPtr wrongArgValueException(RexxThreadContext *c, size_t pos, const cha
 /**
  * Similar to 93.914
  *
- * Method argument <pos>, must contain one or more of <list>; found "<actual>"
+ * Argument <pos>, must contain one or more of <list>; found "<actual>"
  *
- * Method argument 2 must contain one or more of SKIPINVISIBLE, SKIPDISABLED,
+ * Raises 88.900, so it says "Argument", not "Method argument", whether the
+ * caller is a method or a routine.
+ *
+ * Argument 2 must contain one or more of SKIPINVISIBLE, SKIPDISABLED,
  * SKIPTRANSPARENT, or ALL; found "BOGUS NOTVISIBLE"
  *
  * @param c       Thread context
@@ -904,7 +907,7 @@ RexxObjectPtr wrongArgKeywordsException(RexxThreadContext *c, size_t pos, CSTRIN
 {
 
     char buffer[512];
-    snprintf(buffer, sizeof(buffer), "Method argument %zd, must contain one or more of %s; found \"%s\"",
+    snprintf(buffer, sizeof(buffer), "Argument %zd, must contain one or more of %s; found \"%s\"",
               pos, list, actual);
     userDefinedMsgException(c, buffer);
     return NULLOBJECT;
@@ -966,9 +969,12 @@ RexxObjectPtr wrongArgKeywordException(RexxThreadContext *c, size_t pos, CSTRING
 /**
  * Similar to 93.915 and 93.914  (actually a combination of the two.)
  *
- * Method argument <pos>, option must be one of <list>; found "<actual>"
+ * Argument <pos>, option must be one of <list>; found "<actual>"
  *
- * Method argument 2 must be one of [P]artially, or [E]ntirely; found "G"
+ * Raises 88.900, so it says "Argument", not "Method argument", whether the
+ * caller is a method or a routine.
+ *
+ * Argument 2 must be one of [P]artially, or [E]ntirely; found "G"
  *
  * @param c
  * @param pos
@@ -980,7 +986,7 @@ RexxObjectPtr wrongArgKeywordException(RexxThreadContext *c, size_t pos, CSTRING
 RexxObjectPtr wrongArgOptionException(RexxThreadContext *c, size_t pos, CSTRING list, CSTRING actual)
 {
     char buffer[512];
-    snprintf(buffer, sizeof(buffer), "Method argument %zd, option must be one of %s; found \"%s\"", pos, list, actual);
+    snprintf(buffer, sizeof(buffer), "Argument %zd, option must be one of %s; found \"%s\"", pos, list, actual);
     userDefinedMsgException(c, buffer);
     return NULLOBJECT;
 }

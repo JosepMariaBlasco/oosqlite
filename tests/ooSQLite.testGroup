@@ -6299,7 +6299,7 @@ NullStmtRaised:
   big.1 = "a"~copies(3000)
   big.2 = "b"~copies(3000)
   big.3 = "c"
-  self~assertEquals("88.900 String produced by the ooSQLiteEnquote routine is longer than allowed; (max == 4095)", -
+  self~assertEquals("88.900 String produced by the ooSQLiteEnquote routine is longer than allowed; (max == 4095).", -
     self~nullHandleError("ooSQLiteEnquote", .array~of(big.)), "ooSQLiteEnquote with a long result")
 
 ::Method nullHandleError
