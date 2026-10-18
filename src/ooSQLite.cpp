@@ -14246,11 +14246,15 @@ RexxRoutine3(RexxObjectPtr, oosqlCommitHook_rtn, POINTER, _db, CSTRING, rtnName,
 
 /** oosqlCompileOptionGet()
  *
+ *  @param index  The 1-based index of the option, as in compileOptionGet() and
+ *                in the rest of the classic interface.  Before ooSQLite 1.1 it
+ *                was passed unchanged to SQLite, which counts from 0.
  *
  *  @note  Returns "NULL" for the the null pointer return from sqlite.
  */
 RexxRoutine1(RexxObjectPtr, oosqlCompileOptionGet_rtn, int, index)
 {
+    index--;
     return safeRexxString(context->threadContext, sqlite3_compileoption_get(index));
 }
 
