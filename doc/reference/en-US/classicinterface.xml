@@ -164,7 +164,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBusyTimeOut">oosqlBusyTimeOut()</link></entry>
-<entry>.</entry>
+<entry>Sets a busy handler that waits, for up to the given time, while a table is locked.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlCancelAutoBuiltin">oosqlCancelAutoBuiltin()</link></entry>
@@ -172,7 +172,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlChanges">oosqlChanges()</link></entry>
-<entry>.</entry>
+<entry>Returns the number of rows changed, inserted, or deleted by the most recent INSERT, UPDATE, or DELETE statement completed on a database connection.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlClearBindings">oosqlClearBindings()</link></entry>
@@ -180,7 +180,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlClose">oosqlClose()</link></entry>
-<entry>.</entry>
+<entry>Closes a database connection and releases the resources it uses.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlColumnBlob">oosqlColumnBlob()</link></entry>
@@ -276,7 +276,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlDbFileName">oosqlDbFileName()</link></entry>
-<entry>.</entry>
+<entry>Returns the file name of a database of a database connection.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlDbHandle">oosqlDbHandle()</link></entry>
@@ -284,15 +284,15 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlDbMutex">oosqlDbMutex()</link></entry>
-<entry>.</entry>
+<entry>Returns the mutex that serializes the access to a database connection.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlDbReadOnly">oosqlDbReadOnly()</link></entry>
-<entry>.</entry>
+<entry>Tests if a database of a database connection is read only.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlDbReleaseMemory">oosqlDbReleaseMemory()</link></entry>
-<entry>.</entry>
+<entry>Makes SQLite free as much heap memory as it can from a database connection.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlDbStatus">oosqlDbStatus()</link></entry>
@@ -300,15 +300,15 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlEnableLoadExtension">oosqlEnableLoadExtension()</link></entry>
-<entry>.</entry>
+<entry>Allows or forbids loading SQLite extension libraries on a database connection.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlErrCode">oosqlErrCode()</link></entry>
-<entry>.</entry>
+<entry>Returns the result code of the last error on a database connection.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlErrMsg">oosqlErrMsg()</link></entry>
-<entry>.</entry>
+<entry>Returns the English-language description of the last error on a database connection.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlErrStr">oosqlErrStr()</link></entry>
@@ -316,15 +316,15 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlExec">oosqlExec()</link></entry>
-<entry>.</entry>
+<entry>Executes one or more SQL statements, and optionally returns their result rows, or calls a routine for each row.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlExtendedErrCode">oosqlExtendedErrCode()</link></entry>
-<entry>.</entry>
+<entry>Returns the extended result code of the last error on a database connection.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlExtendedResultCodes">oosqlExtendedResultCodes()</link></entry>
-<entry>.</entry>
+<entry>Does nothing: extended result codes are always enabled in ooSQLite.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlFinalize">oosqlFinalize()</link></entry>
@@ -332,11 +332,11 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlGetAutocommit">oosqlGetAutocommit()</link></entry>
-<entry>.</entry>
+<entry>Tests if a database connection is in autocommit mode.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlInterrupt">oosqlInterrupt()</link></entry>
-<entry>.</entry>
+<entry>Makes the SQL operations in progress on a database connection stop as soon as possible.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlIsHandleNull">oosqlIsHandleNull()</link></entry>
@@ -344,7 +344,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlLastInsertRowID">oosqlLastInsertRowID()</link></entry>
-<entry>.</entry>
+<entry>Returns the rowid of the row inserted by the most recent successful INSERT on a database connection.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlLibVersion">oosqlLibVersion()</link></entry>
@@ -356,11 +356,11 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlLimit">oosqlLimit()</link></entry>
-<entry>.</entry>
+<entry>Queries or changes a run time limit of a database connection, such as the maximum length of an SQL statement.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlLoadExtension">oosqlLoadExtension()</link></entry>
-<entry>.</entry>
+<entry>Loads an SQLite extension library into a database connection.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlMemoryHighWater">oosqlMemoryHighWater()</link></entry>
@@ -392,7 +392,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlNextStmt">oosqlNextStmt()</link></entry>
-<entry>.</entry>
+<entry>Finds the prepared statements of a database connection, one by one.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlOpen">oosqlOpen()</link></entry>
@@ -524,7 +524,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlTotalChanges">oosqlTotalChanges()</link></entry>
-<entry>.</entry>
+<entry>Returns the number of rows changed, inserted, or deleted since a database connection was opened.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlTrace">oosqlTrace()</link></entry>

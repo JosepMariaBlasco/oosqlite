@@ -3078,8 +3078,8 @@ Bytes of page memory used by all caches on this database connection:
   <listitem>
   <para>
     The search finds the first statement <emphasis role="italic">after</emphasis> the specified <emphasis
-    role="italic">stmt</emphasis>. It is okay to use a statement that has been <link linkend="mthFinalize">finalized</link>
-    as the starting point of the search. Omitting the <emphasis role="italic">stmt</emphasis> argument or using
+    role="italic">stmt</emphasis>. A statement that has been <link linkend="mthFinalize">finalized</link> is the same as
+    <computeroutput>.nil</computeroutput>: the search starts from the beginning. Omitting the <emphasis role="italic">stmt</emphasis> argument or using
     <computeroutput>.nil</computeroutput> essentially finds the <emphasis role="italic">first</emphasis> prepared statement.
   </para>
   </listitem></varlistentry>

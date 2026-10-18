@@ -337,6 +337,15 @@
     classic interface lists all the routines; it stopped at oosqlFinalize.
   </para></listitem>
   <listitem><para>
+    The routines of the classic interface that work on a database connection are documented: <link
+    linkend="rtn-oosqlExec">oosqlExec</link>, with its result set formats and its callback routine, <link
+    linkend="rtn-oosqlClose">oosqlClose</link>, <link linkend="rtn-oosqlErrCode">oosqlErrCode</link>, <link
+    linkend="rtn-oosqlErrMsg">oosqlErrMsg</link>, <link linkend="rtn-oosqlNextStmt">oosqlNextStmt</link>, <link
+    linkend="rtn-oosqlLoadExtension">oosqlLoadExtension</link>, and the others, most of them with a tested example. The
+    section of <link linkend="mthNextStmt">nextStmt</link> said that a finalized statement could be the starting point of
+    the search; the search then starts from the beginning.
+  </para></listitem>
+  <listitem><para>
     The <link linkend="chpOOSQLiteConstants">constants chapter</link> lists all the constants of the class, also the
     ones that were missing from it, such as NOTICE and WARNING. The values of the version constants are those of the
     embedded SQLite, and the NULL datatype is listed with its ooSQLite name, SQLNULL.

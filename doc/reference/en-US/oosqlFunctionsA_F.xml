@@ -1494,7 +1494,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Sets a busy handler that waits, for up to the given time, while a table is locked.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1502,10 +1502,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null, and the connection must not have been
+        closed: see <link linkend="rtn-oosqlClose">oosqlClose</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>ms [required]</term>
+      <listitem>
+      <para>
+        The number of milliseconds to wait. A value of 0 or less removes any busy handler.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1514,29 +1522,36 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    When a statement finds a table locked by another connection, the handler sleeps and retries, several times, until
+    the lock is released or the total time has passed; then the statement returns <computeroutput>BUSY</computeroutput>.
+    There can be only one busy handler for a connection: <emphasis role="italic">oosqlBusyTimeOut</emphasis> replaces a
+    handler set with <link linkend="rtn-oosqlBusyHandler">oosqlBusyHandler</link>, and the other way round. By default
+    there is no busy handler, and a statement returns <computeroutput>BUSY</computeroutput> at once.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlBusyTimeOut</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/busy_timeout.html">sqlite3_busy_timeout</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthBusyTimeOut">busyTimeOut</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same for a connection object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example makes the statements of a connection wait up to 3 seconds for a lock:
+<programlisting language="rexx">
+  rc = oosqlBusyTimeOut(db, 3000)        -- wait up to 3 seconds for a lock
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1614,18 +1629,21 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the number of rows changed, inserted, or deleted by the most recent INSERT, UPDATE, or DELETE statement
+  completed on a database connection.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null, and the connection must not have been
+        closed: see <link linkend="rtn-oosqlClose">oosqlClose</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1634,29 +1652,38 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The number of rows.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    Only the changes made directly by the statement are counted, not those made by triggers or foreign key actions.
+    Statements that are not an INSERT, an UPDATE, or a DELETE do not change the value. <link
+    linkend="rtn-oosqlTotalChanges">oosqlTotalChanges</link> counts all the changes since the connection was opened.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlChanges</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/changes.html">sqlite3_changes</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthChanges">changes</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same for a connection object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example shows the values of <emphasis role="italic">oosqlChanges</emphasis> and <emphasis
+    role="italic">oosqlTotalChanges</emphasis> after two statements:
+<programlisting language="rexx">
+  rc = oosqlExec(db, "UPDATE foods SET price = price * 1.1 WHERE type_id = 1;")
+  say oosqlChanges(db) oosqlTotalChanges(db)    -- 2 2
+  rc = oosqlExec(db, "DELETE FROM foods WHERE price IS NULL;")
+  say oosqlChanges(db) oosqlTotalChanges(db)    -- 1 3
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1750,18 +1777,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Closes a database connection and releases the resources it uses.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null, and the connection must not have been
+        closed: see <link linkend="rtn-oosqlClose">oosqlClose</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1770,29 +1799,52 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> if the connection is closed, or <computeroutput>BUSY</computeroutput> if
+    it has prepared statements that are not finalized, or backups that are not finished. In that case the connection
+    stays open, and can still be used.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    Every connection set by <link linkend="rtn-oosqlOpen">oosqlOpen</link> must be closed, also when <emphasis
+    role="italic">oosqlOpen</emphasis> returned an error. Before closing it, finalize its statements with <link
+    linkend="rtn-oosqlFinalize">oosqlFinalize</link> (<link linkend="rtn-oosqlNextStmt">oosqlNextStmt</link> finds
+    them), and finish its backups with <link linkend="rtn-oosqlBackupFinish">oosqlBackupFinish</link>.
+  </para>
+  <para>
+    Once a connection has been closed, its handle is not valid any more, but it is not null: ooSQLite can not detect
+    that it has been closed, and using it in any routine, also in <emphasis role="italic">oosqlClose</emphasis>, has
+    unpredictable results, and can crash the interpreter. The object orientated interface does not have this problem:
+    closing an ooSQLiteConnection object that is already closed does nothing.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlClose</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/close.html">sqlite3_close</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthClose">close</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same for a connection object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example tries to close a connection that has a statement that is not finalized, and closes it after finalizing
+    the statement:
+<programlisting language="rexx">
+  rc = oosqlPrepare(db, "SELECT name FROM foods;", 'stmt')
+  rc = oosqlClose(db)
+  say rc oosqlErrMsg(db)
+  call oosqlFinalize stmt
+  say oosqlClose(db)
+  /* Output:
+  5 unable to close due to unfinalized statements or unfinished backups
+  0
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -3547,7 +3599,7 @@ call oosqlCreateFunction db, "double"
 </mediaobject>
 
 <para>
-  xx
+  Returns the file name of a database of a database connection.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -3555,10 +3607,19 @@ call oosqlCreateFunction db, "double"
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null, and the connection must not have been
+        closed: see <link linkend="rtn-oosqlClose">oosqlClose</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>name [required]</term>
+      <listitem>
+      <para>
+        The <link linkend="defDatabaseName">name</link> of the database: <computeroutput>main</computeroutput> for the
+        main database, <computeroutput>temp</computeroutput>, or the name of an attached database.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -3567,29 +3628,43 @@ call oosqlCreateFunction db, "double"
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The full path of the file of the database. For a database that does not exist on the connection, and for a temporary
+    or in-memory database, the empty string is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The path is absolute, even when the database was opened with a relative path or a URI.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlDbFileName</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/db_filename.html">sqlite3_db_filename</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthDbFileName">dbFileName</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same for a connection object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example attaches an in-memory database, and displays, for some database names, the values of <link
+    linkend="rtn-oosqlDbReadOnly">oosqlDbReadOnly</link> and <emphasis role="italic">oosqlDbFileName</emphasis>:
+<programlisting language="rexx">
+  rc = oosqlExec(db, "ATTACH DATABASE ':memory:' AS scratch;")
+  do name over .array~of('main', 'scratch', 'temp', 'other')
+    say name~left(8) oosqlDbReadOnly(db, name)~right(2) '['oosqlDbFileName(db, name)']'
+  end
+  /* Output might be:
+  main      0 [/home/rexx/ooFoods.rdbx]
+  scratch   0 []
+  temp     -1 []
+  other    -1 []
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -3674,18 +3749,20 @@ call oosqlCreateFunction db, "double"
 </mediaobject>
 
 <para>
-  xx
+  Returns the mutex that serializes the access to a database connection.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null, and the connection must not have been
+        closed: see <link linkend="rtn-oosqlClose">oosqlClose</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -3694,29 +3771,41 @@ call oosqlCreateFunction db, "double"
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    A <link linkend="defHandle">handle</link> to the mutex, which can be used with <link
+    linkend="rtn-oosqlMutexEnter">oosqlMutexEnter</link>, <link linkend="rtn-oosqlMutexTry">oosqlMutexTry</link>, and
+    <link linkend="rtn-oosqlMutexLeave">oosqlMutexLeave</link>. If the connection is not in the serialized <link
+    linkend="defThreadingMode">threading mode</link>, which is unlikely, the handle is null.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The mutex belongs to SQLite, which uses it to protect the connection: never free it with <link
+    linkend="rtn-oosqlMutexFree">oosqlMutexFree</link>. Holding the mutex keeps other threads from using the connection,
+    so it must be left as soon as possible, once for each time it was entered.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlDbMutex</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/db_mutex.html">sqlite3_db_mutex</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthDbMutex">dbMutex</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class returns an ooSQLiteMutex object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example holds the mutex of a connection while it uses the connection:
+<programlisting language="rexx">
+  mtx = oosqlDbMutex(db)
+  call oosqlMutexEnter mtx
+  -- No other thread can use the connection here
+  say oosqlChanges(db)
+  call oosqlMutexLeave mtx
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -3734,7 +3823,7 @@ call oosqlCreateFunction db, "double"
 </mediaobject>
 
 <para>
-  xx
+  Tests if a database of a database connection is read only.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -3742,10 +3831,19 @@ call oosqlCreateFunction db, "double"
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null, and the connection must not have been
+        closed: see <link linkend="rtn-oosqlClose">oosqlClose</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>name [required]</term>
+      <listitem>
+      <para>
+        The <link linkend="defDatabaseName">name</link> of the database: <computeroutput>main</computeroutput> for the
+        main database, <computeroutput>temp</computeroutput>, or the name of an attached database.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -3754,30 +3852,32 @@ call oosqlCreateFunction db, "double"
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns 1 if the database is read only, 0 if it can be written, and -1 if the connection has no database with that
+    name.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The temporary database, <computeroutput>temp</computeroutput>, only exists once something has been created in it:
+    until then, -1 is returned for it.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlDbReadOnly</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/db_readonly.html">sqlite3_db_readonly</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthDbReadOnly">dbReadOnly</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same for a connection object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlDbFileName">oosqlDbFileName</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -3794,18 +3894,20 @@ call oosqlCreateFunction db, "double"
 </mediaobject>
 
 <para>
-  xx
+  Makes SQLite free as much heap memory as it can from a database connection.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null, and the connection must not have been
+        closed: see <link linkend="rtn-oosqlClose">oosqlClose</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -3814,30 +3916,25 @@ call oosqlCreateFunction db, "double"
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The memory freed is mostly the page cache of the connection that is not in use. <link
+    linkend="rtn-oosqlReleaseMemory">oosqlReleaseMemory</link> frees memory from all the connections of the process.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlDbReleaseMemory</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/db_release_memory.html">sqlite3_db_release_memory</ulink> API.
   </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
-  <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    The <link linkend="mthDbReleaseMemory">dbReleaseMemory</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same for a connection object.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -3953,7 +4050,7 @@ call oosqlCreateFunction db, "double"
 </mediaobject>
 
 <para>
-  xx
+  Allows or forbids loading SQLite extension libraries on a database connection.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -3961,10 +4058,19 @@ call oosqlCreateFunction db, "double"
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null, and the connection must not have been
+        closed: see <link linkend="rtn-oosqlClose">oosqlClose</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>on [optional]</term>
+      <listitem>
+      <para>
+        True to allow loading extensions with <link linkend="rtn-oosqlLoadExtension">oosqlLoadExtension</link>, false to
+        forbid it. The default is false.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -3973,30 +4079,29 @@ call oosqlCreateFunction db, "double"
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    Loading extensions is forbidden by default, because an extension library can run any code. It is good practice to
+    allow it only while the extensions are loaded. The SQL function <computeroutput>load_extension()</computeroutput> is
+    also allowed or forbidden by this routine.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlEnableLoadExtension</emphasis> routine is similar to that of
+    the SQLite <ulink url="http://www.sqlite.org/c3ref/enable_load_extension.html">sqlite3_enable_load_extension</ulink>
+    API.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlLoadExtension">oosqlLoadExtension</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -4013,18 +4118,20 @@ call oosqlCreateFunction db, "double"
 </mediaobject>
 
 <para>
-  xx
+  Returns the result code of the last error on a database connection.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null, and the connection must not have been
+        closed: see <link linkend="rtn-oosqlClose">oosqlClose</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -4033,29 +4140,56 @@ call oosqlCreateFunction db, "double"
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    One of the <link linkend="sctResultCode">Result Code</link> constants, often an extended one, or
+    <computeroutput>OK</computeroutput> if there has been no error.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The error code and message describe the last SQLite call on the connection that failed, if the calls after it did
+    not set them again: a call that succeeds can reset them, or leave them as they were, so they are only meaningful
+    right after a routine has returned an error. Some errors are not recorded in the connection: those detected by
+    ooSQLite itself, the errors of <link linkend="rtn-oosqlLoadExtension">oosqlLoadExtension</link>, and those of <link
+    linkend="rtn-oosqlDbStatus">oosqlDbStatus</link>.
+  </para>
+  <para>
+    ooSQLite enables extended result codes for every connection, so the code is often an extended one, such as
+    <computeroutput>CONSTRAINT_PRIMARYKEY</computeroutput> (1555), rather than
+    <computeroutput>CONSTRAINT</computeroutput> (19). <link linkend="rtn-oosqlErrCode">oosqlErrCode</link> and <link
+    linkend="rtn-oosqlExtendedErrCode">oosqlExtendedErrCode</link> are the same routine.
+  </para>
+  <para>
+    <link linkend="rtn-oosqlErrMsg">oosqlErrMsg</link> describes the error, and <link
+    linkend="rtn-oosqlErrStr">oosqlErrStr</link> gives the general description of a result code.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlErrCode</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/errcode.html">sqlite3_extended_errcode</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthErrCode">errCode</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same for a connection object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example executes an INSERT that fails, because the table already has a row with that id, and displays the
+    error:
+<programlisting language="rexx">
+  rc = oosqlExec(db, "INSERT INTO foods(id, name) VALUES(1, 'Toast');")
+  say rc
+  say oosqlErrCode(db) oosqlErrMsg(db)
+  say oosqlErrStr(oosqlErrCode(db))
+  /* Output:
+  SQLite Error: rc = 1555, UNIQUE constraint failed: foods.id
+  1555 UNIQUE constraint failed: foods.id
+  constraint failed
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -4073,18 +4207,20 @@ call oosqlCreateFunction db, "double"
 </mediaobject>
 
 <para>
-  xx
+  Returns the English-language description of the last error on a database connection.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null, and the connection must not have been
+        closed: see <link linkend="rtn-oosqlClose">oosqlClose</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -4093,30 +4229,33 @@ call oosqlCreateFunction db, "double"
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The description, such as <computeroutput>no such table: food</computeroutput>. If there has been no error,
+    <computeroutput>not an error</computeroutput> is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    See the remarks of <link linkend="rtn-oosqlErrCode">oosqlErrCode</link>, which returns the code of the same error.
+    The message describes the specific error, and can name the table or the column involved; <link
+    linkend="rtn-oosqlErrStr">oosqlErrStr</link> only gives the general description of a result code.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlErrMsg</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/errcode.html">sqlite3_errmsg</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthErrMsg">errMsg</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same for a connection object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlErrCode">oosqlErrCode</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -4237,7 +4376,7 @@ file is encrypted or is not a database
 </mediaobject>
 
 <para>
-  xx
+  Executes one or more SQL statements, and optionally returns their result rows, or calls a routine for each row.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -4245,10 +4384,76 @@ file is encrypted or is not a database
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null, and the connection must not have been
+        closed: see <link linkend="rtn-oosqlClose">oosqlClose</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>sql [required]</term>
+      <listitem>
+      <para>
+        The SQL to execute: one statement, or several, separated by semicolons. They are executed in order, until one of
+        them fails.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>doCallback [optional]</term>
+      <listitem>
+      <para>
+        False, the default, to just execute the SQL: the return is a result code. True to get the result rows: as a
+        result set returned by <emphasis role="italic">oosqlExec</emphasis>, or, when <emphasis
+        role="italic">rtnName</emphasis> is given, by calling that routine once for each row.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>format [optional]</term>
+      <listitem>
+      <para>
+        The format of the result set, and of each row, one of the <link linkend="sctOOSQLiteSpecific">Result Set
+        Format</link> constants. It is ignored when <emphasis role="italic">doCallback</emphasis> is false. The default
+        is <computeroutput>OO_STEM_OF_STEMS</computeroutput>. The formats are:
+      </para>
+      <variablelist>
+        <varlistentry><term><emphasis role="bold">OO_STEM_OF_STEMS</emphasis></term>
+        <listitem>
+        <para>
+          A stem whose tail 0 is the number of rows, and whose tail <emphasis role="italic">i</emphasis> is row
+          <emphasis role="italic">i</emphasis>, itself a stem whose tails are the names of the columns, in upper case:
+          <computeroutput>rows.i['NAME']</computeroutput>.
+        </para>
+        </listitem></varlistentry>
+        <varlistentry><term><emphasis role="bold">OO_CLASSIC_STEM</emphasis></term>
+        <listitem>
+        <para>
+          A single stem with compound tails: <computeroutput>rows.i.NAME</computeroutput>, and
+          <computeroutput>rows.0</computeroutput> for the number of rows.
+        </para>
+        </listitem></varlistentry>
+        <varlistentry><term><emphasis role="bold">OO_ARRAY_OF_DIRECTORIES</emphasis></term>
+        <listitem>
+        <para>
+          An array with a Directory object for each row, whose indexes are the names of the columns.
+        </para>
+        </listitem></varlistentry>
+        <varlistentry><term><emphasis role="bold">OO_ARRAY_OF_ARRAYS</emphasis></term>
+        <listitem>
+        <para>
+          An array whose first item is an array with the names of the columns, and each following item an array with the
+          values of a row.
+        </para>
+        </listitem></varlistentry>
+      </variablelist>
+      </listitem></varlistentry>
+      <varlistentry><term>rtnName [optional]</term>
+      <listitem>
+      <para>
+        The name of a routine to call for each result row, instead of building a result set. It must be a public
+        routine, defined with <computeroutput>::ROUTINE name PUBLIC</computeroutput>, of the program that calls
+        <emphasis role="italic">oosqlExec</emphasis> or of a package it requires. It is ignored when <emphasis
+        role="italic">doCallback</emphasis> is false. The routine is called with two arguments: the row, in the format
+        given by <emphasis role="italic">format</emphasis>, and the number of the row, 1 for the first one. It must
+        return a whole number: 0 to go on, or any other value to stop executing the SQL.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -4257,29 +4462,73 @@ file is encrypted or is not a database
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    When the SQL executes without error, <computeroutput>OK</computeroutput> if <emphasis
+    role="italic">doCallback</emphasis> is false or <emphasis role="italic">rtnName</emphasis> is given, and otherwise
+    the result set, which is empty if the SQL returns no rows.
+  </para>
+  <para>
+    When there is an error, a string with the result code and the description of the error, such as
+    <computeroutput>SQLite Error: rc = 1, no such table: food</computeroutput>. The code is also returned by <link
+    linkend="rtn-oosqlErrCode">oosqlErrCode</link>. When the callback routine stops the execution, the error is
+    <computeroutput>ABORT</computeroutput> (4), <computeroutput>query aborted</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A NULL value is not set in the row: with the stem formats, the tail of that column is not assigned, and has its
+    default value, its own name, which can be tested with <computeroutput>hasIndex</computeroutput>; with the other
+    formats, the item is .nil.
+  </para>
+  <para>
+    For SQL that returns rows, and needs values from the program, it is better to prepare a statement with <link
+    linkend="rtn-oosqlPrepare">oosqlPrepare</link>, bind the values, and step it: the values do not need to be quoted.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error if <emphasis role="italic">format</emphasis> is not one of the format constants, or if there
+    is no public routine named <emphasis role="italic">rtnName</emphasis>.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">oosqlExec</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/exec.html">sqlite3_exec</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthExec">exec</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same for a connection object, with the
+    result rows in the format of its recordFormat attribute, and with a method of an object as the callback.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example executes an UPDATE, displays the rows of a query from the result set, and then the rows of another
+    query from a callback routine:
+<programlisting language="rexx">
+  rc = oosqlExec(db, "UPDATE foods SET price = 1.75 WHERE name = 'Cheese';")
+  if rc &lt;&gt; .ooSQLite~OK then say rc
 
-]]>
+  rows. = oosqlExec(db, "SELECT id, name FROM foods WHERE type_id = 1;", .true)
+  do i = 1 to rows.0
+    say rows.i['ID'] rows.i['NAME']
+  end
+
+  rc = oosqlExec(db, "SELECT name, price FROM foods;", .true, , 'showFood')
+  /* Output:
+  1 Bagels
+  2 Bagels, raisin
+  1 Bagels 1.25
+  2 Bagels, raisin 1.5
+  3 Bacon 3.75
+  4 Cheese 1.75
+  */
+
+  ::routine showFood public
+    use arg row, rowNumber
+    say rowNumber row['NAME'] row['PRICE']
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -4297,18 +4546,20 @@ file is encrypted or is not a database
 </mediaobject>
 
 <para>
-  xx
+  Returns the extended result code of the last error on a database connection.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null, and the connection must not have been
+        closed: see <link linkend="rtn-oosqlClose">oosqlClose</link>.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -4317,30 +4568,33 @@ file is encrypted or is not a database
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    One of the <link linkend="sctResultCode">Result Code</link> constants, or <computeroutput>OK</computeroutput> if
+    there has been no error.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    This routine is the same as <link linkend="rtn-oosqlErrCode">oosqlErrCode</link>: ooSQLite enables extended result
+    codes for every connection, so both return them. It is provided for completeness. See the remarks of <emphasis
+    role="italic">oosqlErrCode</emphasis>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlExtendedErrCode</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/errcode.html">sqlite3_extended_errcode</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthExtendedErrCode">extendedErrCode</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same for a connection object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="rtn-oosqlErrCode">oosqlErrCode</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -4357,7 +4611,7 @@ file is encrypted or is not a database
 </mediaobject>
 
 <para>
-  xx
+  Does nothing: extended result codes are always enabled in ooSQLite.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -4365,10 +4619,16 @@ file is encrypted or is not a database
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        A <link linkend="defHandle">handle</link> to a database connection. It is not used.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>onOff [required]</term>
+      <listitem>
+      <para>
+        True or false. It is not used.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -4377,30 +4637,25 @@ file is encrypted or is not a database
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The routine is provided for completeness, so that programs written for the SQLite API can be translated directly.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    In SQLite, the <ulink
+    url="http://www.sqlite.org/c3ref/extended_result_codes.html">sqlite3_extended_result_codes</ulink> API enables or
+    disables extended result codes. ooSQLite enables them when it opens a connection, and they can not be disabled.
   </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
-  <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    The <link linkend="mthExtendedResultCodes">extendedResultCodes</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same for a connection object.
   </para>
   </listitem></varlistentry>
 </variablelist>
