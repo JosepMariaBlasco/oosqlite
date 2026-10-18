@@ -372,6 +372,16 @@ Return testResult
   eq = .ooSQLite~enquote
   self~assertEquals("NULL", eq, "enquote() with no arg should return NULL")
 
+::Method testEnquoteNoLimit
+  -- The list has no length limit, whatever the number of items: before,
+  -- an array of 7 or more items was cut at 4095 characters
+  a = "a"~copies(3000); b = "b"~copies(3000)
+  self~assertEquals("'" || a || "', '" || b || "'", .ooSQLite~enquote(.array~of(a, b)), "2 long items")
+  expected = "'1', '2', '3', '4', '5', '6', '" || a || "', '" || b || "'"
+  self~assertEquals(expected, .ooSQLite~enquote(.array~of(1, 2, 3, 4, 5, 6, a, b)), "8 items, long ones last")
+  self~assertEquals("NULL", .ooSQLite~enquote(.array~new), "an empty array is NULL")
+  self~assertEquals("'x', NULL, 'it''s'", .ooSQLite~enquote(.array~of("x", .nil, "it's")), "NULL and quotes")
+
 --------------------------------------------------------------------------------
 -- errStr                                                                     --
 --------------------------------------------------------------------------------
@@ -6289,18 +6299,10 @@ NullStmtRaised:
   Call oosqlClose db
 
 ::Method testClassicRoutineErrorWording
-  -- The errors of routines speak of arguments and routines, not of
-  -- method arguments or functions
+  -- The errors of routines speak of arguments, not of method arguments
   self~assertEquals("88.900 Argument 1, option must be one of [O]neLine [F]ull [C]ompact [L]ibVersion" -
     "[N]umber [S]ourceID; found ""X"".", -
     self~nullHandleError("ooSQLiteVersion", .array~of("X")), "ooSQLiteVersion with a bad type")
-  big. = ""
-  big.0 = 3
-  big.1 = "a"~copies(3000)
-  big.2 = "b"~copies(3000)
-  big.3 = "c"
-  self~assertEquals("88.900 String produced by the ooSQLiteEnquote routine is longer than allowed; (max == 4095).", -
-    self~nullHandleError("ooSQLiteEnquote", .array~of(big.)), "ooSQLiteEnquote with a long result")
 
 ::Method nullHandleError
   -- Calls the routine name with args, returns the code and message of the
@@ -7782,6 +7784,24 @@ Syntax:
 ::Method testClassicEnquoteWithQuote
   self~assertEquals("'it''s'", ooSQLiteEnquote("it's"), -
     "ooSQLiteEnquote should double internal single quotes")
+
+::Method testClassicEnquoteStem
+  -- A stem in array format: one item (before, the result was garbage),
+  -- items with no length limit (before, cut at 4095 characters without an
+  -- error when the last item went over), and no items
+  one.0 = 1; one.1 = "it's"
+  self~assertEquals("'it''s'", ooSQLiteEnquote(one.), "one item")
+  a = "a"~copies(3000); b = "b"~copies(3000)
+  two.0 = 2; two.1 = a; two.2 = b
+  self~assertEquals("'" || a || "', '" || b || "'", ooSQLiteEnquote(two.), "2 long items")
+  eight. = ""
+  eight.0 = 8
+  Do i = 1 To 6; eight.i = i; End
+  eight.7 = a; eight.8 = b
+  self~assertEquals(.ooSQLite~enquote(.array~of(1, 2, 3, 4, 5, 6, a, b)), ooSQLiteEnquote(eight.), -
+    "the stem gives the same as the array of enquote")
+  none.0 = 0
+  self~assertEquals("NULL", ooSQLiteEnquote(none.), "no items is NULL")
 
 ::Method testClassicEnquoteEmpty
   self~assertEquals("''", ooSQLiteEnquote(""), -
