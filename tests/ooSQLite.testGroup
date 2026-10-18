@@ -6628,6 +6628,22 @@ NullStmtRaised:
     "Trace should capture the INSERT statement text")
   Call oosqlClose db
 
+::Method testClassicCallbackTraceArgs
+  -- oosqlTrace registered a profile callback: the routine got 3 arguments
+  -- (sql, nanoseconds, userData) instead of (sql, userData), after the
+  -- statement, and removing it did not return the user data.
+  db = self~classicOpenMemory
+  .environment~classicTraceArgs = .Array~new
+  self~assertEquals(.nil, oosqlTrace(db, "classicTraceArgsCB", "myData"))
+  Call oosqlExec db, "CREATE TABLE t(x INTEGER);"
+  args = .environment~classicTraceArgs
+  self~assertEquals(1, args~items, "One call for one statement")
+  self~assertEquals(2, args[1]~items, "Number of arguments of the trace routine")
+  self~assertEquals("CREATE TABLE t(x INTEGER);", args[1][1], "SQL text")
+  self~assertEquals("myData", args[1][2], "User data is the second argument")
+  self~assertEquals("myData", oosqlTrace(db, ""), "Removing returns the user data")
+  self~assertEquals(0, oosqlClose(db))
+
 --------------------------------------------------------------------------------
 -- oosqlTrace: deregistration                                                 --
 --------------------------------------------------------------------------------
@@ -7904,6 +7920,10 @@ ResetAutoExtNoRot13:
 ::Routine classicTraceCB Public
   Use Arg sql, userData
   .environment~classicTraceStatements~append(sql)
+  Return 0
+
+::Routine classicTraceArgsCB Public
+  .environment~classicTraceArgs~append(Arg(1, "A"))
   Return 0
 
 /* --- profile callbacks --- */
