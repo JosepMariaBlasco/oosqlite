@@ -1251,6 +1251,13 @@ int genTableColumnMetadata(RexxThreadContext *c, sqlite3 *db, CSTRING dbName, CS
 
     if ( rc == SQLITE_OK )
     {
+        // The data type is NULL for a column declared without a type.  The
+        // collation sequence is never NULL, SQLite returns "BINARY" by default.
+        if ( dataType == NULL )
+        {
+            dataType = "";
+        }
+
         if ( pos == 3 )
         {
             RexxDirectoryObject results = (RexxDirectoryObject)_results;
