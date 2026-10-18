@@ -158,18 +158,19 @@
 </mediaobject>
 
 <para>
-  xx
+  Sets or queries the soft limit on the amount of memory that SQLite uses.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>n [required]</term>
       <listitem>
       <para>
-        xx
+        The limit, in bytes. A positive number sets the limit, 0 removes it, and a negative number leaves it as it is,
+        to query it.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -178,29 +179,40 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The limit that was in place before the call, or 0 if there was none.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The limit is soft: when the memory in use approaches it, SQLite frees pages from its cache, but it exceeds the limit
+    rather than fail. The limit applies to the whole process. By default there is no limit.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlSoftHeapLimit64</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/hard_heap_limit64.html">sqlite3_soft_heap_limit64</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthSoftHeapLimit64">softHeapLimit64</link> method of the <link
+    linkend="clsOOSQLite">ooSQLite</link> class does the same.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example sets a limit of 8 megabytes, queries it, and restores the previous one:
+<programlisting language="rexx">
+  old = oosqlSoftHeapLimit64(8 * 1024 * 1024)
+  say 'Limit:   ' oosqlSoftHeapLimit64(-1)
+  call oosqlSoftHeapLimit64 old
+  say 'Restored:' oosqlSoftHeapLimit64(-1)
+  /* Output:
+  Limit:    8388608
+  Restored: 0
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -218,49 +230,49 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the source identifier of the SQLite library that ooSQLite uses.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    A string with the date and time of the check-in of the SQLite source code, and its SHA3-256 hash.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The source identifier tells exactly which SQLite source code was built, also between builds of the same version. It
+    is the same as the <computeroutput>SOURCE_ID</computeroutput> constant when
+    <computeroutput>ooSQLite.cls</computeroutput> and the library match.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlSourceID</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/libversion.html">sqlite3_sourceid</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthSourceID">sourceID</link> method of the <link linkend="clsOOSQLite">ooSQLite</link> class does
+    the same.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example displays the source identifier:
+<programlisting language="rexx">
+  say oosqlSourceID()
+  /* Output might be:
+  2026-03-06 16:01:44 557aeb43869d3585137b17690cb3b64f7de6921774daae9e56403c3717dceab6
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -767,7 +779,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Tests if a string matches a pattern, with the rules of the GLOB operator of SQLite.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -775,10 +787,18 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>glob [required]</term>
       <listitem>
       <para>
-        xx
+        The pattern. <computeroutput>*</computeroutput> matches any sequence of characters,
+        <computeroutput>?</computeroutput> any single character, and <computeroutput>[...]</computeroutput> any of the
+        characters between the brackets, which can include ranges such as <computeroutput>a-z</computeroutput>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>str [required]</term>
+      <listitem>
+      <para>
+        The string to test.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -787,29 +807,41 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns 0 if the string matches the pattern, and a number that is not 0 if it does not. Note that 0, which is false
+    in Rexx, means a match.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The comparison is case sensitive, as the GLOB operator is: <computeroutput>*.txt</computeroutput> does not match
+    <computeroutput>a.TXT</computeroutput>. The return value follows the convention of string comparison functions in C,
+    where 0 means equal.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlStrGlob</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/strglob.html">sqlite3_strglob</ulink> API.
+  </para>
+  <para>
+    The strGlob method of the <link linkend="clsOOSQLite">ooSQLite</link> class does the same.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example displays the names that start with <computeroutput>Ba</computeroutput> or
+    <computeroutput>ba</computeroutput>:
+<programlisting language="rexx">
+  do name over .array~of('Bagels', 'Bacon', 'bread', 'Cheese')
+    if oosqlStrGlob('[Bb]a*', name) == 0 then say name
+  end
+  /* Output:
+  Bagels
+  Bacon
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -976,49 +1008,51 @@
 </mediaobject>
 
 <para>
-  xx
+  Tells whether the SQLite library that ooSQLite uses was built with support for threads.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The value of the SQLITE_THREADSAFE compile-time option: 0 if the library was built without support for threads, 1
+    for the serialized <link linkend="defThreadingMode">threading mode</link>, 2 for the multi-thread mode. ooSQLite
+    builds SQLite with the value 1, so the routine returns 1.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The value is the default threading mode. The mode can be changed when a connection is opened, with the
+    <computeroutput>OPEN_NOMUTEX</computeroutput> and <computeroutput>OPEN_FULLMUTEX</computeroutput> flags of <link
+    linkend="rtn-oosqlOpen">oosqlOpen</link>, but not to or from 0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlThreadSafe</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/threadsafe.html">sqlite3_threadsafe</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthThreadSafe">threadSafe</link> method of the <link linkend="clsOOSQLite">ooSQLite</link> class
+    does the same.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example displays the threading mode:
+<programlisting language="rexx">
+  say 'Threading mode:' oosqlThreadSafe()
+  /* Output:
+  Threading mode: 1
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1954,49 +1988,51 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the version of the SQLite library that ooSQLite uses, from the version string of the SQLite code.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The version, such as <computeroutput>3.52.0</computeroutput>, the same string that <link
+    linkend="rtn-oosqlLibVersion">oosqlLibVersion</link> returns.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    This routine exists for completeness: it is the same as <link linkend="rtn-oosqlLibVersion">oosqlLibVersion</link>.
+    It does not return the version of ooSQLite; <link linkend="rtn-ooSQLiteVersion">ooSQLiteVersion</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The value returned is that of the <ulink url="http://www.sqlite.org/c3ref/libversion.html">sqlite3_version</ulink>
+    string constant of the SQLite code.
+  </para>
+  <para>
+    The <link linkend="mthSqlite3Version">sqlite3Version</link> method of the <link
+    linkend="clsOOSQLite">ooSQLite</link> class does the same. The <link linkend="mthVersion">version</link> method of
+    that class does something else: it returns the version of ooSQLite, as <link
+    linkend="rtn-ooSQLiteVersion">ooSQLiteVersion</link> does.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example shows that the two routines return the same string:
+<programlisting language="rexx">
+  say oosqlVersion() (oosqlVersion() == oosqlLibVersion())
+  /* Output might be:
+  3.52.0 1
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>

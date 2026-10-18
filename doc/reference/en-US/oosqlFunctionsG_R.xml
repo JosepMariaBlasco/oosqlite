@@ -342,49 +342,56 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the version of the SQLite library that ooSQLite uses, as a string.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The version, such as <computeroutput>3.52.0</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The SQLite library is embedded in the ooSQLite library, so this is the version that the ooSQLite library was built
+    with. The <computeroutput>VERSION</computeroutput> constant of the <link
+    linkend="chpOOSQLiteConstants">ooSQLiteConstants</link> class has the version that
+    <computeroutput>ooSQLite.cls</computeroutput> was written for: if they differ,
+    <computeroutput>ooSQLite.cls</computeroutput> and the library do not belong together. Note that
+    <computeroutput>.ooSQLite~VERSION</computeroutput> invokes the <link linkend="mthVersion">version</link> method of
+    the ooSQLite class, not the constant: use <computeroutput>.ooSQLiteConstants~VERSION</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlLibVersion</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/libversion.html">sqlite3_libversion</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthLibVersion">libVersion</link> method of the <link linkend="clsOOSQLite">ooSQLite</link> class
+    does the same.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example checks that <computeroutput>ooSQLite.cls</computeroutput> and the library match:
+<programlisting language="rexx">
+  if oosqlLibVersion() \== .ooSQLiteConstants~VERSION then
+    say 'ooSQLite.cls does not match the ooSQLite library'
+  else
+    say 'SQLite' oosqlLibVersion()
+  /* Output might be:
+  SQLite 3.52.0
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -402,49 +409,54 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the version of the SQLite library that ooSQLite uses, as a number.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The version as a whole number, X*1000000 + Y*1000 + Z for version X.Y.Z: 3052000 for version 3.52.0.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The number is easier to compare than the string that <link linkend="rtn-oosqlLibVersion">oosqlLibVersion</link>
+    returns. It is the same as the <computeroutput>VERSION_NUMBER</computeroutput> constant when
+    <computeroutput>ooSQLite.cls</computeroutput> and the library match.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlLibVersionNumber</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/libversion.html">sqlite3_libversion_number</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthLibVersionNumber">libVersionNumber</link> method of the <link
+    linkend="clsOOSQLite">ooSQLite</link> class does the same.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example uses a feature of SQLite only if the library is recent enough:
+<programlisting language="rexx">
+  if oosqlLibVersionNumber() &lt; 3035000 then
+    say 'RETURNING clauses need SQLite 3.35.0 or later'
+  else do
+    rows = oosqlExec(db, "DELETE FROM foods WHERE price IS NULL RETURNING name;", .true)
+    say 'Deleted:' rows[1]['NAME']
+  end
+  /* Output:
+  Deleted: Cheese
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -659,18 +671,19 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the largest number of bytes of memory that SQLite has used at any one time.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>reset [optional]</term>
       <listitem>
       <para>
-        xx
+        If true, the mark is set to the memory in use, as <link linkend="rtn-oosqlMemoryUsed">oosqlMemoryUsed</link>
+        returns it, after its value is returned. The default is false.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -679,29 +692,44 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The largest number of bytes in use at the same time since the process started, or since the mark was last reset.
+    With <emphasis role="italic">reset</emphasis>, the value before the reset is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    Resetting the mark before an operation and reading it after tells how much memory the operation needed at its peak.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlMemoryHighWater</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/memory_highwater.html">sqlite3_memory_highwater</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthMemoryHighWater">memoryHighWater</link> method of the <link
+    linkend="clsOOSQLite">ooSQLite</link> class does the same.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example measures the memory that a query needs. The numbers depend on the system and the version of SQLite:
+<programlisting language="rexx">
+  call oosqlMemoryHighWater .true                -- the mark is now the memory in use
+  before = oosqlMemoryUsed()
+  rows = oosqlExec(db, "WITH RECURSIVE c(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM c" -
+                       " WHERE i &lt; 10000) SELECT max(randomblob(i % 1000)) FROM c ORDER BY 1;", .true)
+  say 'In use before:' before
+  say 'In use after: ' oosqlMemoryUsed()
+  say 'Peak:         ' oosqlMemoryHighWater()
+  /* Output might be:
+  In use before: 63688
+  In use after:  69016
+  Peak:          90784
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -719,50 +747,44 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the number of bytes of memory that SQLite is using.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
-    <variablelist>
-      <varlistentry><term>TERM</term>
-      <listitem>
-      <para>
-        xx
-      </para>
-      </listitem></varlistentry>
-    </variablelist>
+    There are no arguments.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The number of bytes that SQLite has allocated and not freed yet, for all the connections of the process.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The memory used by the interpreter and by ooSQLite itself is not counted. <link
+    linkend="rtn-oosqlMemoryHighWater">oosqlMemoryHighWater</link> returns the largest amount used.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlMemoryUsed</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/memory_highwater.html">sqlite3_memory_used</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthMemoryUsed">memoryUsed</link> method of the <link linkend="clsOOSQLite">ooSQLite</link> class
+    does the same.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the examples of <link linkend="rtn-oosqlMemoryHighWater">oosqlMemoryHighWater</link> and <link
+    linkend="rtn-oosqlReleaseMemory">oosqlReleaseMemory</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1746,18 +1768,18 @@
 </mediaobject>
 
 <para>
-  xx
+  Asks SQLite to free memory that it does not need, such as the pages of the databases that it keeps in its cache.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>nBytes [required]</term>
       <listitem>
       <para>
-        xx
+        The number of bytes to free.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1766,29 +1788,45 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    The number of bytes that were freed, which can be more or less than <emphasis role="italic">nBytes</emphasis>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The memory freed is mostly that of the page cache of the connections, which SQLite fills again when it needs the
+    pages. The pages of an in-memory database are the database itself, and are never freed. <link
+    linkend="rtn-oosqlDbReleaseMemory">oosqlDbReleaseMemory</link> frees the memory of a single connection.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlReleaseMemory</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/release_memory.html">sqlite3_release_memory</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthReleaseMemory">releaseMemory</link> method of the <link linkend="clsOOSQLite">ooSQLite</link>
+    class does the same.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example fills the cache with the pages of a new table, and then frees part of it. The numbers depend on the
+    system and the version of SQLite:
+<programlisting language="rexx">
+  rc = oosqlExec(db, "CREATE TABLE notes(text); WITH RECURSIVE c(i) AS (SELECT 1 UNION ALL" -
+                     " SELECT i + 1 FROM c WHERE i &lt; 5000) INSERT INTO notes SELECT hex(randomblob(200)) FROM c;")
+  rows = oosqlExec(db, "SELECT count(*) FROM notes;", .true)  -- the pages are in the cache now
+  say 'In use:  ' oosqlMemoryUsed()
+  say 'Released:' oosqlReleaseMemory(1000000)
+  say 'In use:  ' oosqlMemoryUsed()
+  /* Output might be:
+  In use:   2176360
+  Released: 1000272
+  In use:   1176088
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>

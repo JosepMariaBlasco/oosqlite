@@ -256,11 +256,11 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlCompileOptionUsed">oosqlCompileOptionUsed()</link></entry>
-<entry>.</entry>
+<entry>Tests if an option was used at compile time when the SQLite library that ooSQLite uses was built.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlComplete">oosqlComplete()</link></entry>
-<entry>.</entry>
+<entry>Tests if a text seems to form one or more complete SQL statements.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlCreateCollation">oosqlCreateCollation()</link></entry>
@@ -348,11 +348,11 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlLibVersion">oosqlLibVersion()</link></entry>
-<entry>.</entry>
+<entry>Returns the version of the SQLite library that ooSQLite uses, as a string.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlLibVersionNumber">oosqlLibVersionNumber()</link></entry>
-<entry>.</entry>
+<entry>Returns the version of the SQLite library that ooSQLite uses, as a number.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlLimit">oosqlLimit()</link></entry>
@@ -364,11 +364,11 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlMemoryHighWater">oosqlMemoryHighWater()</link></entry>
-<entry>.</entry>
+<entry>Returns the largest number of bytes of memory that SQLite has used at any one time.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlMemoryUsed">oosqlMemoryUsed()</link></entry>
-<entry>.</entry>
+<entry>Returns the number of bytes of memory that SQLite is using.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc()</link></entry>
@@ -412,7 +412,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlReleaseMemory">oosqlReleaseMemory()</link></entry>
-<entry>.</entry>
+<entry>Asks SQLite to free memory that it does not need, such as the pages of the databases that it keeps in its cache.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlReset">oosqlReset()</link></entry>
@@ -480,11 +480,11 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlSoftHeapLimit64">oosqlSoftHeapLimit64()</link></entry>
-<entry>.</entry>
+<entry>Sets or queries the soft limit on the amount of memory that SQLite uses.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlSourceID">oosqlSourceID()</link></entry>
-<entry>.</entry>
+<entry>Returns the source identifier of the SQLite library that ooSQLite uses.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlSql">oosqlSql()</link></entry>
@@ -512,7 +512,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlStrGlob">oosqlStrGlob()</link></entry>
-<entry>.</entry>
+<entry>Tests if a string matches a pattern, with the rules of the GLOB operator of SQLite.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlTableColumnMetadata">oosqlTableColumnMetadata()</link></entry>
@@ -520,7 +520,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlThreadSafe">oosqlThreadSafe()</link></entry>
-<entry>.</entry>
+<entry>Tells whether the SQLite library that ooSQLite uses was built with support for threads.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlTotalChanges">oosqlTotalChanges()</link></entry>
@@ -568,7 +568,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlVersion">oosqlVersion()</link></entry>
-<entry>.</entry>
+<entry>Returns the version of the SQLite library that ooSQLite uses, from the version string of the SQLite code.</entry>
 </row>
 </tbody></tgroup>
 </table>
