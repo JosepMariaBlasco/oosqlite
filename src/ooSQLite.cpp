@@ -45,6 +45,7 @@
 #include "ooSQLite.hpp"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "APICommon.hpp"
@@ -7871,6 +7872,87 @@ RexxMethod2(int, oosqlconn_test, POINTER, functPointer, CSELF, pCSelf)
 
 
 /**
+ * Converts a double to a Rexx number that keeps all its precision.
+ *
+ * The conversion of ooRexx, used for a native function that returns a double
+ * and by Double(), keeps only 9 significant digits.  This returns the shortest
+ * representation, with 15, 16, or 17 significant digits, that converts back to
+ * the same double: 0.1 is 0.1, and 3.141592653589793 keeps all its digits.
+ * Infinities and NaN are left to ooRexx.
+ */
+static RexxObjectPtr doubleToRexx(RexxThreadContext *c, double d)
+{
+    if ( d != d || d - d != 0 )
+    {
+        return c->Double(d);
+    }
+
+    char   buf[32];
+    size_t digits;
+    for ( digits = 15; digits < 17; digits++ )
+    {
+        snprintf(buf, sizeof(buf), "%.*g", (int)digits, d);
+        if ( strtod(buf, NULL) == d )
+        {
+            break;
+        }
+    }
+    // DoubleToObjectWithPrecision() can leave trailing zeros in the fraction,
+    // 0.1 is 0.100000000000000, so they are removed, with the point if nothing
+    // is left after it.
+    RexxObjectPtr r   = c->DoubleToObjectWithPrecision(d, digits);
+    CSTRING       str = c->ObjectToStringValue(r);
+    const char   *dot = strchr(str, '.');
+    const char   *exp = strchr(str, 'E');
+    size_t        len = strlen(str);
+    if ( dot == NULL || len >= sizeof(buf) )
+    {
+        return r;
+    }
+
+    size_t mantEnd = (exp == NULL ? len : (size_t)(exp - str));
+    size_t end     = mantEnd;
+    while ( str[end - 1] == '0' )
+    {
+        end--;
+    }
+    if ( str[end - 1] == '.' )
+    {
+        end--;
+    }
+    if ( end == mantEnd )
+    {
+        return r;
+    }
+
+    memcpy(buf, str, end);
+    strcpy(buf + end, str + mantEnd);
+    return c->String(buf);
+}
+
+
+/**
+ * The value of an argument of a user defined function as a blob: the empty
+ * string for an empty blob, .nil for NULL, and otherwise a String with the
+ * bytes.  Before ooSQLite 1.1, ooSQLValue::blob() returned the empty string for
+ * NULL, and oosqlValueBlob() returned .nil for an empty blob and a Pointer to
+ * the data for anything else.
+ */
+static RexxObjectPtr valueBlob(RexxThreadContext *c, sqlite3_value *value)
+{
+    if ( sqlite3_value_type(value) == SQLITE_NULL )
+    {
+        return TheNilObj;
+    }
+
+    // sqlite3_value_blob() returns a NULL pointer for a zero-length blob
+    const void *b = sqlite3_value_blob(value);
+    size_t      s = sqlite3_value_bytes(value);
+    return (b == NULL ? c->NullString() : c->String((CSTRING)b, s));
+}
+
+
+/**
  *  Methods for the .ooSQLValue class.
  */
 #define OOSQLVALUE_CLASS    "ooSQLValue"
@@ -7882,12 +7964,7 @@ RexxMethod2(int, oosqlconn_test, POINTER, functPointer, CSELF, pCSelf)
  */
 RexxMethod1(RexxObjectPtr, oosqlval_blob, POINTER, sqlValue)
 {
-    const void *b = sqlite3_value_blob((sqlite3_value *)sqlValue);
-    size_t      s = sqlite3_value_bytes((sqlite3_value *)sqlValue);
-
-    // The return value from sqlite3_column_blob() for a zero-length BLOB
-    // is a NULL pointer
-    return (b == NULL ? context->NullString() : context->String((CSTRING)b, s));
+    return valueBlob(context->threadContext, (sqlite3_value *)sqlValue);
 }
 
 /** ooSQLValue::bytes()
@@ -7909,7 +7986,7 @@ RexxMethod1(RexxObjectPtr, oosqlval_double, POINTER, sqlValue)
 
     if ( sqlite3_value_type((sqlite3_value *)sqlValue) !=  SQLITE_NULL )
     {
-        result = context->Double(sqlite3_value_double((sqlite3_value *)sqlValue));
+        result = doubleToRexx(context->threadContext, sqlite3_value_double((sqlite3_value *)sqlValue));
     }
     return result;
 }
@@ -8825,16 +8902,16 @@ RexxMethod2(RexxObjectPtr, oosqlstmt_columnDeclType, int32_t, col, CSELF, pCSelf
  *                          column numbers, the Rexx programmer should use
  *                          1-based numbers as is normal for Rexx.
  */
-RexxMethod2(double, oosqlstmt_columnDouble, int32_t, col, CSELF, pCSelf)
+RexxMethod2(RexxObjectPtr, oosqlstmt_columnDouble, int32_t, col, CSELF, pCSelf)
 {
     pCooSQLiteStmt pCstmt = requiredStmt(context, pCSelf);
     if ( pCstmt == NULL )
     {
-        return SQLITE_MISUSE;
+        return context->WholeNumber(SQLITE_MISUSE);
     }
 
     col--;
-    return sqlite3_column_double(pCstmt->stmt, col);
+    return doubleToRexx(context->threadContext, sqlite3_column_double(pCstmt->stmt, col));
 }
 
 
@@ -13811,16 +13888,16 @@ RexxRoutine2(RexxObjectPtr, oosqlColumnDeclType_rtn, POINTER, _stmt, int32_t, co
  *                          column numbers, the Rexx programmer should use
  *                          1-based numbers as is normal for Rexx.
  */
-RexxRoutine2(double, oosqlColumnDouble_rtn, POINTER, _stmt, int32_t, col)
+RexxRoutine2(RexxObjectPtr, oosqlColumnDouble_rtn, POINTER, _stmt, int32_t, col)
 {
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
-        return SQLITE_MISUSE;
+        return context->WholeNumber(SQLITE_MISUSE);
     }
 
     col--;
-    return sqlite3_column_double(stmt, col);
+    return doubleToRexx(context->threadContext, sqlite3_column_double(stmt, col));
 }
 
 /** oosqlColumnIndex()
@@ -16038,14 +16115,7 @@ RexxRoutine3(RexxObjectPtr, oosqlUpdateHook_rtn, POINTER, _db, CSTRING, rtnName,
  */
 RexxRoutine1(RexxObjectPtr, oosqlValueBlob_rtn, POINTER, sqlValue)
 {
-    // TODO not sure what is needed here for the classic interface???
-
-    const void *b = sqlite3_value_blob((sqlite3_value *)sqlValue);
-    if ( b == NULL )
-    {
-        return TheNilObj;
-    }
-    return context->NewPointer((POINTER)b);
+    return valueBlob(context->threadContext, (sqlite3_value *)sqlValue);
 }
 
 /** oosqlValueBytes()
@@ -16066,7 +16136,7 @@ RexxRoutine1(RexxObjectPtr, oosqlValueDouble_rtn, POINTER, sqlValue)
 
     if ( sqlite3_value_type((sqlite3_value *)sqlValue) !=  SQLITE_NULL )
     {
-        result = context->Double(sqlite3_value_double((sqlite3_value *)sqlValue));
+        result = doubleToRexx(context->threadContext, sqlite3_value_double((sqlite3_value *)sqlValue));
     }
     return result;
 }
