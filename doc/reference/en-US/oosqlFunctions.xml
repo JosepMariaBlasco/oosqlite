@@ -112,7 +112,7 @@
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLiteEncryptionAvailable() -->
-<section id="rtn-ooSQLiteEnquote"><title>ooSQLiteEnquote</title>
+<section id="rtn-ooSQLiteEnquote" revisionflag="changed"><title>&changed11;ooSQLiteEnquote</title>
 <indexterm><primary>ooSQLiteEnquote</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>ooSQLiteEnquote</secondary></indexterm>
 <mediaobject>
@@ -152,7 +152,7 @@
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    The <emphasis role="italic">ooSQLiteEnquote</emphasis> function accepts a single argument <emphasis
+    The <emphasis role="italic">ooSQLiteEnquote</emphasis> routine accepts a single argument <emphasis
     role="italic">values</emphasis>. If <emphasis role="italic">values</emphasis> is a stem, then it must be a stem
     containing tails that are positive whole number indexes. The stem can contain tails 1 through N where N is the count
     of values to convert, and <emphasis role="italic">must</emphasis> contain the tail 0 whose value is N. Any tail 1
@@ -166,6 +166,10 @@
     If <emphasis role="italic">values</emphasis> is not a stem, then it is taken to be a single value to be converted,
     and is converted in the same manner as a single tail of a stem is converted, as described above. This implies that
     if <emphasis role="italic">values</emphasis> is omitted altogether, it is converted to SQL NULL.
+  </para>
+  <para revisionflag="changed">
+    &changed11;The result has no length limit, whatever the number of values. Before ooSQLite 1.1, a stem with more than one value gave a result of at most 4095 characters, cut without an error when the last value went over, and a stem with a single value gave an unpredictable result.
+    When N is 0, NULL is returned.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>

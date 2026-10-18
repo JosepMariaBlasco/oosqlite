@@ -342,8 +342,7 @@
   </para>
   <para>
     In the same way, the errors 88.900 for an invalid option, as in <computeroutput>ooSQLiteVersion('X')</computeroutput>,
-    said "Method argument" also for routines; they now say "Argument". The error for a result of <link
-    linkend="rtn-ooSQLiteEnquote">ooSQLiteEnquote</link> that is too long calls it a routine instead of a function.
+    said "Method argument" also for routines; they now say "Argument".
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">stmtStatus and oosqlStmtStatus with an invalid op</emphasis></term>
@@ -382,6 +381,17 @@
     when a string was compared with itself; the reverse collation compared only the common part of two strings, so
     that "ab" and "abc" were equal; and the strAggregate aggregate failed with "out of memory" over no rows, where it
     now returns NULL, like the group_concat function of SQLite.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">enquote and ooSQLiteEnquote: no length limit, and a stem with one value</emphasis></term>
+  <listitem>
+  <para>
+    <link linkend="rtn-ooSQLiteEnquote">ooSQLiteEnquote</link> returned an unpredictable string for a stem with a single
+    value: it built the list in a buffer that was never written in that case. With more values, the list was cut at
+    4095 characters, and no error was raised when the last value went over. The <link
+    linkend="mthEnquote">enquote</link> method of the ooSQLite class had the same limit for arrays of 7 or more items,
+    and none for fewer. Both now return the whole list, whatever its length, and give the same result for the same
+    values. The limit was the size of that buffer, not a limit of SQLite.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Building with a modern C++ compiler</emphasis></term>
