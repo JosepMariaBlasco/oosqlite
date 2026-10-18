@@ -7230,14 +7230,14 @@ NullStmtRaised:
 /* or more result/value routines, then verifies the output via SQL.           */
 /*                                                                            */
 /* Value routines tested: oosqlValueDouble, oosqlValueBlob,                  */
-/*   oosqlValueNumericType.                                                  */
+/*   oosqlValueNumericType, oosqlValueInt64.                                 */
 /* Result routines tested: oosqlResultInt64, oosqlResultBlob,                */
 /*   oosqlResultNull, oosqlResultZeroBlob, oosqlResultValue,                */
 /*   oosqlResultError, oosqlResultErrorCode, oosqlResultErrorNoMem,         */
 /*   oosqlResultErrorTooBig.                                                 */
 /*                                                                            */
-/* Note: oosqlValueInt64 does not exist as a classic routine (the OO         */
-/* interface ooSQLValue~int64 does exist — this is an asymmetry).            */
+/* Note: oosqlValueInt64 did not exist as a classic routine before 1.1,      */
+/* while the OO ooSQLValue~int64 did (note #26).                             */
 /*                                                                            */
 /******************************************************************************/
 
@@ -7368,6 +7368,36 @@ NullStmtRaised:
   Call oosqlStep stmt
   self~assertEquals("2,2", oosqlColumnText(stmt, 2), -
     "REAL 3.14: type=2 and numericType=2")
+  Call oosqlFinalize stmt
+  Call oosqlClose db
+
+--------------------------------------------------------------------------------
+-- oosqlValueInt64: full 64-bit range, coercion, NULL (note #26)              --
+--------------------------------------------------------------------------------
+
+::Method testClassicValueInt64
+  db = self~classicOpenMemory
+  ret = oosqlCreateFunction(db, "cl_valint64", 1, "classicValueInt64CB")
+  self~assertEquals(0, ret, -
+    "oosqlCreateFunction for cl_valint64 should return OK")
+  rc = oosqlPrepare(db, "SELECT cl_valint64(9223372036854775807)," -
+    "cl_valint64(-9223372036854775808), cl_valint64(123456789012)," -
+    "cl_valint64('77'), cl_valint64(3.9), cl_valint64(NULL);", "stmt")
+  Call oosqlStep stmt
+  self~assertEquals(.ooSQLite~INTEGER, oosqlColumnType(stmt, 1), -
+    "oosqlValueInt64 through oosqlResultInt64 should give an INTEGER")
+  self~assertEquals("9223372036854775807", oosqlColumnText(stmt, 1), -
+    "oosqlValueInt64(INT64_MAX)")
+  self~assertEquals("-9223372036854775808", oosqlColumnText(stmt, 2), -
+    "oosqlValueInt64(INT64_MIN)")
+  self~assertEquals("123456789012", oosqlColumnText(stmt, 3), -
+    "oosqlValueInt64 of a value that does not fit in 32 bits")
+  self~assertEquals("77", oosqlColumnText(stmt, 4), -
+    "oosqlValueInt64(TEXT '77') should coerce to 77")
+  self~assertEquals("3", oosqlColumnText(stmt, 5), -
+    "oosqlValueInt64(REAL 3.9) should truncate to 3")
+  self~assertEquals("NIL", oosqlColumnText(stmt, 6), -
+    "oosqlValueInt64(NULL) should return .nil")
   Call oosqlFinalize stmt
   Call oosqlClose db
 
@@ -8119,6 +8149,15 @@ ResetAutoExtNoRot13:
   typ    = oosqlValueType(val)
   numTyp = oosqlValueNumericType(val)
   Call oosqlResultText ctx, typ","numTyp
+  Return 0
+
+::Routine classicValueInt64CB Public
+  Use Arg db, ctx, userData, val
+  intVal = oosqlValueInt64(val)
+  If intVal == .nil Then
+    Call oosqlResultText ctx, "NIL"
+  Else
+    Call oosqlResultInt64 ctx, intVal
   Return 0
 
 /* --- result routines --- */
