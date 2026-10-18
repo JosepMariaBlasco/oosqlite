@@ -6288,6 +6288,20 @@ NullStmtRaised:
     self~nullHandleError("oosqlBackupStep", .array~of(null)), "null backup")
   Call oosqlClose db
 
+::Method testClassicRoutineErrorWording
+  -- The errors of routines speak of arguments and routines, not of
+  -- method arguments or functions
+  self~assertEquals("88.900 Argument 1, option must be one of [O]neLine [F]ull [C]ompact [L]ibVersion" -
+    "[N]umber [S]ourceID; found ""X"".", -
+    self~nullHandleError("ooSQLiteVersion", .array~of("X")), "ooSQLiteVersion with a bad type")
+  big. = ""
+  big.0 = 3
+  big.1 = "a"~copies(3000)
+  big.2 = "b"~copies(3000)
+  big.3 = "c"
+  self~assertEquals("88.900 String produced by the ooSQLiteEnquote routine is longer than allowed; (max == 4095)", -
+    self~nullHandleError("ooSQLiteEnquote", .array~of(big.)), "ooSQLiteEnquote with a long result")
+
 ::Method nullHandleError
   -- Calls the routine name with args, returns the code and message of the
   -- syntax error it raises
