@@ -296,7 +296,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlDbStatus">oosqlDbStatus()</link></entry>
-<entry>.</entry>
+<entry>Retrieves runtime status information about a database connection, and optionally resets its highwater mark.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlEnableLoadExtension">oosqlEnableLoadExtension()</link></entry>
@@ -492,7 +492,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlStatus">oosqlStatus()</link></entry>
-<entry>.</entry>
+<entry>Retrieves runtime status information about the performance of SQLite, and optionally resets its highwater mark.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlStep">oosqlStep()</link></entry>
@@ -516,7 +516,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlTableColumnMetadata">oosqlTableColumnMetadata()</link></entry>
-<entry>.</entry>
+<entry>Retrieves metadata about a column of a table of a database connection.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlThreadSafe">oosqlThreadSafe()</link></entry>

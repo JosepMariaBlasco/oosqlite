@@ -238,6 +238,15 @@
     MISUSE, as <link linkend="mthGetCollationNeeded">getCollationNeeded</link> already reports an error in that case.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Metadata of a column declared without a type</emphasis></term>
+  <listitem>
+  <para>
+    <link linkend="mthTableColumnMetadata">tableColumnMetadata</link> and the classic <link
+    linkend="rtn-oosqlTableColumnMetadata">oosqlTableColumnMetadata</link> crashed for a column declared without a type,
+    as <computeroutput>a</computeroutput> in <computeroutput>CREATE TABLE t(a, b TEXT)</computeroutput>. The data type of
+    such a column is now the empty string.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">The authorizer callback</emphasis></term>
   <listitem>
   <para>
@@ -338,7 +347,14 @@
     role="italic">columnName</emphasis> instead of <emphasis role="italic">colName</emphasis> in the column methods of
     the ooSQLiteStmt class and in the classic oosqlColumn routines, and <emphasis role="italic">op</emphasis> instead of
     <emphasis role="italic">param</emphasis> in <link linkend="mthStmtStatus">stmtStatus</link> and <link
-    linkend="rtn-oosqlStmtStatus">oosqlStmtStatus</link>, as in SQLite.
+    linkend="rtn-oosqlStmtStatus">oosqlStmtStatus</link>, as in SQLite. In the same way, the status parameter is
+    <emphasis role="italic">op</emphasis> in <link linkend="mthStatus">status</link>, <link
+    linkend="mthDbStatus">dbStatus</link>, <link linkend="rtn-oosqlStatus">oosqlStatus</link>, and <link
+    linkend="rtn-oosqlDbStatus">oosqlDbStatus</link>, and the column is <emphasis role="italic">columnName</emphasis> in
+    <link linkend="mthTableColumnMetadata">tableColumnMetadata</link> and <link
+    linkend="rtn-oosqlTableColumnMetadata">oosqlTableColumnMetadata</link>, whose section showed it with no name, and
+    gave the COLLATIONSEQUENCE index misspelled. The classic oosqlStatus, oosqlDbStatus and oosqlTableColumnMetadata
+    routines are now documented.
   </para></listitem>
   <listitem><para>
     New section for a method that was not documented: <link linkend="mthCollationNeeded">collationNeeded</link> of
