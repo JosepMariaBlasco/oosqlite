@@ -4089,7 +4089,8 @@ call oosqlCreateFunction db, "double"
   <para>
     The mutex belongs to SQLite, which uses it to protect the connection: never free it with <link
     linkend="rtn-oosqlMutexFree">oosqlMutexFree</link>. Holding the mutex keeps other threads from using the connection,
-    so it must be left as soon as possible, once for each time it was entered.
+    so it must be left as soon as possible, once for each time it was entered. When the connection is closed, SQLite
+    frees its mutex, and the handle must not be used any more.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>

@@ -179,6 +179,20 @@
     starts at 0 and stops at NULL must start at 1, or it lists nothing.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Mutex objects that can no longer be used raise an error</emphasis></term>
+  <listitem>
+  <para>
+    The <link linkend="mthEnter">enter</link>, <link linkend="mthLeave">leave</link>, and <link linkend="mthTry">try</link>
+    methods of the ooSQLiteMutex class did nothing on a mutex that had been freed, and try returned OK, as if it had
+    entered it. They now raise the error "The ooSQLite mutex is not valid, it has been closed". Freeing a freed mutex
+    still does nothing.
+  </para>
+  <para>
+    The mutex objects returned by <link linkend="mthDbMutex">dbMutex</link> kept using the mutex of their connection
+    after the connection was closed, when SQLite has freed it. They are now closed with the connection, and raise the
+    same error. A program that used them after closing the connection had undefined results before.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">The recordFormat attribute of a statement works</emphasis></term>
   <listitem>
   <para>
@@ -494,6 +508,10 @@
     linkend="clsOOSQLValue">ooSQLValue</link> classes are now complete: each method has its section, with an example of
     a user defined function, and the method tables list all of them. Before, only the blob method of ooSQLResult was
     documented.
+  </para></listitem>
+  <listitem><para>
+    The chapter on the <link linkend="clsOOSQLiteMutex">ooSQLiteMutex</link> class is now complete, with examples that
+    use several Rexx threads.
   </para></listitem>
   <listitem><para>
     The <link linkend="chpOOSQLiteConstants">constants chapter</link> lists all the constants of the class, also the

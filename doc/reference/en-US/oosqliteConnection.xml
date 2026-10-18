@@ -2015,7 +2015,7 @@ db~createFunction("double", .nil)
 </section>  <!-- End ooSQLiteConnection::dbFileName() -->
 
 
-<section id="mthDbMutex"><title>dbMutex</title>
+<section id="mthDbMutex" revisionflag="changed"><title>&changed11;dbMutex</title>
 <indexterm><primary>dbMutex</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>dbMutex</secondary></indexterm>
 <mediaobject>
@@ -2059,6 +2059,11 @@ db~createFunction("double", .nil)
     role="italic">dbMutex</emphasis> method represents a mutex in use by the SQLite database engine, invoking <link
     linkend="mthFree">free</link> on the object closes the Rexx object, but does not actually close the underlying SQLite
     mutex.
+  </para>
+  <para revisionflag="changed">
+    &changed11;When the connection is closed, SQLite frees its mutex, and the mutex objects returned by <emphasis
+    role="italic">dbMutex</emphasis> for it are closed: their <link linkend="atrClosedClsMutex">closed</link> attribute
+    is true, and their methods raise an error. Before ooSQLite 1.1 they kept using the mutex that SQLite had freed.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details:</emphasis></term>
