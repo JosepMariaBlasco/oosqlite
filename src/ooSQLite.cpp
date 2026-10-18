@@ -16087,8 +16087,10 @@ RexxRoutine1(RexxObjectPtr, oosqlValueInt_rtn, POINTER, sqlValue)
 
 /** oosqlValueInt64()
  *
+ *  Before ooSQLite 1.1 this function was named oosqlValueInt64, and it was not
+ *  in the routine table, so the classic interface had no oosqlValueInt64().
  */
-RexxRoutine1(RexxObjectPtr, oosqlValueInt64, POINTER, sqlValue)
+RexxRoutine1(RexxObjectPtr, oosqlValueInt64_rtn, POINTER, sqlValue)
 {
     RexxObjectPtr result = TheNilObj;
 
@@ -16365,6 +16367,7 @@ REXX_TYPED_ROUTINE_PROTOTYPE(oosqlValueBlob_rtn);
 REXX_TYPED_ROUTINE_PROTOTYPE(oosqlValueBytes_rtn);
 REXX_TYPED_ROUTINE_PROTOTYPE(oosqlValueDouble_rtn);
 REXX_TYPED_ROUTINE_PROTOTYPE(oosqlValueInt_rtn);
+REXX_TYPED_ROUTINE_PROTOTYPE(oosqlValueInt64_rtn);
 REXX_TYPED_ROUTINE_PROTOTYPE(oosqlValueNumericType_rtn);
 REXX_TYPED_ROUTINE_PROTOTYPE(oosqlValueText_rtn);
 REXX_TYPED_ROUTINE_PROTOTYPE(oosqlValueType_rtn);
@@ -16494,6 +16497,7 @@ RexxRoutineEntry ooSQLite_functions[] =
     REXX_TYPED_ROUTINE(oosqlValueBytes_rtn,           oosqlValueBytes_rtn),
     REXX_TYPED_ROUTINE(oosqlValueDouble_rtn,          oosqlValueDouble_rtn),
     REXX_TYPED_ROUTINE(oosqlValueInt_rtn,             oosqlValueInt_rtn),
+    REXX_TYPED_ROUTINE(oosqlValueInt64_rtn,           oosqlValueInt64_rtn),
     REXX_TYPED_ROUTINE(oosqlValueNumericType_rtn,     oosqlValueNumericType_rtn),
     REXX_TYPED_ROUTINE(oosqlValueText_rtn,            oosqlValueText_rtn),
     REXX_TYPED_ROUTINE(oosqlValueType_rtn,            oosqlValueType_rtn),

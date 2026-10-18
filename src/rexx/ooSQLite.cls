@@ -500,6 +500,7 @@
 ::routine oosqlValueBytes public external "LIBRARY oosqlite oosqlValueBytes_rtn"
 ::routine oosqlValueDouble public external "LIBRARY oosqlite oosqlValueDouble_rtn"
 ::routine oosqlValueInt public external "LIBRARY oosqlite oosqlValueInt_rtn"
+::routine oosqlValueInt64 public external "LIBRARY oosqlite oosqlValueInt64_rtn"
 ::routine oosqlValueNumericType public external "LIBRARY oosqlite oosqlValueNumericType_rtn"
 ::routine oosqlValueText public external "LIBRARY oosqlite oosqlValueText_rtn"
 ::routine oosqlValueType public external "LIBRARY oosqlite oosqlValueType_rtn"
