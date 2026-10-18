@@ -646,6 +646,66 @@
 </para>
 </section>  <!-- End Prepared Statements -->
 
+<section id="sctClassicCallbacks"><title>Callback Routines</title>
+<indexterm><primary>callback</primary><secondary>Classic Rexx Interface</secondary></indexterm>
+<indexterm><primary>Classic Rexx Interface</primary><secondary>callback routines</secondary></indexterm>
+<para>
+  Several routines of the classic interface register a Rexx routine that SQLite calls later, while it executes SQL: a
+  <emphasis role="italic">callback</emphasis> routine. They are <link linkend="rtn-oosqlBusyHandler">oosqlBusyHandler</link>,
+  <link linkend="rtn-oosqlCollationNeeded">oosqlCollationNeeded</link>, <link
+  linkend="rtn-oosqlCommitHook">oosqlCommitHook</link>, <link linkend="rtn-oosqlCreateCollation">oosqlCreateCollation</link>,
+  <link linkend="rtn-oosqlCreateFunction">oosqlCreateFunction</link>, <link
+  linkend="rtn-oosqlProfile">oosqlProfile</link>, <link linkend="rtn-oosqlProgressHandler">oosqlProgressHandler</link>,
+  <link linkend="rtn-oosqlRollbackHook">oosqlRollbackHook</link>, <link
+  linkend="rtn-oosqlSetAuthorizer">oosqlSetAuthorizer</link>, <link linkend="rtn-oosqlTrace">oosqlTrace</link>, and <link
+  linkend="rtn-oosqlUpdateHook">oosqlUpdateHook</link>; <link linkend="rtn-oosqlExec">oosqlExec</link> can also call a
+  routine for each result row. These are the rules for callback routines:
+  <itemizedlist>
+  <listitem>
+  <para>
+    The routine is given by its name, and it must be a public routine, defined with <computeroutput>::ROUTINE name
+    PUBLIC</computeroutput>, in the same program, or package, that calls the registering routine. Public routines of
+    the packages that the program requires are not found. If there is no such routine, a syntax error, 88.900, is
+    raised. Case is not significant in the name.
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+    The empty string as the name removes the routine registered before. The routines are also removed when the
+    connection is closed.
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+    A connection has at most one routine of each kind: registering a routine replaces the one registered before.
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+    The routine is called in the same thread, while the routine that executes the SQL, such as <emphasis
+    role="italic">oosqlExec</emphasis> or <emphasis role="italic">oosqlStep</emphasis>, is running. Its arguments are
+    described in the section of each registering routine. When a <emphasis role="italic">userData</emphasis> object is
+    given to the registering routine, it is passed to the callback routine as its last argument; otherwise that argument
+    is .nil.
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+    The routine must return a whole number, even when its value is ignored. If it returns nothing, or something else,
+    a syntax error, 98.900, is raised when the routine that executes the SQL returns. A condition raised in the callback
+    routine, such as a syntax error, is also raised there.
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+    Unless its section says otherwise, the routine must not use the database connection: it must not prepare or execute
+    SQL on it.
+  </para>
+  </listitem>
+  </itemizedlist>
+</para>
+</section>  <!-- End Callback Routines -->
+
 <section id="sct-onlineBackup"><title>Online Backup Feature</title>
 <indexterm><primary>online backup</primary><secondary>Classic Rexx Interface</secondary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>online backup</secondary></indexterm>

@@ -55,7 +55,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Registers a routine that is called while SQL is prepared, to allow or deny each action the SQL would do.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -63,10 +63,24 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>rtnName [required]</term>
+      <listitem>
+      <para>
+        The name of the public routine to call for each action, or the empty string to remove the routine registered
+        before. See the rules for <link linkend="sctClassicCallbacks">callback routines</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>userData [optional]</term>
+      <listitem>
+      <para>
+        Any object, passed to the routine as its sixth argument. If it is omitted, the routine receives .nil.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -75,29 +89,58 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The routine is called with six arguments: the action, one of the <link linkend="sctAuthorizerAction">Authorizer
+    Action Code</link> constants, such as <computeroutput>SELECT</computeroutput>,
+    <computeroutput>READ</computeroutput>, or <computeroutput>DELETE</computeroutput>; two strings that depend on the
+    action, such as the name of the table and of the column; the name of the database; the name of the trigger or view
+    that causes the action; and the user data. The strings that do not apply are empty. The routine must return one of
+    the <link linkend="sctAuthorizerReturnCode">Authorizer Return Code</link> constants:
+    <computeroutput>OK</computeroutput> to allow the action, <computeroutput>IGNORE</computeroutput> to ignore it, for a
+    column read it reads NULL, or <computeroutput>DENY</computeroutput> to make the preparation fail with
+    <computeroutput>AUTH</computeroutput> (23), <computeroutput>not authorized</computeroutput>.
+  </para>
+  <para>
+    The routine is called when the SQL is prepared, not when it is executed. It must not use the connection.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlSetAuthorizer</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/set_authorizer.html">sqlite3_set_authorizer</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthSetAuthorizer">setAuthorizer</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same with a method of an object; see also
+    <link linkend="mthAuthorizerCallBack">authorizerCallBack</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example forbids deleting rows:
+<programlisting language="rexx">
+  rc = oosqlSetAuthorizer(db, 'noDelete')
+  say oosqlExec(db, "DELETE FROM foods WHERE id = 1;")
+  rows. = oosqlExec(db, "SELECT name FROM foods WHERE id = 1;", .true)
+  say rows.1['NAME']
+  rc = oosqlSetAuthorizer(db, '')
+  /* Output:
+  SQLite Error: rc = 23, not authorized
+  Bagels
+  */
 
-]]>
+  ::routine noDelete public
+    use arg action, arg1, arg2, dbName, trigger
+    if action == .ooSQLite~DELETE then return .ooSQLite~DENY
+    return .ooSQLite~OK
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1057,7 +1100,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Registers a routine that is called with the text of each SQL statement when it starts executing.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1065,10 +1108,24 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>rtnName [required]</term>
+      <listitem>
+      <para>
+        The name of the public routine to call for each statement, or the empty string to remove the routine registered
+        before. See the rules for <link linkend="sctClassicCallbacks">callback routines</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>userData [optional]</term>
+      <listitem>
+      <para>
+        Any object, passed to the routine as its second argument. If it is omitted, the routine receives .nil.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1077,29 +1134,51 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns the <emphasis role="italic">userData</emphasis> of the routine that was registered before, or .nil if there
+    was none, or it had no user data.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The routine is called with two arguments: the SQL text, and the user data. When a trigger starts, it is also called,
+    with a comment that names the trigger as the SQL text. It must return a whole number, which is ignored.
+  </para>
+  <para>
+    A connection has only one of trace and <link linkend="rtn-oosqlProfile">profile</link> routine: registering one
+    removes the other.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlTrace</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/profile.html">sqlite3_trace</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthTrace">trace</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same with a method of an object; see also
+    <link linkend="mthTraceCallBack">traceCallBack</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example displays each statement executed by a call to <link linkend="rtn-oosqlExec">oosqlExec</link>, with a
+    prefix given as the user data:
+<programlisting language="rexx">
+  rc = oosqlTrace(db, 'showSql', 'SQL&gt;')
+  rc = oosqlExec(db, "SELECT count(*) FROM foods; UPDATE foods SET price = 3 WHERE id = 1;")
+  rc = oosqlTrace(db, '')
+  /* Output:
+  SQL&gt; SELECT count(*) FROM foods;
+  SQL&gt; UPDATE foods SET price = 3 WHERE id = 1;
+  */
 
-]]>
+  ::routine showSql public
+    use arg sql, prefix
+    say prefix sql
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -1117,7 +1196,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Registers a routine that is called whenever a row is inserted, updated, or deleted.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1125,10 +1204,24 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>rtnName [required]</term>
+      <listitem>
+      <para>
+        The name of the public routine to call for each row changed, or the empty string to remove the routine
+        registered before. See the rules for <link linkend="sctClassicCallbacks">callback routines</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>userData [optional]</term>
+      <listitem>
+      <para>
+        Any object, passed to the routine as its fifth argument. If it is omitted, the routine receives .nil.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1137,29 +1230,60 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns the <emphasis role="italic">userData</emphasis> of the routine that was registered before, or .nil if there
+    was none, or it had no user data.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The routine is called with five arguments: the operation, which is one of the <link
+    linkend="sctAuthorizerAction">Authorizer Action Code</link> constants <computeroutput>INSERT</computeroutput>,
+    <computeroutput>UPDATE</computeroutput>, or <computeroutput>DELETE</computeroutput>; the name of the database, such
+    as <computeroutput>main</computeroutput>; the name of the table; the rowid of the row, after the change for an
+    update; and the user data. It must return a whole number, which is ignored.
+  </para>
+  <para>
+    The routine is not called for changes to tables without a rowid, to internal tables, or for the rows deleted by a
+    DELETE without a WHERE clause, which SQLite carries out by truncating the table. It must not use the connection: it
+    must not prepare or execute SQL on it.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlUpdateHook</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/update_hook.html">sqlite3_update_hook</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthUpdateHook">updateHook</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same with a method of an object; see also
+    <link linkend="mthUpdateHookCallBack">updateHookCallBack</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example displays the rows changed by an UPDATE and a DELETE:
+<programlisting language="rexx">
+  rc = oosqlUpdateHook(db, 'showChange')
+  rc = oosqlExec(db, "UPDATE foods SET price = 2 WHERE type_id = 1; DELETE FROM foods WHERE id = 3;")
+  rc = oosqlUpdateHook(db, '')
+  /* Output:
+  UPDATE main.foods rowid 1
+  UPDATE main.foods rowid 2
+  DELETE main.foods rowid 3
+  */
 
-]]>
+  ::routine showChange public
+    use arg op, dbName, tableName, rowid
+    select
+      when op == .ooSQLite~INSERT then what = 'INSERT'
+      when op == .ooSQLite~UPDATE then what = 'UPDATE'
+      otherwise what = 'DELETE'
+    end
+    say what dbName'.'tableName 'rowid' rowid
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>

@@ -12877,7 +12877,7 @@ static RexxObjectPtr installCallbackRtn(RexxCallContext *c, sqlite3 *db, RexxBuf
     }
     else if ( cbt == traceHook )
     {
-        oldCbc = (pCGenericCallback)sqlite3_profile(db, profileHookCallback, (void *)cbc);
+        oldCbc = (pCGenericCallback)sqlite3_trace(db, traceHookCallback, (void *)cbc);
     }
     else
     {

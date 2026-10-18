@@ -1434,7 +1434,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Registers a routine that is called when a table needed by a statement is locked by another connection.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -1442,10 +1442,24 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>rtnName [required]</term>
+      <listitem>
+      <para>
+        The name of the public routine to call when a table is locked, or the empty string to remove the routine
+        registered before. See the rules for <link linkend="sctClassicCallbacks">callback routines</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>userData [optional]</term>
+      <listitem>
+      <para>
+        Any object, passed to the routine as its second argument. If it is omitted, the routine receives .nil.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1454,29 +1468,65 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The routine is called with two arguments: the number of times it has already been called for this lock, 0 the first
+    time, and the user data. It must return a whole number: not 0 to make SQLite try again, or 0 to give up, and then
+    the statement returns <computeroutput>BUSY</computeroutput>. The routine usually waits a little before returning,
+    with <computeroutput>SysSleep</computeroutput> for example.
+  </para>
+  <para>
+    There can be only one busy handler for a connection: <link linkend="rtn-oosqlBusyTimeOut">oosqlBusyTimeOut</link>
+    replaces this one, and the other way round.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlBusyHandler</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/busy_handler.html">sqlite3_busy_handler</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthBusyHandler">busyHandler</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same with a method of an object; see also
+    <link linkend="mthBusyCallBack">busyCallBack</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example locks the database with a second connection, and then shows how the busy handler of the first one is
+    called before the statement returns <computeroutput>BUSY</computeroutput>:
+<programlisting language="rexx">
+  rc = oosqlOpen(oosqlDbFileName(db, 'main'), 'other')
+  rc = oosqlExec(other, "BEGIN EXCLUSIVE;")      -- other connection locks the database
 
-]]>
+  rc = oosqlBusyHandler(db, 'retry3Times')
+  say oosqlExec(db, "SELECT count(*) FROM foods;")
+  rc = oosqlBusyHandler(db, '')
+
+  rc = oosqlExec(other, "COMMIT;")
+  rc = oosqlClose(other)
+  /* Output:
+  Waiting... 0
+  Waiting... 1
+  Waiting... 2
+  SQLite Error: rc = 5, database is locked
+  */
+
+  ::routine retry3Times public
+    use arg count
+    say 'Waiting...' count
+    if count &lt; 2 then do
+      call SysSleep 0.1
+      return 1                           -- try again
+    end
+    return 0                             -- give up: BUSY
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -3014,7 +3064,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Registers a routine that is called when a statement needs a collation sequence that is not defined.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -3022,10 +3072,24 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>rtnName [required]</term>
+      <listitem>
+      <para>
+        The name of the public routine to call for each undefined collation, or the empty string to remove the routine
+        registered before. See the rules for <link linkend="sctClassicCallbacks">callback routines</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>userData [optional]</term>
+      <listitem>
+      <para>
+        Any object, passed to the routine as its third argument. If it is omitted, the routine receives .nil.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -3034,29 +3098,61 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The routine is called with three arguments: the <link linkend="defHandle">handle</link> to the database connection,
+    the name of the collation, as it is written in the SQL, and the user data. To make the collation available, the
+    routine defines it with <link linkend="rtn-oosqlCreateCollation">oosqlCreateCollation</link> on that handle. It must
+    return a whole number, which is ignored. If it does not define the collation, the statement fails with
+    <computeroutput>no such collation sequence</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlCollationNeeded</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/collation_needed.html">sqlite3_collation_needed</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthCollationNeeded">collationNeeded</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same with a method of an object; see also
+    <link linkend="mthCollationNeededCallBack">collationNeededCallBack</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example defines the collation <computeroutput>REVERSE</computeroutput> only when a query uses it:
+<programlisting language="rexx">
+  rc = oosqlCollationNeeded(db, 'defineCollation')
+  rows. = oosqlExec(db, "SELECT name FROM foods ORDER BY name COLLATE REVERSE;", .true)
+  do i = 1 to rows.0
+    say rows.i['NAME']
+  end
+  /* Output:
+  Collation needed: REVERSE
+  Cheese
+  Bagels, raisin
+  Bagels
+  Bacon
+  */
 
-]]>
+  ::routine defineCollation public
+    use arg db, name
+    say 'Collation needed:' name
+    if name~upper == 'REVERSE' then call oosqlCreateCollation db, 'compareReverse', name
+    return 0
+
+  ::routine compareReverse public
+    use arg a, b
+    if a &lt; b then return 1
+    if a &gt; b then return -1
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -3074,7 +3170,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Registers a routine that is called whenever a transaction is about to be committed.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -3082,10 +3178,24 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>rtnName [required]</term>
+      <listitem>
+      <para>
+        The name of the public routine to call before each commit, or the empty string to remove the routine registered
+        before. See the rules for <link linkend="sctClassicCallbacks">callback routines</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>userData [optional]</term>
+      <listitem>
+      <para>
+        Any object, passed to the routine as its only argument. If it is omitted, the routine receives .nil.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -3094,29 +3204,55 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns the <emphasis role="italic">userData</emphasis> of the routine that was registered before, or .nil if there
+    was none, or it had no user data.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The routine is called with one argument, the user data. It must return a whole number: 0 lets the commit go on; any
+    other value turns the COMMIT into a ROLLBACK, and the statement fails with
+    <computeroutput>CONSTRAINT_COMMITHOOK</computeroutput> (531). In autocommit mode, every statement that changes the
+    database is committed when it ends, so the routine is called for each one.
+  </para>
+  <para>
+    The routine must not use the connection: it must not prepare or execute SQL on it.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlCommitHook</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/commit_hook.html">sqlite3_commit_hook</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthCommitHook">commitHook</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same with a method of an object; see also
+    <link linkend="mthCommitHookCallBack">commitHookCallBack</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example counts the commits made by two calls to <link linkend="rtn-oosqlExec">oosqlExec</link>, using a
+    Directory object as the user data:
+<programlisting language="rexx">
+  counter = .directory~new
+  counter~commits = 0
+  rc = oosqlCommitHook(db, 'countCommits', counter)
+  rc = oosqlExec(db, "UPDATE foods SET price = price + 1 WHERE type_id = 1;")
+  rc = oosqlExec(db, "BEGIN; DELETE FROM foods WHERE id = 4; INSERT INTO foods(name) VALUES('Toast'); COMMIT;")
+  say counter~commits 'commit(s)'
+  rc = oosqlCommitHook(db, '')
+  /* Output:
+  2 commit(s)
+  */
 
-]]>
+  ::routine countCommits public
+    use arg counter
+    counter~commits += 1
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -3313,7 +3449,7 @@
 </mediaobject>
 
 <para>
-  xx
+  Defines a collation sequence, with a routine that compares two strings.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
@@ -3321,10 +3457,31 @@
   <para>
     The arguments are:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>db [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a database connection, as set by <link
+        linkend="rtn-oosqlOpen">oosqlOpen</link>. The handle must not be null.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>rtnName [required]</term>
+      <listitem>
+      <para>
+        The name of the public routine to call to compare two strings, or the empty string to remove the routine
+        registered before. See the rules for <link linkend="sctClassicCallbacks">callback routines</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>collationName [required]</term>
+      <listitem>
+      <para>
+        The name of the collation, used in SQL in the <computeroutput>COLLATE</computeroutput> clause. Case is not
+        significant.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>userData [optional]</term>
+      <listitem>
+      <para>
+        Any object, passed to the routine as its third argument. If it is omitted, the routine receives .nil.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -3333,29 +3490,60 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or one of the <link linkend="sctResultCode">Result
+    Code</link> constants on error.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The routine is called with three arguments: the two strings to compare, and the user data. It must return a negative
+    number if the first string sorts before the second, 0 if they are equal, and a positive number if it sorts after. It
+    must always give the same result for the same strings.
+  </para>
+  <para>
+    To remove the collation, pass the empty string as <emphasis role="italic">rtnName</emphasis> with its <emphasis
+    role="italic">collationName</emphasis>. A collation can also be defined only when a statement needs it, with <link
+    linkend="rtn-oosqlCollationNeeded">oosqlCollationNeeded</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    The functionality of the <emphasis role="italic">oosqlCreateCollation</emphasis> routine is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/create_collation.html">sqlite3_create_collation_v2</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthCreateCollation">createCollation</link> method of the <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class does the same with a method of an object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example sorts the names of the foods without regard to case:
+<programlisting language="rexx">
+  rc = oosqlExec(db, "INSERT INTO foods(name) VALUES('bacon bits');")
+  rc = oosqlCreateCollation(db, 'compareNoCase', 'NOCASEREXX')
+  rows. = oosqlExec(db, "SELECT name FROM foods ORDER BY name COLLATE NOCASEREXX;", .true)
+  do i = 1 to rows.0
+    say rows.i['NAME']
+  end
+  /* Output:
+  Bacon
+  bacon bits
+  Bagels
+  Bagels, raisin
+  Cheese
+  */
 
-]]>
+  ::routine compareNoCase public
+    use arg a, b
+    a = a~upper
+    b = b~upper
+    if a &lt; b then return -1
+    if a &gt; b then return 1
+    return 0
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -4448,9 +4636,8 @@ file is encrypted or is not a database
       <varlistentry><term>rtnName [optional]</term>
       <listitem>
       <para>
-        The name of a routine to call for each result row, instead of building a result set. It must be a public
-        routine, defined with <computeroutput>::ROUTINE name PUBLIC</computeroutput>, of the program that calls
-        <emphasis role="italic">oosqlExec</emphasis> or of a package it requires. It is ignored when <emphasis
+        The name of a routine to call for each result row, instead of building a result set. It must be a public routine of the program that calls <emphasis role="italic">oosqlExec</emphasis>: see the rules
+        for <link linkend="sctClassicCallbacks">callback routines</link>. It is ignored when <emphasis
         role="italic">doCallback</emphasis> is false. The routine is called with two arguments: the row, in the format
         given by <emphasis role="italic">format</emphasis>, and the number of the row, 1 for the first one. It must
         return a whole number: 0 to go on, or any other value to stop executing the SQL.
