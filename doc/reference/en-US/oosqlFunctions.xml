@@ -312,7 +312,7 @@ say ooSQLiteEnquote(str)
 <indexterm><primary>Classic Rexx Interface</primary><secondary>ooSQLiteRegisterBuiltin</secondary></indexterm>
 <mediaobject>
 <imageobject>
-<imagedata fileref="images/classic/oosqliteregisterbuiltin.svg" scale="55" />
+<imagedata fileref="images/specific/oosqliteregisterbuiltin.svg" scale="55" />
 </imageobject>
 </mediaobject>
 

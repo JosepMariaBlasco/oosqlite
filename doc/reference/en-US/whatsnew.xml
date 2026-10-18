@@ -203,6 +203,24 @@
     format. The attribute of the connection was not affected.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Canceling all the automatic builtins returns OK</emphasis></term>
+  <listitem>
+  <para>
+    <link linkend="mthCancelAutoBuiltin">cancelAutoBuiltin</link> with no argument, or with the keyword ALL, returned
+    MISUSE when some builtin extension was not automatic, which was nearly always the case, with the message "Failed to
+    make builtin extension wholeNumber automatic". It now returns OK: afterwards no builtin is automatic, as asked. A
+    single name that is not automatic still returns MISUSE.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Making automatic what already is does nothing</emphasis></term>
+  <listitem>
+  <para>
+    <link linkend="mthAutoPackage">autoPackage</link>, <link linkend="mthAutoFunction">autoFunction</link>, and <link
+    linkend="mthAutoCollation">autoCollation</link> added the package, function, or collation again when it was already
+    automatic, so that stopping it once left it automatic, and each copy counted against the limit of 10. Marking it
+    again now does nothing.
+  </para>
+  </listitem></varlistentry>
 </variablelist>
 </section>
 
@@ -257,6 +275,19 @@
     Both now also accept a String, a Buffer, or a MutableBuffer, as <link linkend="mthBindBlob">bindBlob</link> and
     <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> do, and the size is then optional. A Pointer and a size are
     still accepted, so existing code keeps working.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Result code constants of the extension classes</emphasis></term>
+  <listitem>
+  <para>
+    The ooSQLExtensions and ooSQLPackage classes report errors with the ooSQLite specific result codes 1005 to 1011,
+    which had no constants. They are now <link linkend="sctOOSQLiteSpecificResultCodes">constants</link>:
+    <computeroutput>OO_NO_CSELF</computeroutput>, <computeroutput>OO_PACKAGE_NOT_VALID</computeroutput>,
+    <computeroutput>OO_NO_SUCH_PACKAGE</computeroutput>, <computeroutput>OO_NO_SUCH_LIBRARY</computeroutput>,
+    <computeroutput>OO_PACKAGE_NOT_AUTOMATIC</computeroutput>,
+    <computeroutput>OO_COLLATION_NOT_AUTOMATIC</computeroutput>, and
+    <computeroutput>OO_FUNCTION_NOT_AUTOMATIC</computeroutput>. <link linkend="mthErrStr">errStr</link> and <link
+    linkend="rtn-oosqlErrStr">oosqlErrStr</link> describe them; they returned "unknown error".
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -321,6 +352,15 @@
   <listitem>
   <para>
     See above: an aggregate implemented in Rexx crashed when it was evaluated over no rows.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Registering a package on a closed connection</emphasis></term>
+  <listitem>
+  <para>
+    <link linkend="mthRegister">register</link> of the ooSQLPackage class crashed with a closed connection, and with an
+    object that is not a connection: in that case it raised the error, but went on. It now raises an error in both
+    cases, as <link linkend="mthLoadPackage">loadPackage</link> does: 98.900 for a closed connection, 88.900 for an
+    object that is not an ooSQLiteConnection.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -413,6 +453,24 @@
   <para>
     The register storage class, not allowed in C++17, was removed from ooSQLite and from the example extension
     libraries.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Errors of the ooSQLExtensions class</emphasis></term>
+  <listitem>
+  <para>
+    <link linkend="mthAutoCollationNeeded">autoCollationNeeded</link> with a package that has no collation needed
+    callback returned false, but the <link linkend="atrLastErrCodeClsExt">lastErrCode</link> and <link
+    linkend="atrLastErrMsgClsExt">lastErrMsg</link> attributes said that there was no error: the error was recorded
+    where they do not look. It now sets MISUSE and the message "this package (X) contains no collation needed callback". In the same way, <link
+    linkend="mthLoadPackage">loadPackage</link> refused a package that needs a newer version of ooSQLite or SQLite, but
+    did not say why; it now sets OO_PACKAGE_NOT_VALID, with a message that names both versions.
+  </para>
+  <para>
+    <link linkend="mthLoadLibrary">loadLibrary</link> and <link linkend="mthResetAutoBuiltin">resetAutoBuiltin</link>
+    did not reset the last error, so after a successful call the attributes still showed the error of an earlier method.
+  </para>
+  <para>
+    The message of OO_COLLATION_NOT_AUTOMATIC read "collations X is not an automatically registered collation".
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -512,6 +570,14 @@
   <listitem><para>
     The chapter on the <link linkend="clsOOSQLiteMutex">ooSQLiteMutex</link> class is now complete, with examples that
     use several Rexx threads.
+  </para></listitem>
+  <listitem><para>
+    The chapters on the <link linkend="clsOOSQLExtensions">ooSQLExtensions</link> and <link
+    linkend="clsOOSQLPackage">ooSQLPackage</link> classes are now written, with an introduction to the three kinds of
+    native extensions, and examples that use the example libraries of ooSQLite. They say what the names of packages and
+    libraries are, which differ from the names of their files, what is registered automatically and when, and the errors
+    of each method. The new method of ooSQLPackage is still to be revised. The table of the <link linkend="chpUDExtensions">User Defined Extension Classes</link>
+    chapter describes each class.
   </para></listitem>
   <listitem><para>
     The <link linkend="chpOOSQLiteConstants">constants chapter</link> lists all the constants of the class, also the

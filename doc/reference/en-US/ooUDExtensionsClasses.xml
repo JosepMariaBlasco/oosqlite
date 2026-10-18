@@ -80,35 +80,35 @@
 <tbody>
 <row>
 <entry><link linkend="clsOOSQLCollation">The ooSQLCollation Class</link></entry>
-<entry>Some text.</entry>
+<entry>A collation of an ooSQLite package, as returned by the getCollation method of ooSQLPackage.</entry>
 </row>
 <row>
 <entry><link linkend="clsOOSQLCollationNeeded">The ooSQLCollationNeeded Class</link></entry>
-<entry>Some text.</entry>
+<entry>The collation needed callback of an ooSQLite package, as returned by the getCollationNeeded method of ooSQLPackage.</entry>
 </row>
 <row>
-<entry><link linkend="clsOOSQLExtensions">The ooSQLExtenisons Class</link></entry>
-<entry>Some text.</entry>
+<entry><link linkend="clsOOSQLExtensions">The ooSQLExtensions Class</link></entry>
+<entry>Loads and keeps native libraries and packages, registers the builtin extensions, and makes extensions automatic.</entry>
 </row>
 <row>
 <entry><link linkend="clsOOSQLFunction">The ooSQLFunction Class</link></entry>
-<entry>Some text.</entry>
+<entry>A function of an ooSQLite package, as returned by the getFunction method of ooSQLPackage.</entry>
 </row>
 <row>
 <entry><link linkend="clsOOSQLLibrary">The ooSQLLibrary Class</link></entry>
-<entry>Some text.</entry>
+<entry>A loaded ooSQLite library, which gives the handles of its functions and collations.</entry>
 </row>
 <row>
 <entry><link linkend="clsOOSQLPackage">The ooSQLPackage Class</link></entry>
-<entry>Some text.</entry>
+<entry>A loaded ooSQLite package, which registers its contents, or gives them one by one.</entry>
 </row>
 <row>
 <entry><link linkend="clsOOSQLResult">The ooSQLResult Class</link></entry>
-<entry>Some text.  This class is used in the implementation of user defined extensions in Rexx</entry>
+<entry>Sets the result of a user defined function implemented in Rexx.</entry>
 </row>
 <row>
 <entry><link linkend="clsOOSQLValue">The ooSQLValue Class</link></entry>
-<entry>Some text.  This class is used in the implementation of user defined extensions in Rexx</entry>
+<entry>Reads the arguments of a user defined function implemented in Rexx.</entry>
 </row>
 </tbody></tgroup>
 </table>

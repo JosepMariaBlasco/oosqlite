@@ -45,19 +45,38 @@
 <section id="clsOOSQLExtensions"><title>The ooSQLExtensions Class</title>
 <indexterm><primary>ooSQLExtensions class</primary></indexterm>
 <para>
-  The <computeroutput>ooSQLExtensions</computeroutput> class provides utilities to work with user defined SQLite extensions
-  written in native code, typically C / C++. In general these extensions are packaged in external shared libraries, although
-  there are a few extensions that are statically linked in to the ooSQLite library. The class can be thought of as a manager
-  of these extensions.
+  The ooSQLExtensions class manages the extensions written in native code, typically C or C++, that ooSQLite can use
+  besides the SQL functions and collations written in Rexx. It is not instantiated: all its methods and attributes are
+  class methods and class attributes, as in <computeroutput>.ooSQLExtensions~listBuiltins</computeroutput>.
 </para>
+
 <para>
-  text
+  There are three kinds of extensions. The <emphasis role="bold">builtin extensions</emphasis> come from the SQLite
+  source tree and are compiled into the ooSQLite library; they are registered on a connection with <link
+  linkend="mthRegisterBuiltin">registerBuiltin</link>, or on every new connection with <link
+  linkend="mthAutoBuiltin">autoBuiltin</link>. An <emphasis role="bold">ooSQLite library</emphasis> is a shared library
+  whose functions and collations are registered one by one, with handles: see <link
+  linkend="mthLoadLibrary">loadLibrary</link>. An <emphasis role="bold">ooSQLite package</emphasis> is a shared library
+  that describes its own contents, so that it can be registered as a whole, on a connection or on every new connection:
+  see <link linkend="mthLoadPackage">loadPackage</link>.
+</para>
+
+<para>
+  Libraries and packages are loaded once, and the class keeps them, so that <link
+  linkend="mthGetLibrary">getLibrary</link> and <link linkend="mthGetPackage">getPackage</link> can return them later.
+  Plain SQLite extensions, which are not written for ooSQLite, are loaded with the <link
+  linkend="rtn-oosqlLoadExtension">oosqlLoadExtension</link> routine.
+</para>
+
+<para>
+  The examples of ooSQLite include the source of the exampleLibrary library and of the examplePackage package, in the
+  user.extensions directory. The examples of this chapter use them, and the testPackage package of the same directory;
+  the libraries must be where the operating system looks for them.
 </para>
 
 <section id="sctMethodsOOSQLExtensions"><title>Method Table</title>
 <para>
-  The following table provides links to the documentation for the primary methods and attributes used in working
-  with ooSQLite extensions using the <computeroutput>ooSQLExtensions</computeroutput> class.
+  The following table provides links to the documentation of the methods and attributes of the ooSQLExtensions class.
 </para>
 <table id="tblOOSQLExtensionsMethods" frame="all">
 <title>ooSQLExtensions Methods and Attributes</title>
@@ -77,11 +96,11 @@
 </row>
 <row>
 <entry><link linkend="atrLastErrCodeClsExt">lastErrCode</link></entry>
-<entry>Returns the last error code recorded for this class.</entry>
+<entry>Reflects the result code of the last method of the ooSQLExtensions class that was invoked.</entry>
 </row>
 <row>
 <entry><link linkend="atrLastErrMsgClsExt">lastErrMsg</link></entry>
-<entry>Returns the error message for the last error code recorded for this class.</entry>
+<entry>Reflects the error message of the last method of the ooSQLExtensions class that was invoked.</entry>
 </row>
 <row>
 <entry align="center"><emphasis role="bold">Class Methods</emphasis></entry>
@@ -89,61 +108,61 @@
 </row>
 <row>
 <entry><link linkend="mthAutoBuiltin">autoBuiltin</link></entry>
-<entry>Makes builtin extensions automatic for all database connections.</entry>
-</row>
-<row>
-<entry><link linkend="mthAutoCollationNeeded">autoCollationNeeded</link></entry>
-<entry>.</entry>
+<entry>Makes builtin extensions automatic: they are registered on every database connection opened afterwards.</entry>
 </row>
 <row>
 <entry><link linkend="mthAutoCollation">autoCollation</link></entry>
-<entry>.</entry>
+<entry>&changed11;Makes a collation of a loaded package automatic, or stops it from being automatic.</entry>
+</row>
+<row>
+<entry><link linkend="mthAutoCollationNeeded">autoCollationNeeded</link></entry>
+<entry>&changed11;Makes the collation needed callback of a loaded package automatic, or stops it from being automatic.</entry>
 </row>
 <row>
 <entry><link linkend="mthAutoFunction">autoFunction</link></entry>
-<entry>.</entry>
+<entry>&changed11;Makes a function of a loaded package automatic, or stops it from being automatic.</entry>
 </row>
 <row>
 <entry><link linkend="mthAutoPackage">autoPackage</link></entry>
-<entry>.</entry>
+<entry>&changed11;Makes a loaded package automatic, or stops it from being automatic. All that the package contains is registered on every database connection opened afterwards.</entry>
 </row>
 <row>
 <entry><link linkend="mthCancelAutoBuiltin">cancelAutoBuiltin</link></entry>
-<entry>Cancels builtin extension as automatic for all database connections.</entry>
+<entry>&changed11;Stops builtin extensions from being automatic.</entry>
 </row>
 <row>
 <entry><link linkend="mthGetLibrary">getLibrary</link></entry>
-<entry>.</entry>
+<entry>Returns a library loaded with <link linkend="mthLoadLibrary">loadLibrary</link>.</entry>
 </row>
 <row>
 <entry><link linkend="mthGetPackage">getPackage</link></entry>
-<entry>.</entry>
+<entry>Returns a package loaded with <link linkend="mthLoadPackage">loadPackage</link>.</entry>
 </row>
 <row>
 <entry><link linkend="mthListBuiltins">listBuiltins</link></entry>
-<entry>Lists all builtin extensions.</entry>
+<entry>Lists the builtin extensions.</entry>
 </row>
 <row>
 <entry><link linkend="mthLoadLibrary">loadLibrary</link></entry>
-<entry>.</entry>
+<entry>Loads an ooSQLite library: a shared library that contains collations and functions written in C or C++.</entry>
 </row>
 <row>
 <entry><link linkend="mthLoadPackage">loadPackage</link></entry>
-<entry>.</entry>
-</row>
-<row>
-<entry><link linkend="mthResetAutoBuiltin">resetAutoBuiltin</link></entry>
-<entry>.</entry>
+<entry>&changed11;Loads an ooSQLite package: a shared library that describes the collations and functions that it contains, and optionally registers it.</entry>
 </row>
 <row>
 <entry><link linkend="mthRegisterBuiltin">registerBuiltin</link></entry>
-<entry>Registers builtin extensions with a database connection.</entry>
+<entry>Registers builtin extensions on a database connection.</entry>
+</row>
+<row>
+<entry><link linkend="mthResetAutoBuiltin">resetAutoBuiltin</link></entry>
+<entry>Stops all the builtin extensions from being automatic.</entry>
 </row>
 </tbody></tgroup>
 </table>
 </section>
 
-<section id="atrLastErrCodeClsExt"><title>lastErrCode (Attribute)</title>
+<section id="atrLastErrCodeClsExt"><title>lastErrCode (Class attribute)</title>
 <indexterm><primary>lastErrCode</primary><secondary>ooSQLExtensions class</secondary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>lastErrCode</secondary></indexterm>
 <mediaobject>
@@ -153,50 +172,66 @@
 </mediaobject>
 
 <para>
-  Reflects the last error code set for the <computeroutput>ooSQLExtensions</computeroutput> class.
+  Reflects the result code of the last method of the ooSQLExtensions class that was invoked.
 </para>
 <variablelist>
-  <varlistentry><term><emphasis role="bold">lastErrCode get</emphasis></term>
+  <varlistentry><term><emphasis role="bold">lastErrCode get:</emphasis></term>
   <listitem>
   <para>
-    The value of the <emphasis role="italic">lastErrCode</emphasis> attribute will be a SQLite result <link
-    linkend="sctResultCode">code</link> or one of the ooSQLite specific result <link
-    linkend="sctOOSQLiteSpecificResultCodes">codes</link>.
+    A SQLite <link linkend="sctResultCode">Result Code</link>, or an <link
+    linkend="sctOOSQLiteSpecificResultCodes">ooSQLite specific result code</link>. It is 0,
+    <computeroutput>OK</computeroutput>, if the last method succeeded.
   </para>
   </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks</emphasis></term>
+  <varlistentry><term><emphasis role="bold">lastErrCode set:</emphasis></term>
   <listitem>
   <para>
-    The <emphasis role="italic">lastErrCode</emphasis> and the
-    <emphasis role="italic">lastErrMsg</emphasis> attributes are always updated together.
-    The error message is always the message that goes with the error code.
+    The Rexx programmer can not set the value of this attribute. It is set internally by the ooSQLite framework.
   </para>
   </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example</emphasis></term>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
+    Every method of the class, except <link linkend="mthListBuiltins">listBuiltins</link>, sets the <emphasis
+    role="italic">lastErrCode</emphasis> and <link linkend="atrLastErrMsgClsExt">lastErrMsg</link> attributes. They are
+    always updated together: the message is always the one that goes with the code. Some errors, described in the
+    documentation of each method, raise a syntax error instead, and then the attributes may keep the values of a
+    previous method.
+  </para>
+  <para>
+    Besides <computeroutput>MISUSE</computeroutput>, the methods use these ooSQLite specific result codes:
+    <computeroutput>OO_PACKAGE_NOT_VALID</computeroutput> when the package needs a newer version of ooSQLite or SQLite,
+    <computeroutput>OO_NO_SUCH_PACKAGE</computeroutput> when the package is not loaded,
+    <computeroutput>OO_NO_SUCH_LIBRARY</computeroutput> when the library is not loaded, and
+    <computeroutput>OO_PACKAGE_NOT_AUTOMATIC</computeroutput>,
+    <computeroutput>OO_COLLATION_NOT_AUTOMATIC</computeroutput>, and
+    <computeroutput>OO_FUNCTION_NOT_AUTOMATIC</computeroutput> when what is stopped from being automatic was not.
+    Loading a library that can not be found, or that lacks a function, gives the code of the operating system.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
+  <listitem>
+  <para>
+    This example asks for a package that has not been loaded:
 <programlisting language="rexx">
-  dbName = 'ooFoods.rdbx'
-  dbConn = .ooSQLiteConnection~new(dbName, .ooSQLite~OPEN_READWRITE)
-
-  -- Load the package and automatically register everything in the package for
-  -- our open database connection.
-  success = .ooSQLExtensions~loadPackage('myPackage', dbConn)
-  if \ success then do
-    say 'Failed to load package'
-    say '  Error code:   ' .ooSQLExtensions~lastErrCode
-    say '  Error message:' .ooSQLExtensions~lastErrMsg
-
-    return .ooSQLExtensions~lastErrCode
+  package = .ooSQLExtensions~getPackage('noSuchPackage')
+  if package == .nil then do
+    say 'Error code:   ' .ooSQLExtensions~lastErrCode
+    say 'Error message:' .ooSQLExtensions~lastErrMsg
+    say .ooSQLExtensions~lastErrCode == .ooSQLite~OO_NO_SUCH_PACKAGE
   end
+  /* Output:
+  Error code:    1007
+  Error message: package noSuchPackage is not loaded
+  1
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
-</section>  <!-- End ooSQLExtensions::lastErrCode() [attribute]  -->
+</section>  <!-- End ooSQLExtensions::lastErrCode() [attribute] -->
 
-
-<section id="atrLastErrMsgClsExt"><title>lastErrMsg (Attribute)</title>
+<section id="atrLastErrMsgClsExt"><title>lastErrMsg (Class attribute)</title>
 <indexterm><primary>lastErrMsg</primary><secondary>ooSQLExtensions class</secondary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>lastErrMsg</secondary></indexterm>
 <mediaobject>
@@ -206,29 +241,39 @@
 </mediaobject>
 
 <para>
-  Reflects a human readable explanation, a message, of the last error code recorded
-  for the <computeroutput>ooSQLExtensions</computeroutput> object.
+  Reflects the error message of the last method of the ooSQLExtensions class that was invoked.
 </para>
 <variablelist>
-  <varlistentry><term><emphasis role="bold">lastErrMsg get</emphasis></term>
+  <varlistentry><term><emphasis role="bold">lastErrMsg get:</emphasis></term>
   <listitem>
   <para>
-    Returns a string message that corresponds to the last error code.
+    A message that explains the <link linkend="atrLastErrCodeClsExt">lastErrCode</link> attribute, or <computeroutput>no
+    error</computeroutput> if the last method succeeded.
   </para>
   </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks</emphasis></term>
+  <varlistentry><term><emphasis role="bold">lastErrMsg set:</emphasis></term>
   <listitem>
   <para>
-    The <emphasis role="italic">lastErrCode</emphasis> and the
-    <emphasis role="italic">lastErrMsg</emphasis> attributes are always updated together.
-    The error message is always the message that goes with the error code.
+    The Rexx programmer can not set the value of this attribute. It is set internally by the ooSQLite framework.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    See the remarks of <link linkend="atrLastErrCodeClsExt">lastErrCode</link>.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
+  <listitem>
+  <para>
+    See the example of <link linkend="atrLastErrCodeClsExt">lastErrCode</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
-</section>  <!-- End ooSQLExtensions::lastErrMsg() [attribute]  -->
+</section>  <!-- End ooSQLExtensions::lastErrMsg() [attribute] -->
 
 <section id="mthAutoBuiltin"><title>autoBuiltin (Class method)</title>
-<indexterm><primary>autoBuiltin</primary></indexterm>
+<indexterm><primary>autoBuiltin</primary><secondary>ooSQLExtensions class</secondary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>autoBuiltin</secondary></indexterm>
 <mediaobject>
 <imageobject>
@@ -237,50 +282,189 @@
 </mediaobject>
 
 <para>
-  Registers one or more ooSQLite builtin extensions as automatic.
-  This means that each time a database connection is opened, these builtin
-  extensions will be automatically registered for that connection.
+  Makes builtin extensions automatic: they are registered on every database connection opened afterwards.
 </para>
 <variablelist>
-  <varlistentry><term><emphasis role="bold">Arguments</emphasis></term>
-  <listitem>
-  <variablelist>
-    <varlistentry><term>name [optional]</term>
-    <listitem>
-    <para>
-      A single extension name or an Array of extension names to be made automatic.
-      If this argument is omitted all builtin extensions are made automatic.
-      Name can also be the special keyword <literal>ALL</literal>, with case not
-      significant, in which case all builtin extensions are made automatic.
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Return value</emphasis></term>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    Returns a SQLite <link linkend="sctResultCode">result code</link>.
+    The only argument is:
+    <variablelist>
+      <varlistentry><term>name [optional]</term>
+      <listitem>
+      <para>
+        The name of a builtin extension, an Array of names, or the keyword <computeroutput>ALL</computeroutput>, with
+        case not significant. If it is omitted, or <computeroutput>ALL</computeroutput>, all the builtin extensions are
+        made automatic. The names are <computeroutput>base64</computeroutput>, <computeroutput>csv</computeroutput>,
+        <computeroutput>ieee754</computeroutput>, <computeroutput>nextChar</computeroutput>,
+        <computeroutput>percentile</computeroutput>, <computeroutput>regExp</computeroutput>,
+        <computeroutput>rot13</computeroutput>, <computeroutput>spellFix</computeroutput>,
+        <computeroutput>toType</computeroutput>, and <computeroutput>wholeNumber</computeroutput>; <link
+        linkend="mthListBuiltins">listBuiltins</link> lists them with a description. The case of the letters is not
+        significant.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
   </para>
   </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks</emphasis></term>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    See also methods <link linkend="mthRegisterBuiltin">registerBuiltin</link>
-    and <link linkend="mthCancelAutoBuiltin">cancelAutoBuiltin</link>.
+    Returns <computeroutput>OK</computeroutput> on success, or a <link linkend="sctResultCode">Result Code</link> if
+    SQLite could not make an extension automatic. On error, the <link linkend="atrLastErrCodeClsExt">lastErrCode</link>
+    and <link linkend="atrLastErrMsgClsExt">lastErrMsg</link> attributes tell what went wrong.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    A builtin made automatic is registered by SQLite itself on every connection opened afterwards, in this process: also
+    the connections opened with the classic <link linkend="rtn-oosqlOpen">oosqlOpen</link> routine. Making automatic a
+    builtin that already is does nothing. <link linkend="mthCancelAutoBuiltin">cancelAutoBuiltin</link> stops one or
+    more builtins from being automatic, and <link linkend="mthResetAutoBuiltin">resetAutoBuiltin</link> all of them. The
+    builtin extensions come from the SQLite source tree, and are compiled into the ooSQLite library: they are always
+    available, nothing has to be loaded.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    The extensions come from the SQLite source tree, and are statically
-    linked to the ooSQLite shared library.
+    Raises a syntax error, 88.900, if a name is not the name of a builtin extension, and if the Array is sparse. The
+    names of an Array are processed in order, and the method stops at the first error.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">autoBuiltin</emphasis> method is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/auto_extension.html">sqlite3_auto_extension</ulink> API. The classic <link
+    linkend="rtn-oosqlAutoExtension">oosqlAutoExtension</link> routine does the same for a single builtin.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
+  <listitem>
+  <para>
+    This example makes the toType extension automatic, uses it on a new connection, and stops it from being automatic:
+<programlisting language="rexx">
+  say .ooSQLExtensions~autoBuiltin('toType')
+  conn = .ooSQLiteConnection~new(':memory:')
+  say conn~exec("SELECT tointeger('42') AS n;", .true)[1]['N']
+  conn~close
+  say .ooSQLExtensions~cancelAutoBuiltin('toType')
+  conn = .ooSQLiteConnection~new(':memory:')
+  say conn~exec("SELECT tointeger('42') AS n;")
+  say conn~errMsg
+  conn~close
+  /* Output:
+  0
+  42
+  0
+  1
+  no such function: tointeger
+  */
+</programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLExtensions::autoBuiltin() -->
 
-<section id="mthAutoCollationNeeded"><title>autoCollationNeeded (Class method)</title>
-<indexterm><primary>autoCollationNeeded</primary></indexterm>
+<section id="mthAutoCollation" revisionflag="changed"><title>&changed11;autoCollation (Class method)</title>
+<indexterm><primary>autoCollation</primary><secondary>ooSQLExtensions class</secondary></indexterm>
+<indexterm><primary>ooSQLExtensions class</primary><secondary>autoCollation</secondary></indexterm>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_autocollation.svg" scale="55" />
+</imageobject>
+</mediaobject>
+
+<para>
+  Makes a collation of a loaded package automatic, or stops it from being automatic.
+</para>
+<variablelist>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
+  <listitem>
+  <para>
+    The arguments are:
+    <variablelist>
+      <varlistentry><term>packageName [required]</term>
+      <listitem>
+      <para>
+        The name of a package loaded with <link linkend="mthLoadPackage">loadPackage</link>. This is the name that the
+        package gives itself, not the name of its file: see <link linkend="mthGetPackage">getPackage</link>. The case of
+        the letters is significant.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>collationName [required]</term>
+      <listitem>
+      <para>
+        The name of the collation in the package. The case of the letters is significant.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>enable [optional]</term>
+      <listitem>
+      <para>
+        True to make it automatic, false to stop it from being automatic. The default is true.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
+  <listitem>
+  <para>
+    Returns true on success, false on error. On error, the <link linkend="atrLastErrCodeClsExt">lastErrCode</link> and
+    <link linkend="atrLastErrMsgClsExt">lastErrMsg</link> attributes tell what went wrong. The errors are: the package
+    is not loaded (<computeroutput>OO_NO_SUCH_PACKAGE</computeroutput>), the package has no collation with that name
+    (<computeroutput>MISUSE</computeroutput>), too many automatic collations (<computeroutput>MISUSE</computeroutput>),
+    and, when <emphasis role="italic">enable</emphasis> is false, the collation is not automatic
+    (<computeroutput>OO_COLLATION_NOT_AUTOMATIC</computeroutput>).
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    An automatic collation is registered with the name that it has in the package. What is automatic is registered on
+    each <link linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> object when it is opened, after that: the
+    connections that are already open are not changed. The automatic packages are registered first, then the collations,
+    the collation needed callback, and the functions; if one of them fails, the rest are not registered, and no error is
+    reported. Connections opened with the classic <link linkend="rtn-oosqlOpen">oosqlOpen</link> routine do not get
+    them. Up to 10 packages, 10 collations, and 10 functions can be automatic at the same time. Making automatic again
+    something that already is does nothing.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Details</emphasis></term>
+  <listitem>
+  <para>
+    &changed11;Before ooSQLite 1.1, making automatic again something that already was added it a second time, so that it
+    was still automatic after it had been stopped once.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
+  <listitem>
+  <para>
+    This example makes the reverse collation of the examplePackage package automatic, and uses it on a new connection:
+<programlisting language="rexx">
+  .ooSQLExtensions~loadPackage('examplepackage')
+  say .ooSQLExtensions~autoCollation('examplePackage', 'reverse')
+  conn = .ooSQLiteConnection~new(':memory:')
+  sql = "WITH t(x) AS (VALUES ('a'), ('c'), ('b'))" -
+        "SELECT x FROM t ORDER BY x COLLATE reverse;"
+  rows = conn~exec(sql, .true)
+  do row over rows
+    say row['X']
+  end
+  conn~close
+  /* Output:
+  1
+  c
+  b
+  a
+  */
+</programlisting>
+  </para>
+  </listitem></varlistentry>
+</variablelist>
+</section>  <!-- End ooSQLExtensions::autoCollation() -->
+
+<section id="mthAutoCollationNeeded" revisionflag="changed"><title>&changed11;autoCollationNeeded (Class method)</title>
+<indexterm><primary>autoCollationNeeded</primary><secondary>ooSQLExtensions class</secondary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>autoCollationNeeded</secondary></indexterm>
 <mediaobject>
 <imageobject>
@@ -289,119 +473,100 @@
 </mediaobject>
 
 <para>
-  xx
+  Makes the collation needed callback of a loaded package automatic, or stops it from being automatic.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
     The arguments are:
+    <variablelist>
+      <varlistentry><term>packageName [required]</term>
+      <listitem>
+      <para>
+        The name of a package loaded with <link linkend="mthLoadPackage">loadPackage</link>. This is the name that the
+        package gives itself, not the name of its file: see <link linkend="mthGetPackage">getPackage</link>. The case of
+        the letters is significant.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>enable [optional]</term>
+      <listitem>
+      <para>
+        True to make it automatic, false to stop it from being automatic. The default is true.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
   </para>
-  <variablelist>
-    <varlistentry><term>TERM</term>
-    <listitem>
-    <para>
-      xx
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns true on success, false on error. On error, the <link linkend="atrLastErrCodeClsExt">lastErrCode</link> and
+    <link linkend="atrLastErrMsgClsExt">lastErrMsg</link> attributes tell what went wrong. The errors are: the package
+    is not loaded (<computeroutput>OO_NO_SUCH_PACKAGE</computeroutput>), and the package has no collation needed
+    callback (<computeroutput>MISUSE</computeroutput>).
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A connection can have only one collation needed callback, so only one can be automatic: making the callback of a
+    package automatic replaces the one that was automatic before, from any package. Likewise, <emphasis
+    role="italic">enable</emphasis> false stops the automatic callback, whichever package it came from. See the <link
+    linkend="mthCollationNeeded">collationNeeded</link> method of the ooSQLiteConnection class for what the callback
+    does. What is automatic is registered on each <link linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> object
+    when it is opened, after that: the connections that are already open are not changed. The automatic packages are
+    registered first, then the collations, the collation needed callback, and the functions; if one of them fails, the
+    rest are not registered, and no error is reported. Connections opened with the classic <link
+    linkend="rtn-oosqlOpen">oosqlOpen</link> routine do not get them. Up to 10 packages, 10 collations, and 10 functions
+    can be automatic at the same time. Making automatic again something that already is does nothing.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    &changed11;Before ooSQLite 1.1, a package without a collation needed callback made the method return false, but the
+    <link linkend="atrLastErrCodeClsExt">lastErrCode</link> and <link linkend="atrLastErrMsgClsExt">lastErrMsg</link>
+    attributes said that there was no error.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    The testPackage package, which is built with the examples, has a collation needed callback that registers the
+    collations of the package when SQLite asks for them. This example makes it automatic, and then tries the
+    examplePackage package, which has none:
+<programlisting language="rexx">
+  .ooSQLExtensions~loadPackage('testpackage')
+  say .ooSQLExtensions~autoCollationNeeded('testPackage')
+  conn = .ooSQLiteConnection~new(':memory:')
+  sql = "WITH t(x) AS (VALUES ('a'), ('c'), ('b'))" -
+        "SELECT x FROM t ORDER BY x COLLATE reverseOrder;"
+  rows = conn~exec(sql, .true)
+  do row over rows
+    say row['X']
+  end
+  conn~close
+  .ooSQLExtensions~loadPackage('examplepackage')
+  say .ooSQLExtensions~autoCollationNeeded('examplePackage')
+  say .ooSQLExtensions~lastErrMsg
+  /* Output:
+  1
+  c
+  b
+  a
+  0
+  this package (examplePackage) contains no collation needed callback
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLExtensions::autoCollationNeeded() -->
 
-
-<section id="mthAutoCollation"><title>autoCollation</title>
-<indexterm><primary>autoCollation</primary></indexterm>
-<indexterm><primary>ooSQLExtensions class</primary><secondary>autoCollation (Class method)</secondary></indexterm>
-<mediaobject>
-<imageobject>
-<imagedata fileref="images/extensions/extensions_autocollation.svg" scale="55" />
-</imageobject>
-</mediaobject>
-
-<para>
-  xx
-</para>
-<variablelist>
-  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
-  <listitem>
-  <para>
-    The arguments are:
-  </para>
-  <variablelist>
-    <varlistentry><term>TERM</term>
-    <listitem>
-    <para>
-      xx
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
-  <listitem>
-  <para>
-    xx
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    Additional comments.
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Details</emphasis></term>
-  <listitem>
-  <para>
-    Anything?
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
-  <listitem>
-  <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
-  </para>
-  </listitem></varlistentry>
-</variablelist>
-</section>  <!-- End ooSQLExtensions::autoCollation() -->
-
-
-<section id="mthAutoFunction"><title>autoFunction</title>
-<indexterm><primary>autoFunction</primary></indexterm>
-<indexterm><primary>ooSQLExtensions class</primary><secondary>autoFunction (Class method)</secondary></indexterm>
+<section id="mthAutoFunction" revisionflag="changed"><title>&changed11;autoFunction (Class method)</title>
+<indexterm><primary>autoFunction</primary><secondary>ooSQLExtensions class</secondary></indexterm>
+<indexterm><primary>ooSQLExtensions class</primary><secondary>autoFunction</secondary></indexterm>
 <mediaobject>
 <imageobject>
 <imagedata fileref="images/extensions/extensions_autofunction.svg" scale="55" />
@@ -409,59 +574,95 @@
 </mediaobject>
 
 <para>
-  xx
+  Makes a function of a loaded package automatic, or stops it from being automatic.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
     The arguments are:
+    <variablelist>
+      <varlistentry><term>packageName [required]</term>
+      <listitem>
+      <para>
+        The name of a package loaded with <link linkend="mthLoadPackage">loadPackage</link>. This is the name that the
+        package gives itself, not the name of its file: see <link linkend="mthGetPackage">getPackage</link>. The case of
+        the letters is significant.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>functionName [required]</term>
+      <listitem>
+      <para>
+        The name of the function in the package. The case of the letters is significant.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>enable [optional]</term>
+      <listitem>
+      <para>
+        True to make it automatic, false to stop it from being automatic. The default is true.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
   </para>
-  <variablelist>
-    <varlistentry><term>TERM</term>
-    <listitem>
-    <para>
-      xx
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns true on success, false on error. On error, the <link linkend="atrLastErrCodeClsExt">lastErrCode</link> and
+    <link linkend="atrLastErrMsgClsExt">lastErrMsg</link> attributes tell what went wrong. The errors are: the package
+    is not loaded (<computeroutput>OO_NO_SUCH_PACKAGE</computeroutput>), the package has no function with that name
+    (<computeroutput>MISUSE</computeroutput>), too many automatic functions (<computeroutput>MISUSE</computeroutput>),
+    and, when <emphasis role="italic">enable</emphasis> is false, the function is not automatic
+    (<computeroutput>OO_FUNCTION_NOT_AUTOMATIC</computeroutput>).
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    An automatic function is registered with the name and the number of arguments that it has in the package. What is
+    automatic is registered on each <link linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> object when it is
+    opened, after that: the connections that are already open are not changed. The automatic packages are registered
+    first, then the collations, the collation needed callback, and the functions; if one of them fails, the rest are not
+    registered, and no error is reported. Connections opened with the classic <link
+    linkend="rtn-oosqlOpen">oosqlOpen</link> routine do not get them. Up to 10 packages, 10 collations, and 10 functions
+    can be automatic at the same time. Making automatic again something that already is does nothing.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    &changed11;Before ooSQLite 1.1, making automatic again something that already was added it a second time, so that it
+    was still automatic after it had been stopped once.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example makes the half function of the examplePackage package automatic. The other function of the package,
+    strAggregate, is not registered on the new connection:
+<programlisting language="rexx">
+  .ooSQLExtensions~loadPackage('examplepackage')
+  say .ooSQLExtensions~autoFunction('examplePackage', 'half')
+  conn = .ooSQLiteConnection~new(':memory:')
+  say conn~exec("SELECT half(5) AS h;", .true)[1]['H']
+  say conn~exec("SELECT strAggregate('x') AS s;")
+  say conn~errMsg
+  conn~close
+  /* Output:
+  1
+  2.5
+  1
+  no such function: strAggregate
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLExtensions::autoFunction() -->
 
-
-<section id="mthAutoPackage"><title>autoPackage</title>
-<indexterm><primary>autoPackage</primary></indexterm>
-<indexterm><primary>ooSQLExtensions class</primary><secondary>autoPackage (Class method)</secondary></indexterm>
+<section id="mthAutoPackage" revisionflag="changed"><title>&changed11;autoPackage (Class method)</title>
+<indexterm><primary>autoPackage</primary><secondary>ooSQLExtensions class</secondary></indexterm>
+<indexterm><primary>ooSQLExtensions class</primary><secondary>autoPackage</secondary></indexterm>
 <mediaobject>
 <imageobject>
 <imagedata fileref="images/extensions/extensions_autopackage.svg" scale="55" />
@@ -469,57 +670,94 @@
 </mediaobject>
 
 <para>
-  xx
+  Makes a loaded package automatic, or stops it from being automatic. All that the package contains is registered on
+  every database connection opened afterwards.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
     The arguments are:
+    <variablelist>
+      <varlistentry><term>packageName [required]</term>
+      <listitem>
+      <para>
+        The name of a package loaded with <link linkend="mthLoadPackage">loadPackage</link>. This is the name that the
+        package gives itself, not the name of its file: see <link linkend="mthGetPackage">getPackage</link>. The case of
+        the letters is significant.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>enable [optional]</term>
+      <listitem>
+      <para>
+        True to make it automatic, false to stop it from being automatic. The default is true.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
   </para>
-  <variablelist>
-    <varlistentry><term>TERM</term>
-    <listitem>
-    <para>
-      xx
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns true on success, false on error. On error, the <link linkend="atrLastErrCodeClsExt">lastErrCode</link> and
+    <link linkend="atrLastErrMsgClsExt">lastErrMsg</link> attributes tell what went wrong. The errors are: the package
+    is not loaded (<computeroutput>OO_NO_SUCH_PACKAGE</computeroutput>), too many automatic packages
+    (<computeroutput>MISUSE</computeroutput>), and, when <emphasis role="italic">enable</emphasis> is false, the package
+    is not automatic (<computeroutput>OO_PACKAGE_NOT_AUTOMATIC</computeroutput>).
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    An automatic package is registered as <link linkend="mthRegister">register</link> does: its collation needed
+    callback, its collations, and its functions, with the names they have in the package. A package can also be made
+    automatic when it is loaded, with the <emphasis role="italic">makeAuto</emphasis> argument of <link
+    linkend="mthLoadPackage">loadPackage</link>. What is automatic is registered on each <link
+    linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> object when it is opened, after that: the connections that
+    are already open are not changed. The automatic packages are registered first, then the collations, the collation
+    needed callback, and the functions; if one of them fails, the rest are not registered, and no error is reported.
+    Connections opened with the classic <link linkend="rtn-oosqlOpen">oosqlOpen</link> routine do not get them. Up to 10
+    packages, 10 collations, and 10 functions can be automatic at the same time. Making automatic again something that
+    already is does nothing.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    &changed11;Before ooSQLite 1.1, making automatic again something that already was added it a second time, so that it
+    was still automatic after it had been stopped once.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example makes the examplePackage package automatic, and then stops it from being automatic:
+<programlisting language="rexx">
+  .ooSQLExtensions~loadPackage('examplepackage')
+  say .ooSQLExtensions~autoPackage('examplePackage')
+  conn = .ooSQLiteConnection~new(':memory:')
+  say conn~exec("SELECT half(5) AS h;", .true)[1]['H']
+  conn~close
+  say .ooSQLExtensions~autoPackage('examplePackage', .false)
+  conn = .ooSQLiteConnection~new(':memory:')
+  say conn~exec("SELECT half(5) AS h;")
+  say conn~errMsg
+  conn~close
+  /* Output:
+  1
+  2.5
+  1
+  1
+  no such function: half
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLExtensions::autoPackage() -->
 
-<section id="mthCancelAutoBuiltin"><title>cancelAutoBuiltin</title>
-<indexterm><primary>cancelAutoBuiltin</primary></indexterm>
+<section id="mthCancelAutoBuiltin" revisionflag="changed"><title>&changed11;cancelAutoBuiltin (Class method)</title>
+<indexterm><primary>cancelAutoBuiltin</primary><secondary>ooSQLExtensions class</secondary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>cancelAutoBuiltin</secondary></indexterm>
 <mediaobject>
 <imageobject>
@@ -528,52 +766,77 @@
 </mediaobject>
 
 <para>
-  Cancels one or more automatic ooSQLite builtin extensions.
-  Automatic means that each time a database connection is opened, the builtin
-  extensions is automatically registered for that connection.
-  This function undoes this automatic registration for the named builtin extensions.
+  Stops builtin extensions from being automatic.
 </para>
 <variablelist>
-  <varlistentry><term><emphasis role="bold">Arguments</emphasis></term>
-  <listitem>
-  <variablelist>
-    <varlistentry><term>name [optional]</term>
-    <listitem>
-    <para>
-      A single extension name or an Array of extension names to be cancelled as
-      automatic.
-      If this argument is omitted all builtin extensions are cancelled as automatic.
-      Name can also be the special keyword <literal>ALL</literal>, with case not
-      significant, in which case all builtin extensions are cancelled as automatic.
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Return value</emphasis></term>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    Returns a SQLite <link linkend="sctResultCode">result code</link>.
+    The only argument is:
+    <variablelist>
+      <varlistentry><term>name [optional]</term>
+      <listitem>
+      <para>
+        The name of a builtin extension, an Array of names, or the keyword <computeroutput>ALL</computeroutput>, with
+        case not significant. If it is omitted, or <computeroutput>ALL</computeroutput>, no builtin extension is
+        automatic any more. The names are <computeroutput>base64</computeroutput>, <computeroutput>csv</computeroutput>,
+        <computeroutput>ieee754</computeroutput>, <computeroutput>nextChar</computeroutput>,
+        <computeroutput>percentile</computeroutput>, <computeroutput>regExp</computeroutput>,
+        <computeroutput>rot13</computeroutput>, <computeroutput>spellFix</computeroutput>,
+        <computeroutput>toType</computeroutput>, and <computeroutput>wholeNumber</computeroutput>; <link
+        linkend="mthListBuiltins">listBuiltins</link> lists them with a description. The case of the letters is not
+        significant.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
   </para>
   </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks</emphasis></term>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    See also method <link linkend="mthAutoBuiltin">autoBuiltin</link>.
+    Returns <computeroutput>OK</computeroutput> on success. A name, or a name of an Array, that is not automatic gives
+    <computeroutput>MISUSE</computeroutput>; with <computeroutput>ALL</computeroutput> the result is always
+    <computeroutput>OK</computeroutput>. On error, the <link linkend="atrLastErrCodeClsExt">lastErrCode</link> and <link
+    linkend="atrLastErrMsgClsExt">lastErrMsg</link> attributes tell what went wrong.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    Connections that are already open keep the extensions that were registered on them. <link
+    linkend="mthResetAutoBuiltin">resetAutoBuiltin</link> also stops all the builtins from being automatic.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    The extensions come from the SQLite source tree, and are statically
-    linked to the ooSQLite shared library.
+    Raises a syntax error, 88.900, if a name is not the name of a builtin extension, and if the Array is sparse. The
+    names of an Array are processed in order, and the method stops at the first error.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">cancelAutoBuiltin</emphasis> method is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/cancel_auto_extension.html">sqlite3_cancel_auto_extension</ulink>
+    API. The classic <link linkend="rtn-oosqlCancelAutoExtension">oosqlCancelAutoExtension</link> routine does the same
+    for a single builtin.
+  </para>
+  <para>
+    &changed11;Before ooSQLite 1.1, <computeroutput>ALL</computeroutput>, or no argument, returned
+    <computeroutput>MISUSE</computeroutput> when some builtin was not automatic, which was nearly always the case, with
+    a wrong message.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
+  <listitem>
+  <para>
+    See the example of <link linkend="mthAutoBuiltin">autoBuiltin</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLExtensions::cancelAutoBuiltin() -->
 
-<section id="mthGetLibrary"><title>getLibrary</title>
-<indexterm><primary>getLibrary</primary></indexterm>
-<indexterm><primary>ooSQLExtensions class</primary><secondary>getLibrary (Class method)</secondary></indexterm>
+<section id="mthGetLibrary"><title>getLibrary (Class method)</title>
+<indexterm><primary>getLibrary</primary><secondary>ooSQLExtensions class</secondary></indexterm>
+<indexterm><primary>ooSQLExtensions class</primary><secondary>getLibrary</secondary></indexterm>
 <mediaobject>
 <imageobject>
 <imagedata fileref="images/extensions/extensions_getlibrary.svg" scale="55" />
@@ -581,59 +844,54 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns a library loaded with <link linkend="mthLoadLibrary">loadLibrary</link>.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
+    <variablelist>
+      <varlistentry><term>libraryName [required]</term>
+      <listitem>
+      <para>
+        The base name of the library: the name of its file without the path, the extension, and, on Unix, the
+        <computeroutput>lib</computeroutput> prefix. For example, the library loaded from
+        <computeroutput>user.extensions/libexamplelibrary.so</computeroutput> is
+        <computeroutput>examplelibrary</computeroutput>.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
   </para>
-  <variablelist>
-    <varlistentry><term>TERM</term>
-    <listitem>
-    <para>
-      xx
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    Additional comments.
+    An <link linkend="clsOOSQLLibrary">ooSQLLibrary</link> object, or <computeroutput>.nil</computeroutput> if no
+    library with that name is loaded: then the <link linkend="atrLastErrCodeClsExt">lastErrCode</link> attribute is
+    <computeroutput>OO_NO_SUCH_LIBRARY</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The <link linkend="clsOOSQLLibrary">ooSQLLibrary</link> object gives the handles of the functions of the library,
+    which the <link linkend="mthCreateFunction">createFunction</link> and <link
+    linkend="mthCreateCollation">createCollation</link> methods of the ooSQLiteConnection class accept.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the example of <link linkend="mthLoadLibrary">loadLibrary</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLExtensions::getLibrary() -->
 
-
-<section id="mthGetPackage"><title>getPackage</title>
-<indexterm><primary>getPackage</primary></indexterm>
-<indexterm><primary>ooSQLExtensions class</primary><secondary>getPackage (Class method)</secondary></indexterm>
+<section id="mthGetPackage"><title>getPackage (Class method)</title>
+<indexterm><primary>getPackage</primary><secondary>ooSQLExtensions class</secondary></indexterm>
+<indexterm><primary>ooSQLExtensions class</primary><secondary>getPackage</secondary></indexterm>
 <mediaobject>
 <imageobject>
 <imagedata fileref="images/extensions/extensions_getpackage.svg" scale="55" />
@@ -641,57 +899,64 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns a package loaded with <link linkend="mthLoadPackage">loadPackage</link>.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
+    <variablelist>
+      <varlistentry><term>packageName [required]</term>
+      <listitem>
+      <para>
+        The name that the package gives itself, in its package entry, with the case of its letters. This is not the name
+        of the file: the package <computeroutput>examplePackage</computeroutput> is loaded from the library
+        <computeroutput>examplepackage</computeroutput>.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
   </para>
-  <variablelist>
-    <varlistentry><term>TERM</term>
-    <listitem>
-    <para>
-      xx
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    Additional comments.
+    An <link linkend="clsOOSQLPackage">ooSQLPackage</link> object, or <computeroutput>.nil</computeroutput> if no
+    package with that name is loaded: then the <link linkend="atrLastErrCodeClsExt">lastErrCode</link> attribute is
+    <computeroutput>OO_NO_SUCH_PACKAGE</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The package object gives access to each collation and function of the package, and to its collation needed callback,
+    so that they can be registered one by one: see the <link linkend="clsOOSQLPackage">ooSQLPackage</link> class.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    The examplePackage package is in the examplepackage library:
+<programlisting language="rexx">
+  .ooSQLExtensions~loadPackage('examplepackage')
+  package = .ooSQLExtensions~getPackage('examplePackage')
+  say package
+  package = .ooSQLExtensions~getPackage('examplepackage')
+  say package
+  say .ooSQLExtensions~lastErrMsg
+  /* Output:
+  an ooSQLPackage
+  The NIL object
+  package examplepackage is not loaded
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLExtensions::getPackage() -->
 
-<section id="mthListBuiltins"><title>listBuiltins</title>
-<indexterm><primary>listBuiltins</primary></indexterm>
+<section id="mthListBuiltins"><title>listBuiltins (Class method)</title>
+<indexterm><primary>listBuiltins</primary><secondary>ooSQLExtensions class</secondary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>listBuiltins</secondary></indexterm>
 <mediaobject>
 <imageobject>
@@ -700,80 +965,77 @@
 </mediaobject>
 
 <para>
-  Returns a result set, in the current
-  <link linkend="atrRecordFormatClsOOSQLite">Result Set Format</link>,
-  listing all extensions builtin to ooSQLite.
+  Lists the builtin extensions.
 </para>
 <variablelist>
-  <varlistentry><term><emphasis role="bold">Arguments</emphasis></term>
-  <listitem>
-  <variablelist>
-    <varlistentry><term>print [optional]</term>
-    <listitem>
-    <para>
-      If .true, the result set is printed to the console as it is produced.
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Return value</emphasis></term>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    A list of the builtin extensions available in this version of ooSQLite.
-    The result set has two columns:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>name</term>
+      <varlistentry><term>print [optional]</term>
       <listitem>
       <para>
-        The builtin extension's name
-      </para>
-      </listitem></varlistentry>
-      <varlistentry><term>description</term>
-      <listitem>
-      <para>
-        A short descriptive text for the builtin extension
+        If true, the list is also printed on the console, as a table. The default is false.
       </para>
       </listitem></varlistentry>
     </variablelist>
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
+  <listitem>
+  <para>
+    A result set with a record for each builtin extension, with two fields: <computeroutput>NAME</computeroutput> and
+    <computeroutput>DESCRIPTION</computeroutput>. The format of the result set is the one set by the <link
+    linkend="atrRecordFormatClsOOSQLite">recordFormat</link> attribute of the ooSQLite class, since there is no
+    connection: by default, an Array of Directory objects. In the Array of Arrays format, the first item holds the names
+    of the fields.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    The builtin extensions come from the SQLite source tree, and are compiled into the ooSQLite library: they are always
+    available, nothing has to be loaded. ooSQLite 1.1 has ten builtin extensions.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    The extensions come from the SQLite source tree, and are statically
-    linked to the ooSQLite shared library.
+    The names are the ones that <link linkend="mthRegisterBuiltin">registerBuiltin</link>, <link
+    linkend="mthAutoBuiltin">autoBuiltin</link>, and <link linkend="mthCancelAutoBuiltin">cancelAutoBuiltin</link>
+    accept, and the classic <link linkend="rtn-ooSQLiteRegisterBuiltin">ooSQLiteRegisterBuiltin</link> routine.
   </para>
   </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example</emphasis></term>
+  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
+    This example shows the start of each description:
 <programlisting language="rexx">
-do extension over .ooSQLExtensions~listBuiltins
-  say extension~name~left(11) extension~description
-end
-
-/* Output might be:
-base64      Implements a base64() SQL function to convert between a blob and Base64 ..
-csv         Implements a virtual table for reading CSV files.
-ieee754     Implements SQL functions for IEEE 754 binary64 floating-point numbers.
-nextChar    Implements the next_char(A, T, F, W, C) SQL function.
-percentile  Implements the percentile(Y, P) SQL function.
-regExp      Implements a POSIX extended regular expression matcher for UTF-8.
-rot13       Implements a rot13() SQL function and a rot13 collating sequence.
-spellFix    Implements the spellfix1 virtual table that can search a vocabulary ..
-toType      Implements tointeger() and toreal() SQL functions.
-wholeNumber Implements the wholenumber virtual table that returns whole numbers ..
-*/
+  do builtin over .ooSQLExtensions~listBuiltins
+    say builtin['NAME']~left(12) builtin['DESCRIPTION']~left(50)
+  end
+  /* Output:
+  base64       Implements a base64() SQL function to convert betw
+  csv          Implements a virtual table for reading CSV files.
+  ieee754      Implements SQL functions for IEEE 754 binary64 flo
+  nextChar     Implements the next_char(A, T, F, W, C) SQL functi
+  percentile   Implements the percentile(Y, P) SQL function.
+  regExp       Implements a POSIX extended regular expression mat
+  rot13        Implements a rot13() SQL function and a rot13 coll
+  spellFix     Implements the spellfix1 virtual table that can se
+  toType       Implements tointeger() and toreal() SQL functions.
+  wholeNumber  Implements the wholenumber virtual table that retu
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLExtensions::listBuiltins() -->
 
-
-<section id="mthLoadLibrary"><title>loadLibrary</title>
-<indexterm><primary>loadLibrary</primary></indexterm>
-<indexterm><primary>ooSQLExtensions class</primary><secondary>loadLibrary (Class method)</secondary></indexterm>
+<section id="mthLoadLibrary"><title>loadLibrary (Class method)</title>
+<indexterm><primary>loadLibrary</primary><secondary>ooSQLExtensions class</secondary></indexterm>
+<indexterm><primary>ooSQLExtensions class</primary><secondary>loadLibrary</secondary></indexterm>
 <mediaobject>
 <imageobject>
 <imagedata fileref="images/extensions/extensions_loadlibrary.svg" scale="55" />
@@ -781,59 +1043,108 @@ wholeNumber Implements the wholenumber virtual table that returns whole numbers 
 </mediaobject>
 
 <para>
-  xx
+  Loads an ooSQLite library: a shared library that contains collations and functions written in C or C++.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
     The arguments are:
+    <variablelist>
+      <varlistentry><term>libName [required]</term>
+      <listitem>
+      <para>
+        The name of the shared library, or its path name. Without path information, the library is searched for as the
+        operating system does: on Unix, the name is written as it is customary there,
+        <computeroutput>examplelibrary</computeroutput> for <computeroutput>libexamplelibrary.so</computeroutput>, and
+        on Windows the extension can be left out, so the same name works on both. With path information, the library is
+        loaded exactly as specified: on Unix the name of the file must then be complete, as in
+        <computeroutput>libexamplelibrary.so</computeroutput>; on Windows <computeroutput>.dll</computeroutput> can
+        still be left out.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>procedures [optional]</term>
+      <listitem>
+      <para>
+        The name of a function of the library, or an Array of names, to resolve now. If it is omitted, each function is
+        resolved when its handle is first asked for. The names of an Array are resolved in order; if one fails, the
+        method stops there, returns false, and the names resolved before stay usable.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
   </para>
-  <variablelist>
-    <varlistentry><term>TERM</term>
-    <listitem>
-    <para>
-      xx
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns true on success, false on error. On error, the <link linkend="atrLastErrCodeClsExt">lastErrCode</link> and
+    <link linkend="atrLastErrMsgClsExt">lastErrMsg</link> attributes tell what went wrong. The library stays loaded when
+    a function fails to resolve.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    An ooSQLite library must export the <computeroutput>ooSQLiteSetApi</computeroutput> function, which the
+    <computeroutput>OOSQLITE_SET_API</computeroutput> macro of the ooSQLite headers defines: a library that does not,
+    such as a plain SQLite extension, can not be loaded, and the error message names the missing function. A plain
+    SQLite extension is loaded with the <link linkend="rtn-oosqlLoadExtension">oosqlLoadExtension</link> routine
+    instead.
+  </para>
+  <para>
+    Loading a library does not register anything. Its functions and collations are registered with the <link
+    linkend="mthCreateFunction">createFunction</link> and <link linkend="mthCreateCollation">createCollation</link>
+    methods of the ooSQLiteConnection class, with the handles that the <link
+    linkend="clsOOSQLLibrary">ooSQLLibrary</link> object gives, and under the names chosen there. The ooSQLite examples
+    include the source of the exampleLibrary library.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    Raises a syntax error if the Array of <emphasis role="italic">procedures</emphasis> is sparse; the library is then
+    not kept.
+  </para>
+  <para>
+    The library is kept under its base name, which <link linkend="mthGetLibrary">getLibrary</link> uses. Loading a
+    library with the same base name again replaces it.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example loads the exampleLibrary library, and registers one of its functions and one of its collations:
+<programlisting language="rexx">
+  names = .array~of('halfFunc', 'reverse')
+  if \ .ooSQLExtensions~loadLibrary('examplelibrary', names) then do
+    say 'Failed to load the library:' .ooSQLExtensions~lastErrMsg
+    return
+  end
+  lib = .ooSQLExtensions~getLibrary('examplelibrary')
+  say db~createFunction('half', lib~getHandle('halfFunc'), 1)
+  say db~createCollation('reverse', lib~getHandle('reverse'))
+  sql = "SELECT name, half(price) AS h FROM foods WHERE price IS NOT NULL" -
+        "ORDER BY name COLLATE reverse;"
+  rows = db~exec(sql, .true)
+  do row over rows
+    say row['NAME']~left(15) row['H']
+  end
+  /* Output:
+  0
+  0
+  Bagels, raisin  0.75
+  Bagels          0.625
+  Bacon           1.875
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLExtensions::loadLibrary() -->
 
-
-<section id="mthLoadPackage"><title>loadPackage</title>
-<indexterm><primary>loadPackage</primary></indexterm>
-<indexterm><primary>ooSQLExtensions class</primary><secondary>loadPackage (Class method)</secondary></indexterm>
+<section id="mthLoadPackage" revisionflag="changed"><title>&changed11;loadPackage (Class method)</title>
+<indexterm><primary>loadPackage</primary><secondary>ooSQLExtensions class</secondary></indexterm>
+<indexterm><primary>ooSQLExtensions class</primary><secondary>loadPackage</secondary></indexterm>
 <mediaobject>
 <imageobject>
 <imagedata fileref="images/extensions/extensions_loadpackage.svg" scale="55" />
@@ -841,119 +1152,116 @@ wholeNumber Implements the wholenumber virtual table that returns whole numbers 
 </mediaobject>
 
 <para>
-  xx
+  Loads an ooSQLite package: a shared library that describes the collations and functions that it contains, and
+  optionally registers it.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
     The arguments are:
+    <variablelist>
+      <varlistentry><term>libName [required]</term>
+      <listitem>
+      <para>
+        The name of the shared library, or its path name, as for <link linkend="mthLoadLibrary">loadLibrary</link>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>dbConn [optional]</term>
+      <listitem>
+      <para>
+        An open <link linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> object. If it is given, the package is
+        registered on it, as <link linkend="mthRegister">register</link> does.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>makeAuto [optional]</term>
+      <listitem>
+      <para>
+        If true, the package is also made automatic, as <link linkend="mthAutoPackage">autoPackage</link> does. The
+        default is false.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
   </para>
-  <variablelist>
-    <varlistentry><term>TERM</term>
-    <listitem>
-    <para>
-      xx
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns true on success, false on error. On error, the <link linkend="atrLastErrCodeClsExt">lastErrCode</link> and
+    <link linkend="atrLastErrMsgClsExt">lastErrMsg</link> attributes tell what went wrong. A package that needs a newer
+    version of ooSQLite or SQLite gives <computeroutput>OO_PACKAGE_NOT_VALID</computeroutput>, with a message that names
+    both versions. A failure to register the package on <emphasis role="italic">dbConn</emphasis> is not reported: the
+    method still returns true.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    An ooSQLite package must export the <computeroutput>ooSQLiteGetPackage</computeroutput> function, which the
+    <computeroutput>OOSQLITE_GET_PACKAGE</computeroutput> macro of the ooSQLite headers defines. The function returns
+    the package entry, which gives the name of the package, the versions of ooSQLite and SQLite that it needs, and its
+    collation needed callback, collations, and functions, each with its name. A package that needs a newer version of
+    ooSQLite or SQLite is not loaded.
+  </para>
+  <para>
+    A package is registered as a whole on a connection with <emphasis role="italic">dbConn</emphasis>, with <link
+    linkend="mthRegister">register</link>, or with <link linkend="mthAutoPackage">autoPackage</link>; its parts are
+    registered one by one with the methods of the <link linkend="clsOOSQLPackage">ooSQLPackage</link> class, <link
+    linkend="mthAutoCollation">autoCollation</link>, <link linkend="mthAutoFunction">autoFunction</link>, and <link
+    linkend="mthAutoCollationNeeded">autoCollationNeeded</link>. The ooSQLite examples include the source of the
+    examplePackage package.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    Raises an execution error, 98.900, if the connection is closed, and a syntax error, 88.900, if the argument is not
+    an ooSQLiteConnection object. The connection is checked before the library is loaded.
+  </para>
+  <para>
+    The package is kept under the name that it gives itself, which <link linkend="mthGetPackage">getPackage</link> uses.
+    Loading a package with the same name again replaces it.
+  </para>
+  <para>
+    &changed11;Before ooSQLite 1.1, a package that needed a newer version was refused, but the <link
+    linkend="atrLastErrCodeClsExt">lastErrCode</link> and <link linkend="atrLastErrMsgClsExt">lastErrMsg</link>
+    attributes said that there was no error.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example loads the examplePackage package and registers it on an open connection, which can then use its half
+    and strAggregate functions and its reverse collation. The examplepackage library must be where the operating system
+    looks for libraries:
+<programlisting language="rexx">
+  if \ .ooSQLExtensions~loadPackage('examplepackage', db) then do
+    say 'Failed to load the package:' .ooSQLExtensions~lastErrMsg
+    return
+  end
+  sql = "SELECT name, half(price) AS h FROM foods WHERE price IS NOT NULL" -
+        "ORDER BY name COLLATE reverse;"
+  rows = db~exec(sql, .true)
+  do row over rows
+    say row['NAME']~left(15) row['H']
+  end
+  sql = "SELECT strAggregate(name) AS s FROM foods WHERE type_id = 1;"
+  say db~exec(sql, .true)[1]['S']
+  /* Output:
+  Bagels, raisin  0.75
+  Bagels          0.625
+  Bacon           1.875
+  Bagels, Bagels, raisin
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLExtensions::loadPackage() -->
 
-
-<section id="mthResetAutoBuiltin"><title>resetAutoBuiltin</title>
-<indexterm><primary>resetAutoBuiltin</primary></indexterm>
-<indexterm><primary>ooSQLExtensions class</primary><secondary>resetAutoBuiltin (Class method)</secondary></indexterm>
-<mediaobject>
-<imageobject>
-<imagedata fileref="images/extensions/extensions_resetautobuiltin.svg" scale="55" />
-</imageobject>
-</mediaobject>
-
-<para>
-  xx
-</para>
-<variablelist>
-  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
-  <listitem>
-  <para>
-    The arguments are:
-  </para>
-  <variablelist>
-    <varlistentry><term>TERM</term>
-    <listitem>
-    <para>
-      xx
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
-  <listitem>
-  <para>
-    xx
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    Additional comments.
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Details</emphasis></term>
-  <listitem>
-  <para>
-    Anything?
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
-  <listitem>
-  <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
-  </para>
-  </listitem></varlistentry>
-</variablelist>
-</section>  <!-- End ooSQLExtensions::resetAutoBuiltin() -->
-
-
-<section id="mthRegisterBuiltin"><title>registerBuiltin</title>
-<indexterm><primary>registerBuiltin</primary></indexterm>
-<indexterm><primary>ooSQLExtensions class</primary><secondary>registerBuiltin (Class method)</secondary></indexterm>
+<section id="mthRegisterBuiltin"><title>registerBuiltin (Class method)</title>
+<indexterm><primary>registerBuiltin</primary><secondary>ooSQLExtensions class</secondary></indexterm>
+<indexterm><primary>ooSQLExtensions class</primary><secondary>registerBuiltin</secondary></indexterm>
 <mediaobject>
 <imageobject>
 <imagedata fileref="images/extensions/extensions_registerbuiltin.svg" scale="55" />
@@ -961,67 +1269,143 @@ wholeNumber Implements the wholenumber virtual table that returns whole numbers 
 </mediaobject>
 
 <para>
-  Registers one or more extensions builtin to ooSQLite with the specified
-  database connection.
+  Registers builtin extensions on a database connection.
 </para>
 <variablelist>
-  <varlistentry><term><emphasis role="bold">Arguments</emphasis></term>
-  <listitem>
-  <variablelist>
-    <varlistentry><term>connection [required]</term>
-    <listitem>
-    <para>
-      An open, valid, database connection that the builtin extension is to be
-      registered with.
-    </para>
-    </listitem></varlistentry>
-    <varlistentry><term>name [optional]</term>
-    <listitem>
-    <para>
-      A single extension name or an Array of extension names to be registered.
-      If this argument is omitted all builtin extensions are registered.
-      Name can also be the special keyword <literal>ALL</literal>, with case not
-      significant, in which case all builtin extensions are registered.
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Return value</emphasis></term>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    Returns a SQLite <link linkend="sctResultCode">result code</link>.
+    The arguments are:
+    <variablelist>
+      <varlistentry><term>dbConn [required]</term>
+      <listitem>
+      <para>
+        An open <link linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> object.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>name [optional]</term>
+      <listitem>
+      <para>
+        The name of a builtin extension, an Array of names, or the keyword <computeroutput>ALL</computeroutput>, with
+        case not significant. If it is omitted, or <computeroutput>ALL</computeroutput>, all the builtin extensions are
+        registered. The names are <computeroutput>base64</computeroutput>, <computeroutput>csv</computeroutput>,
+        <computeroutput>ieee754</computeroutput>, <computeroutput>nextChar</computeroutput>,
+        <computeroutput>percentile</computeroutput>, <computeroutput>regExp</computeroutput>,
+        <computeroutput>rot13</computeroutput>, <computeroutput>spellFix</computeroutput>,
+        <computeroutput>toType</computeroutput>, and <computeroutput>wholeNumber</computeroutput>; <link
+        linkend="mthListBuiltins">listBuiltins</link> lists them with a description. The case of the letters is not
+        significant.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
   </para>
   </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks</emphasis></term>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    See also method <link linkend="mthAutoBuiltin">autoBuiltin</link>.
+    Returns <computeroutput>OK</computeroutput> on success. A name that is not the name of a builtin extension gives
+    <computeroutput>MISUSE</computeroutput>; an extension that fails to initialize gives the <link
+    linkend="sctResultCode">Result Code</link> that it returns. On error, the <link
+    linkend="atrLastErrCodeClsExt">lastErrCode</link> and <link linkend="atrLastErrMsgClsExt">lastErrMsg</link>
+    attributes tell what went wrong.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    Registering an extension again on the same connection does nothing more. The builtin extensions come from the SQLite
+    source tree, and are compiled into the ooSQLite library: they are always available, nothing has to be loaded. Unlike
+    <link linkend="mthAutoBuiltin">autoBuiltin</link>, which raises a syntax error for an unknown name, this method
+    returns <computeroutput>MISUSE</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    The extensions come from the SQLite source tree, and are statically
-    linked to the ooSQLite shared library.
+    Raises an execution error, 98.900, if the connection is closed, and a syntax error, 88.900, if the argument is not
+    an ooSQLiteConnection object. Raises a syntax error, 88.900, if the Array is sparse. The names of an Array are
+    processed in order, and the method stops at the first error.
+  </para>
+  <para>
+    The classic <link linkend="rtn-ooSQLiteRegisterBuiltin">ooSQLiteRegisterBuiltin</link> routine does the same for a
+    single builtin.
   </para>
   </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Example</emphasis></term>
+  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
+    This example registers two builtins on an open connection, and uses them; then it tries a name that does not exist:
 <programlisting language="rexx">
-mem = .ooSQLiteConnection~new(":memory:")
-.ooSQLExtensions~registerBuiltin(mem, "base64")
-do row over mem~exec("SELECT base64('SGVsbG8gd29ybGQh');", .true)
-  say row~allItems
-end
-
-/* Output
-Hello world!
-*/
+  say .ooSQLExtensions~registerBuiltin(db, .array~of('rot13', 'regExp'))
+  sql = "SELECT rot13(name) AS r FROM foods WHERE name REGEXP '^Ba';"
+  rows = db~exec(sql, .true)
+  do row over rows
+    say row['R']
+  end
+  say .ooSQLExtensions~registerBuiltin(db, 'rot47')
+  say .ooSQLExtensions~lastErrMsg~right(13)
+  /* Output:
+  0
+  Ontryf
+  Ontryf, envfva
+  Onpba
+  21
+  found "rot47"
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLExtensions::registerBuiltin() -->
+
+<section id="mthResetAutoBuiltin"><title>resetAutoBuiltin (Class method)</title>
+<indexterm><primary>resetAutoBuiltin</primary><secondary>ooSQLExtensions class</secondary></indexterm>
+<indexterm><primary>ooSQLExtensions class</primary><secondary>resetAutoBuiltin</secondary></indexterm>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/extensions_resetautobuiltin.svg" scale="55" />
+</imageobject>
+</mediaobject>
+
+<para>
+  Stops all the builtin extensions from being automatic.
+</para>
+<variablelist>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
+  <listitem>
+  <para>
+    There are no arguments.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
+  <listitem>
+  <para>
+    Returns <computeroutput>OK</computeroutput>.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    Since this is done by SQLite, it also cancels the extensions made automatic with the classic <link
+    linkend="rtn-oosqlAutoExtension">oosqlAutoExtension</link> routine. The automatic packages, collations, and
+    functions are not affected. Connections that are already open keep the extensions that were registered on them.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Details</emphasis></term>
+  <listitem>
+  <para>
+    The functionality of the <emphasis role="italic">resetAutoBuiltin</emphasis> method is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/reset_auto_extension.html">sqlite3_reset_auto_extension</ulink> API. The
+    classic <link linkend="rtn-oosqlResetAutoExtension">oosqlResetAutoExtension</link> routine does the same.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
+  <listitem>
+  <para>
+    See the example of <link linkend="mthAutoBuiltin">autoBuiltin</link>.
+  </para>
+  </listitem></varlistentry>
+</variablelist>
+</section>  <!-- End ooSQLExtensions::resetAutoBuiltin() -->
 
 </section>

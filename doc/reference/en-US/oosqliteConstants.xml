@@ -156,11 +156,39 @@ The "ooFoods.rdbx" database file has been corrupted.
 </row>
 <row>
 <entry>OO_BACKUP_IN_PROGRESS</entry>
-<entry>A method was invoked on this database connection object when the database is the destnation of a backup in progress.</entry>
+<entry>A method was invoked on this database connection object when the database is the destination of a backup in progress.</entry>
 </row>
 <row>
 <entry>OO_BACKUP_DB_ERRSTATE</entry>
 <entry>The specified source or destination database for a backup operation is in an error state.</entry>
+</row>
+<row revisionflag="added">
+<entry>OO_NO_CSELF</entry>
+<entry>&added11;An internal error: ooSQLite could not get the C data of an object.</entry>
+</row>
+<row revisionflag="added">
+<entry>OO_PACKAGE_NOT_VALID</entry>
+<entry>&added11;The package needs a newer version of ooSQLite or SQLite than the one in use. See <link linkend="mthLoadPackage">loadPackage</link>.</entry>
+</row>
+<row revisionflag="added">
+<entry>OO_NO_SUCH_PACKAGE</entry>
+<entry>&added11;No package with that name has been loaded. See <link linkend="mthGetPackage">getPackage</link>.</entry>
+</row>
+<row revisionflag="added">
+<entry>OO_NO_SUCH_LIBRARY</entry>
+<entry>&added11;No library with that name has been loaded. See <link linkend="mthGetLibrary">getLibrary</link>.</entry>
+</row>
+<row revisionflag="added">
+<entry>OO_PACKAGE_NOT_AUTOMATIC</entry>
+<entry>&added11;The package is not an automatically registered package. See <link linkend="mthAutoPackage">autoPackage</link>.</entry>
+</row>
+<row revisionflag="added">
+<entry>OO_COLLATION_NOT_AUTOMATIC</entry>
+<entry>&added11;The collation is not an automatically registered collation. See <link linkend="mthAutoCollation">autoCollation</link>.</entry>
+</row>
+<row revisionflag="added">
+<entry>OO_FUNCTION_NOT_AUTOMATIC</entry>
+<entry>&added11;The function is not an automatically registered function. See <link linkend="mthAutoFunction">autoFunction</link>.</entry>
 </row>
 <row>
 <entry id="rowOOSQLiteResultSetFormat" align="center"><emphasis role="bold"></emphasis></entry>
@@ -1998,11 +2026,39 @@ The "ooFoods.rdbx" database file has been corrupted.
 </row>
 <row>
 <entry>OO_BACKUP_IN_PROGRESS</entry>
-<entry>A method was invoked on this database connection object when the database is the destnation of a backup in progress.</entry>
+<entry>A method was invoked on this database connection object when the database is the destination of a backup in progress.</entry>
 </row>
 <row>
 <entry>OO_BACKUP_DB_ERRSTATE</entry>
 <entry>The specified source or destination database for a backup operation is in an error state.</entry>
+</row>
+<row revisionflag="added">
+<entry>OO_NO_CSELF</entry>
+<entry>&added11;An internal error: ooSQLite could not get the C data of an object.</entry>
+</row>
+<row revisionflag="added">
+<entry>OO_PACKAGE_NOT_VALID</entry>
+<entry>&added11;The package needs a newer version of ooSQLite or SQLite than the one in use. See <link linkend="mthLoadPackage">loadPackage</link>.</entry>
+</row>
+<row revisionflag="added">
+<entry>OO_NO_SUCH_PACKAGE</entry>
+<entry>&added11;No package with that name has been loaded. See <link linkend="mthGetPackage">getPackage</link>.</entry>
+</row>
+<row revisionflag="added">
+<entry>OO_NO_SUCH_LIBRARY</entry>
+<entry>&added11;No library with that name has been loaded. See <link linkend="mthGetLibrary">getLibrary</link>.</entry>
+</row>
+<row revisionflag="added">
+<entry>OO_PACKAGE_NOT_AUTOMATIC</entry>
+<entry>&added11;The package is not an automatically registered package. See <link linkend="mthAutoPackage">autoPackage</link>.</entry>
+</row>
+<row revisionflag="added">
+<entry>OO_COLLATION_NOT_AUTOMATIC</entry>
+<entry>&added11;The collation is not an automatically registered collation. See <link linkend="mthAutoCollation">autoCollation</link>.</entry>
+</row>
+<row revisionflag="added">
+<entry>OO_FUNCTION_NOT_AUTOMATIC</entry>
+<entry>&added11;The function is not an automatically registered function. See <link linkend="mthAutoFunction">autoFunction</link>.</entry>
 </row>
 
 </tbody></tgroup>

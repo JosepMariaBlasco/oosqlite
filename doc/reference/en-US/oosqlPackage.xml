@@ -45,17 +45,24 @@
 <section id="clsOOSQLPackage"><title>The ooSQLPackage Class</title>
 <indexterm><primary>ooSQLPackage class</primary></indexterm>
 <para>
-  text
+  An ooSQLPackage object is an ooSQLite package that has been loaded: a shared library, written in C or C++, that
+  describes the collations and functions it contains, and optionally a collation needed callback. Packages are loaded
+  with the <link linkend="mthLoadPackage">loadPackage</link> method of the ooSQLExtensions class, which keeps them, and
+  the package object is obtained with its <link linkend="mthGetPackage">getPackage</link> method.
 </para>
 
 <para>
-  text
+  For many uses, the methods of the ooSQLExtensions class are enough: <link linkend="mthLoadPackage">loadPackage</link>
+  can register the package on a connection, and <link linkend="mthAutoPackage">autoPackage</link>, <link
+  linkend="mthAutoFunction">autoFunction</link>, <link linkend="mthAutoCollation">autoCollation</link>, and <link
+  linkend="mthAutoCollationNeeded">autoCollationNeeded</link> make the package or its parts automatic. The package
+  object is needed to register the package on a connection later, with <link linkend="mthRegister">register</link>, or
+  to register a single function or collation, perhaps under another name.
 </para>
 
 <section id="sctMethodsOOSQLPackage"><title>Method Table</title>
 <para>
-  The following table provides links to the documentation for the primary methods and attributes used in working
-  with mutex objects using the ooSQLPackage class.
+  The following table provides links to the documentation of the methods and attributes of the ooSQLPackage class.
 </para>
 <table id="tblOOSQLPackageMethods" frame="all">
 <title>ooSQLPackage Methods and Attributes</title>
@@ -75,7 +82,7 @@
 </row>
 <row>
 <entry><link linkend="mthNewClsOOSQLPackage">new</link></entry>
-<entry>Instantiates a new ooSQLite mutex</entry>
+<entry>Package objects are obtained with the getPackage method of the ooSQLExtensions class.</entry>
 </row>
 <row>
 <entry align="center"><emphasis role="bold">Attribute Methods</emphasis></entry>
@@ -83,11 +90,11 @@
 </row>
 <row>
 <entry><link linkend="atrLastErrCodeClsPack">lastErrCode</link></entry>
-<entry>.</entry>
+<entry>Reflects the result code of the last method invoked on the package.</entry>
 </row>
 <row>
 <entry><link linkend="atrLastErrMsgClsPack">lastErrMsg</link></entry>
-<entry>.</entry>
+<entry>Reflects the error message of the last method invoked on the package.</entry>
 </row>
 <row>
 <entry align="center"><emphasis role="bold">Instance Methods</emphasis></entry>
@@ -95,19 +102,19 @@
 </row>
 <row>
 <entry><link linkend="mthGetCollation">getCollation</link></entry>
-<entry>.</entry>
+<entry>Returns a collation of the package, as an object that can be registered on a connection.</entry>
 </row>
 <row>
 <entry><link linkend="mthGetCollationNeeded">getCollationNeeded</link></entry>
-<entry>.</entry>
+<entry>Returns the collation needed callback of the package, as an object that can be registered on a connection.</entry>
 </row>
 <row>
 <entry><link linkend="mthGetFunction">getFunction</link></entry>
-<entry>.</entry>
+<entry>Returns a function of the package, as an object that can be registered on a connection.</entry>
 </row>
 <row>
 <entry><link linkend="mthRegister">register</link></entry>
-<entry>.</entry>
+<entry>&changed11;Registers all that the package contains on a database connection.</entry>
 </row>
 </tbody></tgroup>
 </table>
@@ -184,7 +191,6 @@
 </variablelist>
 </section>  <!-- End ooSQLPackage::new() -->
 
-
 <section id="atrLastErrCodeClsPack"><title>lastErrCode (Attribute)</title>
 <indexterm><primary>lastErrCode</primary><secondary>ooSQLPackage class</secondary></indexterm>
 <indexterm><primary>ooSQLPackage class</primary><secondary>lastErrCode</secondary></indexterm>
@@ -195,52 +201,44 @@
 </mediaobject>
 
 <para>
-  Reflects the last error code set by for the <computeroutput>ooSQLPackage</computeroutput> object.
+  Reflects the result code of the last method invoked on the package.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">lastErrCode get:</emphasis></term>
   <listitem>
   <para>
-    The value of the <emphasis role="italic">lastErrCode</emphasis> attribute will be a SQLite result <link
-    linkend="sctResultCode">code</link> or one of the ooSQLite specific result <link
-    linkend="sctOOSQLiteSpecificResultCodes">codes</link>.
+    A SQLite <link linkend="sctResultCode">Result Code</link>. It is 0, <computeroutput>OK</computeroutput>, if the last
+    method succeeded.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">lastErrCode set:</emphasis></term>
   <listitem>
   <para>
-    The programmer can not set the value of this attribute, it is set internally by the ooSQLite framework.
+    The Rexx programmer can not set the value of this attribute. It is set internally by the ooSQLite framework.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    The last error code attribute is similar to the <link linkend="atrLastErrMsgClsPack">lastErrMsg</link> attribute.
-    Its value is the last status code recorded by ooSQLite. The <emphasis role="italic">lastErrCode</emphasis> and the
-    <emphasis role="italic">lastErrMsg</emphasis> attributes are always updated together. The error message is always
-    the message that goes with the error code.
+    The methods of the package set the <emphasis role="italic">lastErrCode</emphasis> and <link
+    linkend="atrLastErrMsgClsPack">lastErrMsg</link> attributes, which are always updated together. The errors that a
+    method reports are <computeroutput>MISUSE</computeroutput>: the package has no collation, function, or collation
+    needed callback with that name. Some errors raise a syntax error instead.
+  </para>
+  <para>
+    The <link linkend="atrLastErrCodeClsExt">lastErrCode</link> and <link
+    linkend="atrLastErrMsgClsExt">lastErrMsg</link> attributes of the ooSQLExtensions class are separate: they reflect
+    the methods of that class.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example uses the <emphasis role="italic">lastErrCode</emphasis> attribute as part of producing a meaningful error
-    message when an <computeroutput>ooSQLFunction</computeroutput> object can not be retrieved from a package:
-<programlisting language="rexx">
-  function  = package~getFunction('half')
-  if function == .nil then do
-    say 'Failed to get function: half'
-    say '  Error code:   ' package~lastErrCode
-    say '  Error message:' package~lastErrMsg
-
-    return package~lastErrCode
-  end
-</programlisting>
+    See the example of <link linkend="mthGetFunction">getFunction</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
-</section>  <!-- End ooSQLPackage::lastErrCode() [attribute]  -->
-
+</section>  <!-- End ooSQLPackage::lastErrCode() [attribute] -->
 
 <section id="atrLastErrMsgClsPack"><title>lastErrMsg (Attribute)</title>
 <indexterm><primary>lastErrMsg</primary><secondary>ooSQLPackage class</secondary></indexterm>
@@ -252,55 +250,39 @@
 </mediaobject>
 
 <para>
-  Reflects a human readable explanation, a message, of the last error code recorded by the connection object.
+  Reflects the error message of the last method invoked on the package.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">lastErrMsg get:</emphasis></term>
   <listitem>
   <para>
-    Returns a string message that corresponds to the last error code.
+    A message that explains the <link linkend="atrLastErrCodeClsPack">lastErrCode</link> attribute, or
+    <computeroutput>no error</computeroutput> if the last method succeeded.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">lastErrMsg set:</emphasis></term>
   <listitem>
   <para>
-    The programmer can not set this attribute, it is set internally by the ooSQLite framework.
+    The Rexx programmer can not set the value of this attribute. It is set internally by the ooSQLite framework.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    The last error message attribute is similar to the <link linkend="atrLastErrCodeClsPack">lastErrCode</link>
-    attribute. Its value is the last status message recorded by ooSQLite. The <emphasis
-    role="italic">lastErrCode</emphasis> and the <emphasis role="italic">lastErrMsg</emphasis> attributes are always
-    updated together. The error message is always the message that goes with the error code.
+    See the remarks of <link linkend="atrLastErrCodeClsPack">lastErrCode</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example uses the <emphasis role="italic">lastErrMsg</emphasis> attribute to produce a meaningful error message when
-    an <computeroutput>ooSQLFunction</computeroutput> object can not be retrieved from a package:
-<programlisting language="rexx">
-
-  function  = package~getFunction('half')
-  if function == .nil then do
-    say 'Failed to get function: half'
-    say '  Error code:   ' package~lastErrCode
-    say '  Error message:' package~lastErrMsg
-
-    return package~lastErrCode
-  end
-
-</programlisting>
+    See the example of <link linkend="mthGetFunction">getFunction</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
-</section>  <!-- End ooSQLPackage::lastErrMsg() [attribute]  -->
-
+</section>  <!-- End ooSQLPackage::lastErrMsg() [attribute] -->
 
 <section id="mthGetCollation"><title>getCollation</title>
-<indexterm><primary>getCollation</primary></indexterm>
+<indexterm><primary>getCollation</primary><secondary>ooSQLPackage class</secondary></indexterm>
 <indexterm><primary>ooSQLPackage class</primary><secondary>getCollation</secondary></indexterm>
 <mediaobject>
 <imageobject>
@@ -309,58 +291,75 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns a collation of the package, as an object that can be registered on a connection.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
+    <variablelist>
+      <varlistentry><term>name [required]</term>
+      <listitem>
+      <para>
+        The name of the collation in the package. The case of the letters is significant.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
   </para>
-  <variablelist>
-    <varlistentry><term>TERM</term>
-    <listitem>
-    <para>
-      xx
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    An <link linkend="clsOOSQLCollation">ooSQLCollation</link> object, or <computeroutput>.nil</computeroutput> if the
+    package has no collation with that name. On error, the <link linkend="atrLastErrCodeClsPack">lastErrCode</link> and
+    <link linkend="atrLastErrMsgClsPack">lastErrMsg</link> attributes of the package tell what went wrong.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    <link linkend="mthAutoCollation">autoCollation</link> makes a collation of a package automatic, and <link
+    linkend="mthRegister">register</link> registers all the collations of the package at once.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The object is passed to the <link linkend="mthCreateCollation">createCollation</link> method of the
+    ooSQLiteConnection class, which registers the collation on the connection under the name given there. The same
+    object is returned each time.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example registers the ebcdic collation of the examplePackage package, which sorts as EBCDIC does: lowercase
+    letters, then uppercase letters, then digits:
+<programlisting language="rexx">
+  .ooSQLExtensions~loadPackage('examplepackage')
+  package = .ooSQLExtensions~getPackage('examplePackage')
+  say db~createCollation('ebcdic', package~getCollation('ebcdic'))
+  sql = "WITH t(x) AS (VALUES ('a'), ('A'), ('1'))" -
+        "SELECT x FROM t ORDER BY x COLLATE ebcdic;"
+  rows = db~exec(sql, .true)
+  do row over rows
+    say row['X']
+  end
+  /* Output:
+  0
+  a
+  A
+  1
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLPackage::getCollation() -->
 
-
 <section id="mthGetCollationNeeded"><title>getCollationNeeded</title>
-<indexterm><primary>getCollationNeeded</primary></indexterm>
+<indexterm><primary>getCollationNeeded</primary><secondary>ooSQLPackage class</secondary></indexterm>
 <indexterm><primary>ooSQLPackage class</primary><secondary>getCollationNeeded</secondary></indexterm>
 <mediaobject>
 <imageobject>
@@ -369,58 +368,68 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns the collation needed callback of the package, as an object that can be registered on a connection.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    There are no arguments.
   </para>
-  <variablelist>
-    <varlistentry><term>TERM</term>
-    <listitem>
-    <para>
-      xx
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    An <link linkend="clsOOSQLCollationNeeded">ooSQLCollationNeeded</link> object, or
+    <computeroutput>.nil</computeroutput> if the package has no collation needed callback. On error, the <link
+    linkend="atrLastErrCodeClsPack">lastErrCode</link> and <link linkend="atrLastErrMsgClsPack">lastErrMsg</link>
+    attributes of the package tell what went wrong.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A package has at most one collation needed callback. SQLite invokes it when a statement uses a collation that the
+    connection does not have, so that it can register it. <link
+    linkend="mthAutoCollationNeeded">autoCollationNeeded</link> makes it automatic.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The object is passed to the <link linkend="mthCollationNeeded">collationNeeded</link> method of the
+    ooSQLiteConnection class, which also accepts the package itself. The same object is returned each time.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    The testPackage package, which is built with the examples, has a collation needed callback that registers its
+    collations when SQLite asks for them:
+<programlisting language="rexx">
+  .ooSQLExtensions~loadPackage('testpackage')
+  package = .ooSQLExtensions~getPackage('testPackage')
+  say db~collationNeeded(package~getCollationNeeded)
+  sql = "WITH t(x) AS (VALUES ('a'), ('c'), ('b'))" -
+        "SELECT x FROM t ORDER BY x COLLATE reverseOrder;"
+  rows = db~exec(sql, .true)
+  do row over rows
+    say row['X']
+  end
+  /* Output:
+  0
+  c
+  b
+  a
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLPackage::getCollationNeeded() -->
 
-
 <section id="mthGetFunction"><title>getFunction</title>
-<indexterm><primary>getFunction</primary></indexterm>
+<indexterm><primary>getFunction</primary><secondary>ooSQLPackage class</secondary></indexterm>
 <indexterm><primary>ooSQLPackage class</primary><secondary>getFunction</secondary></indexterm>
 <mediaobject>
 <imageobject>
@@ -429,58 +438,76 @@
 </mediaobject>
 
 <para>
-  xx
+  Returns a function of the package, as an object that can be registered on a connection.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
+    <variablelist>
+      <varlistentry><term>name [required]</term>
+      <listitem>
+      <para>
+        The name of the function in the package. The case of the letters is significant.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
   </para>
-  <variablelist>
-    <varlistentry><term>TERM</term>
-    <listitem>
-    <para>
-      xx
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    An <link linkend="clsOOSQLFunction">ooSQLFunction</link> object, or <computeroutput>.nil</computeroutput> if the
+    package has no function with that name. On error, the <link linkend="atrLastErrCodeClsPack">lastErrCode</link> and
+    <link linkend="atrLastErrMsgClsPack">lastErrMsg</link> attributes of the package tell what went wrong.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    <link linkend="mthAutoFunction">autoFunction</link> makes a function of a package automatic, and <link
+    linkend="mthRegister">register</link> registers all the functions of the package at once.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    The object is passed to the <link linkend="mthCreateFunction">createFunction</link> method of the ooSQLiteConnection
+    class, which registers the function on the connection under the name given there, with the number of arguments of
+    the package unless another one is given. The same object is returned each time.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example registers the half function of the examplePackage package under another name, and then asks for a
+    function that the package does not have:
+<programlisting language="rexx">
+  .ooSQLExtensions~loadPackage('examplepackage')
+  package = .ooSQLExtensions~getPackage('examplePackage')
+  function = package~getFunction('half')
+  say function
+  say db~createFunction('mitad', function)
+  sql = "SELECT mitad(price) AS m FROM foods WHERE name = 'Bacon';"
+  say db~exec(sql, .true)[1]['M']
+  say package~getFunction('double')
+  say package~lastErrMsg
+  /* Output:
+  an ooSQLFunction
+  0
+  1.875
+  The NIL object
+  this package contains no function named double
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLPackage::getFunction() -->
 
-
-<section id="mthRegister"><title>register</title>
-<indexterm><primary>register</primary></indexterm>
+<section id="mthRegister" revisionflag="changed"><title>&changed11;register</title>
+<indexterm><primary>register</primary><secondary>ooSQLPackage class</secondary></indexterm>
 <indexterm><primary>ooSQLPackage class</primary><secondary>register</secondary></indexterm>
 <mediaobject>
 <imageobject>
@@ -489,49 +516,64 @@
 </mediaobject>
 
 <para>
-  xx
+  Registers all that the package contains on a database connection.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
+    <variablelist>
+      <varlistentry><term>dbConn [required]</term>
+      <listitem>
+      <para>
+        An open <link linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> object.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
   </para>
-  <variablelist>
-    <varlistentry><term>TERM</term>
-    <listitem>
-    <para>
-      xx
-    </para>
-    </listitem></varlistentry>
-  </variablelist>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> on success, or <computeroutput>MISUSE</computeroutput> if a part of the
+    package could not be registered. On error, the <link linkend="atrLastErrCodeClsPack">lastErrCode</link> and <link
+    linkend="atrLastErrMsgClsPack">lastErrMsg</link> attributes of the package tell what went wrong.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The collation needed callback of the package, its collations, and its functions are registered in that order, with
+    the names they have in the package; the method stops at the first that fails. The <emphasis
+    role="italic">dbConn</emphasis> argument of <link linkend="mthLoadPackage">loadPackage</link> does the same when the
+    package is loaded, and <link linkend="mthAutoPackage">autoPackage</link> does it on every new connection.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Anything?
+    Raises an execution error, 98.900, if the connection is closed, and a syntax error, 88.900, if the argument is not
+    an ooSQLiteConnection object.
+  </para>
+  <para>
+    &changed11;Before ooSQLite 1.1, a closed connection, or an object that is not a connection, crashed the interpreter.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example registers the examplePackage package on an open connection:
+<programlisting language="rexx">
+  .ooSQLExtensions~loadPackage('examplepackage')
+  package = .ooSQLExtensions~getPackage('examplePackage')
+  say package~register(db)
+  sql = "SELECT strAggregate(name) AS s FROM foods WHERE type_id = 1;"
+  say db~exec(sql, .true)[1]['S']
+  /* Output:
+  0
+  Bagels, Bagels, raisin
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
