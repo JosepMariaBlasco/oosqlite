@@ -5195,6 +5195,32 @@ ConstantMissing:
 
 /******************************************************************************/
 /*                                                                            */
+/* Section 37: tableColumnMetadata of a column declared without a type        */
+/*                                                                            */
+/* sqlite3_table_column_metadata() returns a NULL data type for a column     */
+/* declared without a type, and ooSQLite made a string of it: SIGSEGV. The    */
+/* data type is now the empty string, as columnDeclType returns.             */
+/*                                                                            */
+/******************************************************************************/
+
+::Method testTableColumnMetadataNoType
+  db = self~openMemoryDB
+  self~assertEquals(db~OK, db~exec("CREATE TABLE t(a, b TEXT COLLATE NOCASE NOT NULL);"))
+  info = .directory~new
+  self~assertEquals(db~OK, db~tableColumnMetadata("t", "a", info), "rc for a column without a type")
+  self~assertEquals("", info~dataType, "DATATYPE of a column without a type")
+  self~assertEquals("BINARY", info~collationSequence)
+  self~assertEquals(0, info~notNull)
+  self~assertEquals(0, info~primaryKey)
+  self~assertEquals(0, info~autoIncrement)
+  self~assertEquals(db~OK, db~tableColumnMetadata("t", "b", info))
+  self~assertEquals("TEXT", info~dataType)
+  self~assertEquals("NOCASE", info~collationSequence)
+  self~assertEquals(1, info~notNull)
+  self~assertEquals(db~OK, db~close)
+
+/******************************************************************************/
+/*                                                                            */
 /* ooSQLiteClassic.testGroup — Tier 4: Classic Rexx routines (oosqlXxx)       */
 /* ====================================================================       */
 /*                                                                            */
@@ -5709,6 +5735,16 @@ ConstantMissing:
   self~assertEquals("BINARY", meta["COLLATIONSEQUENCE"], -
     "COLLATIONSEQUENCE for 'name' column should be BINARY")
   Call oosqlClose db
+
+::Method testClassicTableColumnMetadataNoType
+  -- See Section 37 of the OO tests: a column without a type crashed
+  db = self~classicOpenMemory
+  Call oosqlExec db, "CREATE TABLE t(a, b TEXT);"
+  meta = .Stem~new
+  self~assertEquals(0, oosqlTableColumnMetadata(db, "t", "a", meta), "rc for a column without a type")
+  self~assertEquals("", meta["DATATYPE"], "DATATYPE of a column without a type")
+  self~assertEquals("BINARY", meta["COLLATIONSEQUENCE"])
+  self~assertEquals(0, oosqlClose(db))
 
 --------------------------------------------------------------------------------
 -- oosqlNextStmt                                                              --
