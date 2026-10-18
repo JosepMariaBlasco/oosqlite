@@ -264,6 +264,16 @@
 
 <section id="sctWhatsChangedOther"><title>Other Fixes</title>
 <variablelist>
+  <varlistentry><term><emphasis role="bold">oosqlTrace registered a profile routine</emphasis></term>
+  <listitem>
+  <para>
+    The classic <link linkend="rtn-oosqlTrace">oosqlTrace</link> registered its routine as a profile routine: it was
+    called when each statement finished, not when it started, with three arguments, the SQL, a time, and the user data,
+    instead of two, the SQL and the user data; and removing it returned .nil instead of its user data. Programs that
+    took the user data as the third argument of a trace routine must take it as the second one. The <link
+    linkend="mthTrace">trace</link> method was not affected.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Argument positions in the errors of oosqlExec and oosqlBackupInit</emphasis></term>
   <listitem>
   <para>
@@ -355,6 +365,19 @@
     leave the error message of SQLite, which is not recorded in the connection: <computeroutput>.routineErrorMessage</computeroutput>. The
     section of <link linkend="mthNextStmt">nextStmt</link> said that a finalized statement could be the starting point of
     the search; the search then starts from the beginning.
+  </para></listitem>
+  <listitem><para>
+    The classic routines that register callback routines are documented: <link
+    linkend="rtn-oosqlCommitHook">oosqlCommitHook</link>, <link linkend="rtn-oosqlRollbackHook">oosqlRollbackHook</link>,
+    <link linkend="rtn-oosqlUpdateHook">oosqlUpdateHook</link>, <link linkend="rtn-oosqlTrace">oosqlTrace</link>, <link
+    linkend="rtn-oosqlProfile">oosqlProfile</link>, <link linkend="rtn-oosqlProgressHandler">oosqlProgressHandler</link>,
+    <link linkend="rtn-oosqlBusyHandler">oosqlBusyHandler</link>, <link
+    linkend="rtn-oosqlSetAuthorizer">oosqlSetAuthorizer</link>, <link
+    linkend="rtn-oosqlCreateCollation">oosqlCreateCollation</link>, and <link
+    linkend="rtn-oosqlCollationNeeded">oosqlCollationNeeded</link>, each one with the arguments its routine receives and
+    a tested example. A new section, <link linkend="sctClassicCallbacks">Callback Routines</link>, gives the rules common
+    to all of them: in particular, the routine must be a public routine of the calling program; those of the packages
+    it requires are not found.
   </para></listitem>
   <listitem><para>
     The <link linkend="chpOOSQLiteConstants">constants chapter</link> lists all the constants of the class, also the

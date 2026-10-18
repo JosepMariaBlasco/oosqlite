@@ -80,7 +80,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-ooSQLiteMerge">ooSQLiteMerge()</link></entry>
-<entry>description</entry>
+<entry>.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-ooSQLiteRegisterBuiltin">ooSQLiteRegisterBuiltin()</link></entry>
@@ -88,7 +88,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-ooSQLiteVersion">ooSQLiteVersion()</link></entry>
-<entry>description</entry>
+<entry>.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlAutoExtension">oosqlAutoExtension()</link></entry>
@@ -160,7 +160,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBusyHandler">oosqlBusyHandler()</link></entry>
-<entry>.</entry>
+<entry>Registers a routine that is called when a table needed by a statement is locked by another connection.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBusyTimeOut">oosqlBusyTimeOut()</link></entry>
@@ -244,11 +244,11 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlCollationNeeded">oosqlCollationNeeded()</link></entry>
-<entry>.</entry>
+<entry>Registers a routine that is called when a statement needs a collation sequence that is not defined.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlCommitHook">oosqlCommitHook()</link></entry>
-<entry>.</entry>
+<entry>Registers a routine that is called whenever a transaction is about to be committed.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlCompileOptionGet">oosqlCompileOptionGet()</link></entry>
@@ -264,7 +264,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlCreateCollation">oosqlCreateCollation()</link></entry>
-<entry>.</entry>
+<entry>Defines a collation sequence, with a routine that compares two strings.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlCreateFunction">oosqlCreateFunction()</link></entry>
@@ -404,11 +404,11 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlProfile">oosqlProfile()</link></entry>
-<entry>.</entry>
+<entry>Registers a routine that is called with the text of each SQL statement, and the time it took, when it finishes executing.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlProgressHandler">oosqlProgressHandler()</link></entry>
-<entry>.</entry>
+<entry>Registers a routine that is called periodically while SQL is executed, and that can interrupt it.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlReleaseMemory">oosqlReleaseMemory()</link></entry>
@@ -472,11 +472,11 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlRollbackHook">oosqlRollbackHook()</link></entry>
-<entry>.</entry>
+<entry>Registers a routine that is called whenever a transaction is rolled back.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlSetAuthorizer">oosqlSetAuthorizer()</link></entry>
-<entry>.</entry>
+<entry>Registers a routine that is called while SQL is prepared, to allow or deny each action the SQL would do.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlSoftHeapLimit64">oosqlSoftHeapLimit64()</link></entry>
@@ -528,11 +528,11 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlTrace">oosqlTrace()</link></entry>
-<entry>.</entry>
+<entry>Registers a routine that is called with the text of each SQL statement when it starts executing.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlUpdateHook">oosqlUpdateHook()</link></entry>
-<entry>.</entry>
+<entry>Registers a routine that is called whenever a row is inserted, updated, or deleted.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlValueBlob">oosqlValueBlob()</link></entry>
