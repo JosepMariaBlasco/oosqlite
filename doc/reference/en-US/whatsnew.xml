@@ -323,6 +323,14 @@
     argument 2.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Null handles are called handles in the error messages</emphasis></term>
+  <listitem>
+  <para>
+    The syntax error 88.900 that the classic routines raise for a null handle called it an object, as in "Argument 1,
+    the mutex object, must not be null.", and for a backup "the backup handle object". The message now says "handle":
+    "Argument 1, the mutex handle, must not be null." Only the text changed; the error code is the same.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">stmtStatus and oosqlStmtStatus with an invalid op</emphasis></term>
   <listitem>
   <para>
