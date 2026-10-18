@@ -7969,19 +7969,14 @@ Syntax:
   rc = oosqlResetAutoExtension()
   self~assertEquals(0, rc, -
     "oosqlResetAutoExtension should return 0 (void)")
-  -- Verify rot13 is no longer auto-registered on new connections
+  -- Verify rot13 is no longer auto-registered on new connections: the
+  -- statement can not be prepared
   Call oosqlOpen ":memory:", "db2"
-  Signal On Syntax Name ResetAutoExtNoRot13
-  Call oosqlPrepare db2, "SELECT rot13('x')", "stmt"
-  Call oosqlStep stmt
-  -- If we get here, rot13 is still registered (unexpected)
-  Call oosqlFinalize stmt
-  Call oosqlClose db2
-  Return
-ResetAutoExtNoRot13:
-  -- Expected: rot13 not found after reset
-  self~assertTrue(.true, -
+  rc = oosqlPrepare(db2, "SELECT rot13('x')", "stmt")
+  self~assertEquals(.ooSQLite~ERROR, rc, -
     "rot13 should not be available after oosqlResetAutoExtension")
+  self~assertEquals("no such function: rot13", oosqlErrMsg(db2), -
+    "the error should be that rot13 does not exist")
   Call oosqlClose db2
 
 /******************************************************************************/
