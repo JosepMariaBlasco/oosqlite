@@ -13226,7 +13226,7 @@ RexxRoutine4(POINTER, oosqlBackupInit_rtn, POINTER, dstConn, POINTER, srcConn, O
              OPTIONAL_CSTRING, srcName)
 {
     sqlite3 *dst = routineDB(context, dstConn, 1);
-    sqlite3 *src = routineDB(context, srcConn, 3);
+    sqlite3 *src = routineDB(context, srcConn, 2);
 
     if ( dst == NULL || src == NULL )
     {
@@ -14704,7 +14704,7 @@ RexxRoutine5(RexxObjectPtr, oosqlExec_rtn, POINTER, _db, CSTRING, sql, OPTIONAL_
         {
             if ( format < anArrayOfArrays || format > aClassicStem )
             {
-                wrongArgValueException(context->threadContext, 3, RECORD_FORMATS_LIST,
+                wrongArgValueException(context->threadContext, 4, RECORD_FORMATS_LIST,
                                        context->UnsignedInt32(format));
                 return NULLOBJECT;
             }
@@ -14725,7 +14725,7 @@ RexxRoutine5(RexxObjectPtr, oosqlExec_rtn, POINTER, _db, CSTRING, sql, OPTIONAL_
             cbc.callbackRtn = getCallerRoutine(context, rtnName);
             if ( cbc.callbackRtn == NULLOBJECT )
             {
-                return noSuchRoutineException(context->threadContext, rtnName, 4);
+                return noSuchRoutineException(context->threadContext, rtnName, 5);
             }
         }
         else
