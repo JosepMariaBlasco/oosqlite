@@ -462,6 +462,13 @@
     invokes the version method of the ooSQLite class, which hides the VERSION constant: the constant is <computeroutput>.ooSQLiteConstants~VERSION</computeroutput>.
   </para></listitem>
   <listitem><para>
+    The automatic extension routines of the classic interface are now documented: <link
+    linkend="rtn-oosqlAutoExtension">oosqlAutoExtension</link>, <link
+    linkend="rtn-oosqlCancelAutoExtension">oosqlCancelAutoExtension</link>, and <link
+    linkend="rtn-oosqlResetAutoExtension">oosqlResetAutoExtension</link>. oosqlCancelAutoExtension was documented
+    under the name oosqlCancelAutoBuiltin, a routine that does not exist.
+  </para></listitem>
+  <listitem><para>
     The <link linkend="chpOOSQLiteConstants">constants chapter</link> lists all the constants of the class, also the
     ones that were missing from it, such as NOTICE and WARNING. The values of the version constants are those of the
     embedded SQLite, and the NULL datatype is listed with its ooSQLite name, SQLNULL.

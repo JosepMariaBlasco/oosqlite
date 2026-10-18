@@ -92,7 +92,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlAutoExtension">oosqlAutoExtension()</link></entry>
-<entry>.</entry>
+<entry>Makes one of the extensions built into ooSQLite automatic: it is registered on every database connection opened from then on.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlBackupFinish">oosqlBackupFinish()</link></entry>
@@ -167,8 +167,8 @@
 <entry>Sets a busy handler that waits, for up to the given time, while a table is locked.</entry>
 </row>
 <row>
-<entry><link linkend="rtn-oosqlCancelAutoBuiltin">oosqlCancelAutoBuiltin()</link></entry>
-<entry>.</entry>
+<entry><link linkend="rtn-oosqlCancelAutoExtension">oosqlCancelAutoExtension()</link></entry>
+<entry>Removes one of the extensions built into ooSQLite from the list of automatic extensions.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlChanges">oosqlChanges()</link></entry>
@@ -420,7 +420,7 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlResetAutoExtension">oosqlResetAutoExtension()</link></entry>
-<entry>.</entry>
+<entry>Removes all the extensions from the list of automatic extensions.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlResultBlob">oosqlResultBlob()</link></entry>
