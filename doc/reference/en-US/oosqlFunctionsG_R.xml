@@ -779,18 +779,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Allocates a new mutex, which the threads of a program can use to take turns.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>type [required]</term>
       <listitem>
       <para>
-        xx
+        The kind of mutex, one of the <link linkend="sctMutexType">Mutex Type</link> constants
+        <computeroutput>MUTEX_FAST</computeroutput> or <computeroutput>MUTEX_RECURSIVE</computeroutput>. A thread that
+        holds a recursive mutex can enter it again; a thread that holds a fast mutex must not.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -799,29 +801,84 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    A <link linkend="defHandle">handle</link> to the mutex, which is used with <link
+    linkend="rtn-oosqlMutexEnter">oosqlMutexEnter</link>, <link linkend="rtn-oosqlMutexTry">oosqlMutexTry</link>, <link
+    linkend="rtn-oosqlMutexLeave">oosqlMutexLeave</link>, and <link linkend="rtn-oosqlMutexFree">oosqlMutexFree</link>.
+    The handle is null if SQLite was built without support for threads, see <link
+    linkend="rtn-oosqlThreadSafe">oosqlThreadSafe</link>; the SQLite embedded in ooSQLite has that support.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    What is said here applies to all the mutex routines. A mutex is held by one thread at a time: a thread enters it
+    with <link linkend="rtn-oosqlMutexEnter">oosqlMutexEnter</link>, which waits while another thread holds it, or with
+    <link linkend="rtn-oosqlMutexTry">oosqlMutexTry</link>, which does not wait, and leaves it with <link
+    linkend="rtn-oosqlMutexLeave">oosqlMutexLeave</link>. The thread that entered the mutex is the one that must leave
+    it, once for each time it entered it. While a thread waits for a mutex, the other threads of the program keep
+    running.
+  </para>
+  <para>
+    Breaking these rules has undefined results: entering a fast mutex again from the thread that holds it blocks the
+    thread for ever, and leaving a mutex that the thread does not hold, using a mutex after it has been freed, or
+    freeing it while it is held, can crash the interpreter. ooSQLite can not detect any of these.
+  </para>
+  <para>
+    Every mutex allocated with <emphasis role="italic">oosqlMutexAlloc</emphasis> must be freed with <link
+    linkend="rtn-oosqlMutexFree">oosqlMutexFree</link> when it is no longer needed. In Rexx code, the guarded methods
+    and the <computeroutput>GUARD</computeroutput> instruction of ooRexx also make threads take turns; an SQLite mutex
+    is mostly useful when other code that uses SQLite takes part, or to hold the mutex of a connection, see <link
+    linkend="rtn-oosqlDbMutex">oosqlDbMutex</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error, 88.916, if <emphasis role="italic">type</emphasis> is not
+    <computeroutput>MUTEX_FAST</computeroutput> or <computeroutput>MUTEX_RECURSIVE</computeroutput>. The other mutex
+    types are the static mutexes that SQLite uses internally, and they can not be allocated.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">oosqlMutexAlloc</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/mutex_alloc.html">sqlite3_mutex_alloc</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthNewClsOOSQLiteMutex">new</link> method of the <link
+    linkend="clsOOSQLiteMutex">ooSQLiteMutex</link> class creates a mutex object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    In this example, three threads add 1000 to a shared counter each. Each addition reads the counter, lets the other
+    threads run, and writes it back, so without the mutex the threads would overwrite each other's work and the total
+    would be much lower:
+<programlisting language="rexx">
+  mtx = oosqlMutexAlloc(.ooSQLite~MUTEX_FAST)
+  counter = .directory~new~~put(0, 'N')
+  threads = .array~new
+  do 3
+    threads~append(.message~new(.adder~new, 'add', 'I', mtx, counter)~~start)
+  end
+  do t over threads
+    t~result                             -- waits until the thread ends
+  end
+  say counter['N']
+  call oosqlMutexFree mtx
+  /* Output:
+  3000
+  */
 
-]]>
+  ::class adder
+  ::method add
+    use arg mtx, counter
+    do 1000
+      call oosqlMutexEnter mtx
+      n = counter['N']
+      call SysSleep 0                    -- lets the other threads run
+      counter['N'] = n + 1
+      call oosqlMutexLeave mtx
+    end
 </programlisting>
   </para>
   </listitem></varlistentry>
@@ -839,18 +896,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Enters a mutex, waiting until no other thread holds it.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>mtx [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a mutex, returned by <link
+        linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link> or by <link linkend="rtn-oosqlDbMutex">oosqlDbMutex</link>.
+        The handle must not be null, and the mutex must not have been freed.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -859,30 +918,36 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A recursive mutex can be entered again by the thread that holds it; a fast mutex must not. Each enter must be
+    matched by an <link linkend="rtn-oosqlMutexLeave">oosqlMutexLeave</link> from the same thread. See the remarks of
+    <link linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link> for the rules that all the mutex routines follow.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error, 88.900, if the handle is null.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">oosqlMutexEnter</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/mutex_alloc.html">sqlite3_mutex_enter</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthEnter">enter</link> method of the <link linkend="clsOOSQLiteMutex">ooSQLiteMutex</link> class
+    does the same for a mutex object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the examples of <link linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link> and <link
+    linkend="rtn-oosqlDbMutex">oosqlDbMutex</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -899,18 +964,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Frees a mutex allocated by <link linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link>.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>mtx [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a mutex returned by <link
+        linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link>. The handle must not be null, and the mutex must not be
+        held by any thread.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -919,30 +986,37 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    After <emphasis role="italic">oosqlMutexFree</emphasis>, the handle is not valid any more: it must not be used in
+    any routine, and it must not be freed again. The mutex of a connection, returned by <link
+    linkend="rtn-oosqlDbMutex">oosqlDbMutex</link>, belongs to SQLite and must never be freed. See the remarks of <link
+    linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link> for the rules that all the mutex routines follow.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error, 88.900, if the handle is null.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">oosqlMutexFree</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/mutex_alloc.html">sqlite3_mutex_free</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthFree">free</link> method of the <link linkend="clsOOSQLiteMutex">ooSQLiteMutex</link> class
+    does the same for a mutex object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the examples of <link linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link> and <link
+    linkend="rtn-oosqlMutexTry">oosqlMutexTry</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -959,18 +1033,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Leaves a mutex that the current thread holds.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>mtx [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a mutex, returned by <link
+        linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link> or by <link linkend="rtn-oosqlDbMutex">oosqlDbMutex</link>.
+        The handle must not be null, and the mutex must not have been freed.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -979,30 +1055,37 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The mutex must have been entered by the same thread, with <link linkend="rtn-oosqlMutexEnter">oosqlMutexEnter</link>
+    or with a successful <link linkend="rtn-oosqlMutexTry">oosqlMutexTry</link>. A recursive mutex that was entered
+    several times is released when it has been left as many times. See the remarks of <link
+    linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link> for the rules that all the mutex routines follow.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error, 88.900, if the handle is null.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">oosqlMutexLeave</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/mutex_alloc.html">sqlite3_mutex_leave</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthLeave">leave</link> method of the <link linkend="clsOOSQLiteMutex">ooSQLiteMutex</link> class
+    does the same for a mutex object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
-</programlisting>
+    See the examples of <link linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link> and <link
+    linkend="rtn-oosqlDbMutex">oosqlDbMutex</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -1019,18 +1102,20 @@
 </mediaobject>
 
 <para>
-  xx
+  Tries to enter a mutex, without waiting if another thread holds it.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
   <para>
-    The arguments are:
+    The only argument is:
     <variablelist>
-      <varlistentry><term>TERM</term>
+      <varlistentry><term>mtx [required]</term>
       <listitem>
       <para>
-        xx
+        The <link linkend="defHandle">handle</link> to a mutex, returned by <link
+        linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link> or by <link linkend="rtn-oosqlDbMutex">oosqlDbMutex</link>.
+        The handle must not be null, and the mutex must not have been freed.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1039,29 +1124,62 @@
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput> if the mutex was entered: then it must be left with <link
+    linkend="rtn-oosqlMutexLeave">oosqlMutexLeave</link>, as after <link
+    linkend="rtn-oosqlMutexEnter">oosqlMutexEnter</link>. Returns <computeroutput>BUSY</computeroutput> if another
+    thread holds the mutex.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A thread that holds a recursive mutex gets <computeroutput>OK</computeroutput> and enters it again. The result of
+    trying a fast mutex that the same thread already holds is undefined. SQLite notes that on some systems this routine
+    always returns <computeroutput>BUSY</computeroutput>, so a program should not depend on it to work. See the remarks
+    of <link linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link> for the rules that all the mutex routines follow.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Additional details
+    Raises a syntax error, 88.900, if the handle is null.
+  </para>
+  <para>
+    The functionality of the <emphasis role="italic">oosqlMutexTry</emphasis> routine is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/mutex_alloc.html">sqlite3_mutex_try</ulink> API.
+  </para>
+  <para>
+    The <link linkend="mthTry">try</link> method of the <link linkend="clsOOSQLiteMutex">ooSQLiteMutex</link> class does
+    the same for a mutex object.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    This example tries to enter a mutex from another thread, first while the main thread holds it, and then after it has
+    left it:
+<programlisting language="rexx">
+  mtx = oosqlMutexAlloc(.ooSQLite~MUTEX_FAST)
+  call oosqlMutexEnter mtx
+  say 'While this thread holds it:' tryInAnotherThread(mtx)
+  call oosqlMutexLeave mtx
+  say 'Once it has left it:' tryInAnotherThread(mtx)
+  call oosqlMutexFree mtx
+  /* Output:
+  While this thread holds it: busy
+  Once it has left it: entered
+  */
 
-]]>
+  ::routine tryInAnotherThread
+    use arg mtx
+    return .message~new(.tryer~new, 'try', 'I', mtx)~~start~result
+
+  ::class tryer
+  ::method try
+    use arg mtx
+    if oosqlMutexTry(mtx) == .ooSQLite~BUSY then return 'busy'
+    call oosqlMutexLeave mtx
+    return 'entered'
 </programlisting>
   </para>
   </listitem></varlistentry>

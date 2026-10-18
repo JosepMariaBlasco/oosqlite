@@ -430,6 +430,12 @@
     converts a text to a number in place, which changes what the other routines see afterwards.
   </para></listitem>
   <listitem><para>
+    The mutex routines of the classic interface are now documented: <link
+    linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link>, <link linkend="rtn-oosqlMutexEnter">oosqlMutexEnter</link>,
+    <link linkend="rtn-oosqlMutexTry">oosqlMutexTry</link>, <link linkend="rtn-oosqlMutexLeave">oosqlMutexLeave</link>,
+    and <link linkend="rtn-oosqlMutexFree">oosqlMutexFree</link>, with examples that use several Rexx threads.
+  </para></listitem>
+  <listitem><para>
     The <link linkend="chpOOSQLiteConstants">constants chapter</link> lists all the constants of the class, also the
     ones that were missing from it, such as NOTICE and WARNING. The values of the version constants are those of the
     embedded SQLite, and the NULL datatype is listed with its ooSQLite name, SQLNULL.

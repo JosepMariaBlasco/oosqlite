@@ -372,23 +372,23 @@
 </row>
 <row>
 <entry><link linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc()</link></entry>
-<entry>.</entry>
+<entry>Allocates a new mutex, which the threads of a program can use to take turns.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlMutexEnter">oosqlMutexEnter()</link></entry>
-<entry>.</entry>
+<entry>Enters a mutex, waiting until no other thread holds it.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlMutexFree">oosqlMutexFree()</link></entry>
-<entry>.</entry>
+<entry>Frees a mutex allocated by <link linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link>.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlMutexLeave">oosqlMutexLeave()</link></entry>
-<entry>.</entry>
+<entry>Leaves a mutex that the current thread holds.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlMutexTry">oosqlMutexTry()</link></entry>
-<entry>.</entry>
+<entry>Tries to enter a mutex, without waiting if another thread holds it.</entry>
 </row>
 <row>
 <entry><link linkend="rtn-oosqlNextStmt">oosqlNextStmt()</link></entry>
