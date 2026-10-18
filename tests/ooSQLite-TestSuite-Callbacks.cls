@@ -742,6 +742,20 @@
   .ooSQLResult~text(sqlContext, .ooSQLValue~blob(val1)~c2x)
   Return 0
 
+::Method blobKind Unguarded
+  -- "NIL" for .nil, otherwise the bytes in hexadecimal between brackets
+  Use Arg db, sqlContext, userData, val1
+  b = .ooSQLValue~blob(val1)
+  If b == .nil Then .ooSQLResult~text(sqlContext, "NIL")
+  Else .ooSQLResult~text(sqlContext, "[" || b~c2x || "]")
+  Return 0
+
+::Method doubleText Unguarded
+  -- the string that ooSQLValue~double returns
+  Use Arg db, sqlContext, userData, val1
+  .ooSQLResult~text(sqlContext, .ooSQLValue~double(val1))
+  Return 0
+
 ::Method int64Thru Unguarded
   Use Arg db, sqlContext, userData, val1
   .ooSQLResult~int64(sqlContext, .ooSQLValue~int64(val1))

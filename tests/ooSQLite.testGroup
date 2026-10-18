@@ -4912,6 +4912,42 @@ AggregateErrorTrapped:
   stmt~finalize
   db~close
 
+::Method testValueBlobEmptyAndNull
+  -- an empty blob is "", NULL is .nil, any other value its bytes
+  db = self~openMemoryDB
+  self~resultValueUDF(db, "oo_blobkind", 1, "blobKind")
+  stmt = .ooSQLiteStmt~new(db, "SELECT oo_blobkind(X'CAFE'), oo_blobkind(X'')," -
+    "oo_blobkind(NULL), oo_blobkind('ab'), oo_blobkind(12);")
+  stmt~step
+  self~assertEquals("[CAFE]", stmt~columnText(1), "ooSQLValue~blob of a blob")
+  self~assertEquals("[]", stmt~columnText(2), "ooSQLValue~blob of an empty blob is the empty string")
+  self~assertEquals("NIL", stmt~columnText(3), "ooSQLValue~blob of NULL is .nil")
+  self~assertEquals("[6162]", stmt~columnText(4), "ooSQLValue~blob of a text")
+  self~assertEquals("[3132]", stmt~columnText(5), "ooSQLValue~blob of an integer")
+  stmt~finalize
+  db~close
+
+::Method testColumnDoublePrecision
+  db = self~openMemoryDB
+  Do case Over doubleCases()
+    stmt = .ooSQLiteStmt~new(db, "SELECT" case[1]";")
+    stmt~step
+    self~assertEquals("["case[2]"]", "["stmt~columnDouble(1)"]", "columnDouble of" case[1])
+    stmt~finalize
+  End
+  db~close
+
+::Method testValueDoublePrecision
+  db = self~openMemoryDB
+  self~resultValueUDF(db, "oo_dbltext", 1, "doubleText")
+  Do case Over doubleCases()
+    stmt = .ooSQLiteStmt~new(db, "SELECT oo_dbltext("case[1]");")
+    stmt~step
+    self~assertEquals("["case[2]"]", "["stmt~columnText(1)"]", "ooSQLValue~double of" case[1])
+    stmt~finalize
+  End
+  db~close
+
 ::Method testResultInt64ValueInt64
   db = self~openMemoryDB
   self~resultValueUDF(db, "oo_int64", 1, "int64Thru")
@@ -7290,7 +7326,7 @@ NullStmtRaised:
   Call oosqlClose db
 
 --------------------------------------------------------------------------------
--- oosqlValueBlob: returns Pointer, pass through via oosqlResultBlob         --
+-- oosqlValueBlob: pass through via oosqlResultBlob                          --
 --------------------------------------------------------------------------------
 
 ::Method testClassicValueBlob
@@ -7329,6 +7365,52 @@ NullStmtRaised:
   self~assertEquals("NIL", oosqlColumnText(stmt, 1), -
     "oosqlValueBlob(NULL) should return .nil")
   Call oosqlFinalize stmt
+  Call oosqlClose db
+
+--------------------------------------------------------------------------------
+-- oosqlValueBlob: empty blob, NULL and other types                           --
+--------------------------------------------------------------------------------
+
+::Method testClassicValueBlobEmptyAndNull
+  -- an empty blob is "", NULL is .nil, any other value its bytes
+  db = self~classicOpenMemory
+  ret = oosqlCreateFunction(db, "cl_blobkind", 1, "classicValueBlobKindCB")
+  self~assertEquals(0, ret, -
+    "oosqlCreateFunction for cl_blobkind should return OK")
+  rc = oosqlPrepare(db, "SELECT cl_blobkind(X'CAFE'), cl_blobkind(X'')," -
+    "cl_blobkind(NULL), cl_blobkind('ab'), cl_blobkind(12);", "stmt")
+  Call oosqlStep stmt
+  self~assertEquals("[CAFE]", oosqlColumnText(stmt, 1), "oosqlValueBlob of a blob")
+  self~assertEquals("[]", oosqlColumnText(stmt, 2), "oosqlValueBlob of an empty blob is the empty string")
+  self~assertEquals("NIL", oosqlColumnText(stmt, 3), "oosqlValueBlob of NULL is .nil")
+  self~assertEquals("[6162]", oosqlColumnText(stmt, 4), "oosqlValueBlob of a text")
+  self~assertEquals("[3132]", oosqlColumnText(stmt, 5), "oosqlValueBlob of an integer")
+  Call oosqlFinalize stmt
+  Call oosqlClose db
+
+--------------------------------------------------------------------------------
+-- oosqlColumnDouble / oosqlValueDouble: full precision (see doubleCases)     --
+--------------------------------------------------------------------------------
+
+::Method testClassicColumnDoublePrecision
+  db = self~classicOpenMemory
+  Do case Over doubleCases()
+    rc = oosqlPrepare(db, "SELECT" case[1]";", "stmt")
+    Call oosqlStep stmt
+    self~assertEquals("["case[2]"]", "["oosqlColumnDouble(stmt, 1)"]", "oosqlColumnDouble of" case[1])
+    Call oosqlFinalize stmt
+  End
+  Call oosqlClose db
+
+::Method testClassicValueDoublePrecision
+  db = self~classicOpenMemory
+  ret = oosqlCreateFunction(db, "cl_dbltext", 1, "classicValueDoubleCB")
+  Do case Over doubleCases()
+    rc = oosqlPrepare(db, "SELECT cl_dbltext("case[1]");", "stmt")
+    Call oosqlStep stmt
+    self~assertEquals("["case[2]"]", "["oosqlColumnText(stmt, 1)"]", "oosqlValueDouble of" case[1])
+    Call oosqlFinalize stmt
+  End
   Call oosqlClose db
 
 --------------------------------------------------------------------------------
@@ -8123,11 +8205,34 @@ ResetAutoExtNoRot13:
     Call oosqlResultText ctx, dbl
   Return 0
 
+-- The doubles must keep all their precision: the shortest string that
+-- converts back to the same double.  Compared between brackets, because
+-- assertEquals compares numbers with NUMERIC DIGITS 9.
+::Routine doubleCases Public
+  Return .Array~of( -
+    .Array~of("3.141592653589793",     "3.141592653589793"), -
+    .Array~of("0.1",                   "0.1"),               -
+    .Array~of("0.1 + 0.2",             "0.30000000000000004"), -
+    .Array~of("2.5",                   "2.5"),               -
+    .Array~of("123456789012.5",        "123456789012.5"),    -
+    .Array~of("-2.0",                  "-2"),                -
+    .Array~of("1e300",                 "1E+300"))
+
+::Routine classicValueBlobKindCB Public
+  -- "NIL" for .nil, otherwise the bytes in hexadecimal between brackets
+  Use Arg db, ctx, userData, val
+  b = oosqlValueBlob(val)
+  If b == .nil Then
+    Call oosqlResultText ctx, "NIL"
+  Else
+    Call oosqlResultText ctx, "[" || b~c2x || "]"
+  Return 0
+
 ::Routine classicValueBlobCB Public
   Use Arg db, ctx, userData, val
-  blobPtr = oosqlValueBlob(val)
+  blob    = oosqlValueBlob(val)
   blobLen = oosqlValueBytes(val)
-  Call oosqlResultBlob ctx, blobPtr, blobLen
+  Call oosqlResultBlob ctx, blob, blobLen
   Return 0
 
 ::Routine classicResultBlobStringCB Public
