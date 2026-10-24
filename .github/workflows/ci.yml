@@ -10,14 +10,15 @@ jobs:
   linux:
     name: Linux (Ubuntu 24.04)
     runs-on: ubuntu-24.04
+    env:
+      # ooRexx revision (SourceForge's 5.3.0 beta builds).  Sessions read it
+      # from here too: scripts/setup-oorexx.sh.
+      OOREXX_REV: "13286"
     steps:
       - uses: actions/checkout@v5
 
       - name: Install ooRexx
-        run: |
-          curl -fsSL -o "$RUNNER_TEMP/oorexx.deb" https://rexx.epbcn.com/oorexx-latest.deb
-          sudo apt-get install -y "$RUNNER_TEMP/oorexx.deb"
-          rexx -v
+        run: sudo TMPDIR="$RUNNER_TEMP" scripts/setup-oorexx.sh
 
       - name: Build
         run: make -f Makefile.lin lib -j"$(nproc)"
