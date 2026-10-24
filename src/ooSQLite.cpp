@@ -10583,16 +10583,23 @@ static void tooManyAutoRegistrations(RexxMethodContext *c, pCooSQLExtensions pce
  */
 static bool packageVersionOk(ooSQLitePackageEntry *pa, char *buf, size_t size)
 {
+    // ooSQLite versions are 0x00MMmmll (oosqlPackage.hpp), SQLite versions
+    // M*1000000 + m*1000 + l (SQLITE_VERSION_NUMBER): both are shown as M.m.l.
     if ( OOSQLITE_CURRENT_VERSION < pa->reqOOSQLVersion )
     {
-        snprintf(buf, size, "Package: %s requires ooSQLite version: %d current version: %d",
-                 pa->packageName, pa->reqOOSQLVersion, OOSQLITE_CURRENT_VERSION);
+        uint32_t req = pa->reqOOSQLVersion;
+        uint32_t cur = OOSQLITE_CURRENT_VERSION;
+        snprintf(buf, size, "Package: %s requires ooSQLite version: %u.%u.%u current version: %u.%u.%u",
+                 pa->packageName, req >> 16, (req >> 8) & 0xff, req & 0xff, cur >> 16, (cur >> 8) & 0xff, cur & 0xff);
         return false;
     }
     if ( sqlite3_libversion_number() < pa->reqSQLiteVersion )
     {
-        snprintf(buf, size, "Package: %s requires SQLite version: %d current version: %d",
-                 pa->packageName, pa->reqSQLiteVersion, sqlite3_libversion_number());
+        int req = pa->reqSQLiteVersion;
+        int cur = sqlite3_libversion_number();
+        snprintf(buf, size, "Package: %s requires SQLite version: %d.%d.%d current version: %d.%d.%d",
+                 pa->packageName, req / 1000000, (req / 1000) % 1000, req % 1000,
+                 cur / 1000000, (cur / 1000) % 1000, cur % 1000);
         return false;
     }
     return true;
