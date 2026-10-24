@@ -5049,6 +5049,65 @@ TestCancelAllCleanup:
   self~assertNull(.ooSQLExtensions~getPackage("tooNewPackage"), -
     "the package should not be kept")
 
+::Method testPackageNewBadFile
+  -- new with a file that does not load returned an invalid object, and any
+  -- method sent to it crashed (SIGSEGV).  Now new raises the error.
+  err = self~syntaxErrorOf(.ooSQLPackage, "NEW", userExtLib("nosuchpackage"))
+  self~assertEquals("98.900", err~word(1), -
+    "new of a missing file should raise error 98.900:" err)
+  self~assertTrue(err~pos("nosuchpackage") > 0, -
+    "the message should name the file:" err)
+
+::Method testPackageNewNotAPackage
+  -- a library that loads but is not an ooSQLite package
+  err = self~syntaxErrorOf(.ooSQLPackage, "NEW", userExtLib("testlibrary"))
+  self~assertEquals("98.900", err~word(1), -
+    "new of a file that is not a package should raise error 98.900:" err)
+
+::Method testPackageNewTooNew
+  -- new did not check the version the package needs, as loadPackage does
+  err = self~syntaxErrorOf(.ooSQLPackage, "NEW", userExtLib("toonewpackage"))
+  self~assertEquals("98.900", err~word(1), -
+    "new of a package that needs a newer ooSQLite should raise error 98.900:" err)
+  self~assertTrue(err~pos("requires ooSQLite version") > 0, -
+    "the message should say why:" err)
+
+::Method testPackageNewIsNotManaged
+  -- a package made with new works, but ooSQLExtensions does not know it
+  package = .ooSQLPackage~new(userExtLib("examplepackage"))
+  self~assertEquals(0, package~lastErrCode, "lastErrCode of a good package")
+  self~assertTrue(.ooSQLExtensions~getPackage("examplePackage") \== package, -
+    "getPackage should not return a package made with new")
+  db = self~openMemoryDB
+  self~assertEquals(0, package~register(db), "register should succeed")
+  self~assertEquals(1.5, self~queryValue(db, "SELECT half(3) AS v;"), -
+    "the package's functions should be registered")
+  db~close
+
+::Method testLibraryNewBadFile
+  -- new with a file that does not load returned an invalid object, and
+  -- getHandle on it crashed (SIGSEGV).  Now new raises the error.
+  err = self~syntaxErrorOf(.ooSQLLibrary, "NEW", userExtLib("nosuchlibrary"))
+  self~assertEquals("98.900", err~word(1), -
+    "new of a missing file should raise error 98.900:" err)
+  self~assertTrue(err~pos("nosuchlibrary") > 0, -
+    "the message should name the file:" err)
+
+::Method testLibraryNewNotALibrary
+  -- a shared library that loads but is not an ooSQLite library
+  err = self~syntaxErrorOf(.ooSQLLibrary, "NEW", userExtLib("simpleextension"))
+  self~assertEquals("98.900", err~word(1), -
+    "new of a file that is not an ooSQLite library should raise error 98.900:" err)
+
+::Method testLibraryNewIsNotManaged
+  -- a library made with new works, but ooSQLExtensions does not know it
+  lib = .ooSQLLibrary~new(userExtLib("testlibrary"))
+  self~assertEquals(0, lib~lastErrCode, "lastErrCode of a good library")
+  self~assertTrue(.ooSQLExtensions~getLibrary("testlibrary") \== lib, -
+    "getLibrary should not return a library made with new")
+  self~assertTrue(lib~getHandle("reverse")~isA(.Pointer), -
+    "getHandle should work")
+
 ::Method testAutoCollationNotAutomaticMessage
   -- the message said "collations X is not ..."
   self~loadTestPackage
