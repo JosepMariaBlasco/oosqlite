@@ -5069,8 +5069,8 @@ TestCancelAllCleanup:
   err = self~syntaxErrorOf(.ooSQLPackage, "NEW", userExtLib("toonewpackage"))
   self~assertEquals("98.900", err~word(1), -
     "new of a package that needs a newer ooSQLite should raise error 98.900:" err)
-  self~assertTrue(err~pos("requires ooSQLite version") > 0, -
-    "the message should say why:" err)
+  self~assertTrue(err~pos("requires ooSQLite version: 99.0.0") > 0, -
+    "the message should say why, with the versions as M.m.l:" err)
 
 ::Method testPackageNewIsNotManaged
   -- a package made with new works, but ooSQLExtensions does not know it
