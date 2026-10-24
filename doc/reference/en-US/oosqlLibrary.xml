@@ -45,17 +45,26 @@
 <section id="clsOOSQLLibrary"><title>The ooSQLLibrary Class</title>
 <indexterm><primary>ooSQLLibrary class</primary></indexterm>
 <para>
-  text
+  An ooSQLLibrary object is an ooSQLite library that has been loaded: a shared library, written in C or C++, that
+  contains functions and collations, and that exports the <computeroutput>ooSQLiteSetApi</computeroutput> function. Unlike
+  a <link linkend="clsOOSQLPackage">package</link>, a library does not describe what it contains: the program asks for
+  each function or collation by the name it has in the library, with <link linkend="mthGetHandle">getHandle</link>, and
+  registers the handle on a connection with the <link linkend="mthCreateFunction">createFunction</link> or <link
+  linkend="mthCreateCollation">createCollation</link> methods of the ooSQLiteConnection class, under the name it
+  chooses.
 </para>
 
 <para>
-  text
+  Libraries are loaded with the <link linkend="mthLoadLibrary">loadLibrary</link> method of the ooSQLExtensions class,
+  which keeps them, and the library object is obtained with its <link linkend="mthGetLibrary">getLibrary</link>
+  method. A library can also be loaded with <link linkend="mthNewClsOOSQLLibrary">new</link>, as an object of the
+  program's own that the ooSQLExtensions class does not know. The ooSQLite examples include the source of the
+  exampleLibrary library.
 </para>
 
 <section id="sctMethodsOOSQLLibrary"><title>Method Table</title>
 <para>
-  The following table provides links to the documentation for the primary methods and attributes used in working
-  with mutex objects using the ooSQLLibrary class.
+  The following table provides links to the documentation of the methods and attributes of the ooSQLLibrary class.
 </para>
 <table id="tblOOSQLLibraryMethods" frame="all">
 <title>ooSQLLibrary Methods and Attributes</title>
@@ -75,21 +84,33 @@
 </row>
 <row>
 <entry><link linkend="mthNewClsOOSQLLibrary">new</link></entry>
-<entry>Instantiates a new ooSQLite mutex</entry>
+<entry>&changed11;Loads a library as an object that the ooSQLExtensions class does not keep.</entry>
 </row>
 <row>
 <entry align="center"><emphasis role="bold">Attribute Methods</emphasis></entry>
 <entry align="center"><emphasis role="bold"></emphasis></entry>
 </row>
 <row>
+<entry><link linkend="atrLastErrCodeClsLib">lastErrCode</link></entry>
+<entry>Reflects the result code of the last getHandle on the library.</entry>
+</row>
+<row>
+<entry><link linkend="atrLastErrMsgClsLib">lastErrMsg</link></entry>
+<entry>Reflects the error message of the last getHandle on the library.</entry>
+</row>
+<row>
 <entry align="center"><emphasis role="bold">Instance Methods</emphasis></entry>
 <entry align="center"><emphasis role="bold"></emphasis></entry>
+</row>
+<row>
+<entry><link linkend="mthGetHandle">getHandle</link></entry>
+<entry>Returns the handle of a function or collation of the library.</entry>
 </row>
 </tbody></tgroup>
 </table>
 </section>
 
-<section id="mthNewClsOOSQLLibrary"><title>new (Class method)</title>
+<section id="mthNewClsOOSQLLibrary" revisionflag="changed"><title>&changed11;new (Class method)</title>
 <indexterm><primary>new</primary><secondary>ooSQLLibrary class</secondary></indexterm>
 <indexterm><primary>ooSQLLibrary class</primary><secondary>new</secondary></indexterm>
 <mediaobject>
@@ -99,35 +120,92 @@
 </mediaobject>
 
 <para>
-  xx
+  Loads an ooSQLite library and returns it as a library object that the ooSQLExtensions class does not keep.
 </para>
 <variablelist>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
+  <listitem>
+  <para>
+    The only argument is:
+    <variablelist>
+      <varlistentry><term>libName [required]</term>
+      <listitem>
+      <para>
+        The name of the shared library, or its path name, as for <link linkend="mthLoadLibrary">loadLibrary</link>.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
+  <listitem>
+  <para>
+    Returns a new ooSQLLibrary object.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    The usual way to load a library is the <link linkend="mthLoadLibrary">loadLibrary</link> method of the
+    ooSQLExtensions class, which keeps the library under its base name, so that <link
+    linkend="mthGetLibrary">getLibrary</link> returns it. A library loaded with <emphasis role="italic">new</emphasis>
+    belongs to the program alone: getLibrary does not return it. Its <link linkend="mthGetHandle">getHandle</link> method
+    works as for any other library.
+  </para>
+  <para>
+    The library must export the <computeroutput>ooSQLiteSetApi</computeroutput> function, as for loadLibrary: a plain
+    SQLite extension is loaded with the <link linkend="rtn-oosqlLoadExtension">oosqlLoadExtension</link> routine instead.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Raises syntax errors when incorrect arguments are detected.
+    Raises an execution error, 98.900, if the library can not be loaded or is not an ooSQLite library. The message says
+    which. loadLibrary, given the same library, returns false and sets the <link
+    linkend="atrLastErrCodeClsExt">lastErrCode</link> and <link linkend="atrLastErrMsgClsExt">lastErrMsg</link>
+    attributes of the ooSQLExtensions class instead.
+  </para>
+  <para>
+    &changed11;Before ooSQLite 1.1, <emphasis role="italic">new</emphasis> did not raise an error: it returned a library
+    object that could not be used, and getHandle crashed the interpreter.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example loads the exampleLibrary library with <emphasis role="italic">new</emphasis> and registers one of its
+    functions on an open connection; the ooSQLExtensions class does not know the library:
+<programlisting language="rexx">
+  lib = .ooSQLLibrary~new('examplelibrary')
+  say db~createFunction('half', lib~getHandle('halfFunc'), 1)
+  say db~exec("SELECT half(5) AS h;", .true)[1]['H']
+  say .ooSQLExtensions~getLibrary('examplelibrary') == .nil
+  /* Output:
+  0
+  2.5
+  1
+  */
+</programlisting>
+  </para>
+  <para>
+    The simpleExtension library is a plain SQLite extension, not an ooSQLite library:
+<programlisting language="rexx">
+  signal on syntax
+  lib = .ooSQLLibrary~new('simpleextension')
+  say 'not reached'
+syntax:
+  say condition('O')~code
+  parse value condition('O')~message with head ': ' .
+  say head
+  /* Output:
+  98.900
+  Could not create an ooSQLLibrary object
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLLibrary::new() -->
-
 
 <section id="atrLastErrCodeClsLib"><title>lastErrCode (Attribute)</title>
 <indexterm><primary>lastErrCode</primary><secondary>ooSQLLibrary class</secondary></indexterm>
@@ -139,74 +217,43 @@
 </mediaobject>
 
 <para>
-  Reflects the last error code set by for the <computeroutput>ooSQLLibrary</computeroutput> object.
+  Reflects the result code of the last <link linkend="mthGetHandle">getHandle</link> on the library.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">lastErrCode get:</emphasis></term>
   <listitem>
   <para>
-    The value of the <emphasis role="italic">lastErrCode</emphasis> attribute will be a SQLite result <link
-    linkend="sctResultCode">code</link> or one of the ooSQLite specific result <link
-    linkend="sctOOSQLiteSpecificResultCodes">codes</link>.
+    0 if the last getHandle succeeded. Otherwise, the code that the operating system gave when the name could not be
+    found in the library; it is not 0, but its value depends on the operating system.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">lastErrCode set:</emphasis></term>
   <listitem>
   <para>
-    The programmer can not set the value of this attribute, it is set internally by the ooSQLite framework.
+    The Rexx programmer can not set the value of this attribute. It is set internally by the ooSQLite framework.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    The last error code attribute is similar to the <link linkend="atrLastErrMsgClsLib">lastErrMsg</link> attribute.
-    Its value is the last status code recorded by ooSQLite. The <emphasis role="italic">lastErrCode</emphasis> and the
-    <emphasis role="italic">lastErrMsg</emphasis> attributes are always updated together. The error message is always
-    the message that goes with the error code.
+    The <emphasis role="italic">lastErrCode</emphasis> and <link linkend="atrLastErrMsgClsLib">lastErrMsg</link>
+    attributes are always updated together. An error in <link linkend="mthNewClsOOSQLLibrary">new</link> raises a
+    condition instead, so a library object starts with no error.
   </para>
   <para>
-    Each of the three major ooSQLite objects, an <link linkend="clsOOSQLiteConnection">ooSQLLibrary</link>, an
-    <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link>, and an <link
-    linkend="clsOOSQLiteBackup">ooSQLiteBackup</link> object have a <emphasis role="italic">lastErrMsg</emphasis> and
-    a <emphasis role="italic">lastErrCode</emphasis> attribute. These attributes all serve the same basic purpose, to
-    hold the last error message and code recorded by ooSQLite.
-  </para>
-  <para>
-    The attributes are most useful when the invocation of <emphasis role="italic">new</emphasis> fails to initialize the
-    object correctly due to an error. The <emphasis role="italic">lastErrMsg</emphasis> and <emphasis
-    role="italic">lastErrCode</emphasis> attributes are always updated during <emphasis role="italic">new</emphasis>.
-    In general, these objects do not update the attributes after every method invocation.
+    The <link linkend="atrLastErrCodeClsExt">lastErrCode</link> and <link
+    linkend="atrLastErrMsgClsExt">lastErrMsg</link> attributes of the ooSQLExtensions class are separate: they reflect
+    the methods of that class.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example uses the <emphasis role="italic">lastErrCode</emphasis> attribute to produce a meaningful error message when
-    a database connection fails to open:
-<programlisting language="rexx">
-
-
-  dbName =  'ooFotods.rdbx'
-  dbConn = .ooSQLLibrary~new(dbName, .ooSQLite~OPEN_READWRITE)
-
-  if dbConn~initCode &lt;&gt; 0 then do
-    errRC  = dbConn~lastErrCode
-    errMsg = dbConn~lastErrMsg
-
-    say 'ooSQLLibrary initialization error:' dbConn~initCode
-    say '  Error code:' errRC '('errMsg')'
-
-    dbConn~close
-    return errRC
-  end
-  ...
-
-</programlisting>
+    See the example of <link linkend="mthGetHandle">getHandle</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
-</section>  <!-- End ooSQLLibrary::lastErrCode() [attribute]  -->
-
+</section>  <!-- End ooSQLLibrary::lastErrCode() [attribute] -->
 
 <section id="atrLastErrMsgClsLib"><title>lastErrMsg (Attribute)</title>
 <indexterm><primary>lastErrMsg</primary><secondary>ooSQLLibrary class</secondary></indexterm>
@@ -218,58 +265,106 @@
 </mediaobject>
 
 <para>
-  Reflects a human readable explanation, a message, of the last error code recorded by the connection object.
+  Reflects the error message of the last <link linkend="mthGetHandle">getHandle</link> on the library.
 </para>
 <variablelist>
   <varlistentry><term><emphasis role="bold">lastErrMsg get:</emphasis></term>
   <listitem>
   <para>
-    Returns a string message that corresponds to the last error code.
+    A message that explains the <link linkend="atrLastErrCodeClsLib">lastErrCode</link> attribute, or
+    <computeroutput>no error</computeroutput> if the last getHandle succeeded. When a name is not found, the message is
+    the one the operating system gave, and names the library and the missing function.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">lastErrMsg set:</emphasis></term>
   <listitem>
   <para>
-    The programmer can not set this attribute, it is set internally by the ooSQLite framework.
-  </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
-  <listitem>
-  <para>
-    The last error message attribute is similar to the <link linkend="atrLastErrCodeClsLib">lastErrCode</link>
-    attribute. Its value is the last status message recorded by ooSQLite. The <emphasis
-    role="italic">lastErrCode</emphasis> and the <emphasis role="italic">lastErrMsg</emphasis> attributes are always
-    updated together. The error message is always the message that goes with the error code.
-  </para>
-  <para>
-    Each of the three major ooSQLite objects, an <link linkend="clsOOSQLiteConnection">ooSQLLibrary</link>, an
-    <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link>, and an <link
-    linkend="clsOOSQLiteBackup">ooSQLiteBackup</link> object have a <emphasis role="italic">lastErrMsg</emphasis> and
-    a <emphasis role="italic">lastErrCode</emphasis> attribute. These attributes all serve the same basic purpose, to
-    hold the last error message and code recorded by ooSQLite.
-  </para>
-  <para>
-    The attributes are most useful when the invocation of <emphasis role="italic">new</emphasis> fails to initialize the
-    object correctly due to an error. The <emphasis role="italic">lastErrMsg</emphasis> and <emphasis
-    role="italic">lastErrCode</emphasis> attributes are always updated during <emphasis role="italic">new</emphasis>.
-    In general, these objects do not update the attributes after every method invocation.
+    The Rexx programmer can not set the value of this attribute. It is set internally by the ooSQLite framework.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
+    See the example of <link linkend="mthGetHandle">getHandle</link>.
+  </para>
+  </listitem></varlistentry>
+</variablelist>
+</section>  <!-- End ooSQLLibrary::lastErrMsg() [attribute] -->
 
-]]>
+<section id="mthGetHandle"><title>getHandle</title>
+<indexterm><primary>getHandle</primary><secondary>ooSQLLibrary class</secondary></indexterm>
+<indexterm><primary>ooSQLLibrary class</primary><secondary>getHandle</secondary></indexterm>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/extensions/library_gethandle.svg" scale="55" />
+</imageobject>
+</mediaobject>
+
+<para>
+  Returns the handle of a function or collation of the library.
+</para>
+<variablelist>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
+  <listitem>
+  <para>
+    The only argument is:
+    <variablelist>
+      <varlistentry><term>name [required]</term>
+      <listitem>
+      <para>
+        The name of the function in the library, the name of the C function, with its exact case.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
+  <listitem>
+  <para>
+    Returns the handle, a Pointer object, or <computeroutput>.nil</computeroutput> if the library has no function with
+    that name. In that case the <link linkend="atrLastErrCodeClsLib">lastErrCode</link> and <link
+    linkend="atrLastErrMsgClsLib">lastErrMsg</link> attributes tell what went wrong.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    The handle is what the <link linkend="mthCreateFunction">createFunction</link> and <link
+    linkend="mthCreateCollation">createCollation</link> methods of the ooSQLiteConnection class accept to register a
+    function or a collation written in C. Whether the function in the library is a function or a collation, and how many
+    arguments it takes, is for the program to know: the library does not say.
+  </para>
+  <para>
+    A name is looked up in the library the first time its handle is asked for, or when the library is loaded, if it is
+    named in the <emphasis role="italic">procedures</emphasis> argument of <link
+    linkend="mthLoadLibrary">loadLibrary</link>; the library object keeps the handle from then on.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
+  <listitem>
+  <para>
+    This example gets the handle of a collation of the exampleLibrary library and registers it, then asks for a name the
+    library does not have:
+<programlisting language="rexx">
+  .ooSQLExtensions~loadLibrary('examplelibrary')
+  lib = .ooSQLExtensions~getLibrary('examplelibrary')
+  handle = lib~getHandle('reverse')
+  say handle~class~id
+  say db~createCollation('reverse', handle)
+  say lib~getHandle('noSuchFunction') == .nil
+  say lib~lastErrCode \= 0
+  say lib~lastErrMsg~pos('noSuchFunction') &gt; 0
+  /* Output:
+  Pointer
+  0
+  1
+  1
+  1
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
-</section>  <!-- End ooSQLLibrary::lastErrMsg() [attribute]  -->
-
-
-
+</section>  <!-- End ooSQLLibrary::getHandle() -->
 
 </section>

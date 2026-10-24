@@ -48,7 +48,9 @@
   An ooSQLPackage object is an ooSQLite package that has been loaded: a shared library, written in C or C++, that
   describes the collations and functions it contains, and optionally a collation needed callback. Packages are loaded
   with the <link linkend="mthLoadPackage">loadPackage</link> method of the ooSQLExtensions class, which keeps them, and
-  the package object is obtained with its <link linkend="mthGetPackage">getPackage</link> method.
+  the package object is obtained with its <link linkend="mthGetPackage">getPackage</link> method. A package can also be
+  loaded with <link linkend="mthNewClsOOSQLPackage">new</link>, as an object of the program's own that the
+  ooSQLExtensions class does not know.
 </para>
 
 <para>
@@ -82,7 +84,7 @@
 </row>
 <row>
 <entry><link linkend="mthNewClsOOSQLPackage">new</link></entry>
-<entry>Package objects are obtained with the getPackage method of the ooSQLExtensions class.</entry>
+<entry>&changed11;Loads a package as an object that the ooSQLExtensions class does not keep.</entry>
 </row>
 <row>
 <entry align="center"><emphasis role="bold">Attribute Methods</emphasis></entry>
@@ -120,7 +122,7 @@
 </table>
 </section>
 
-<section id="mthNewClsOOSQLPackage"><title>new (Class method)</title>
+<section id="mthNewClsOOSQLPackage" revisionflag="changed"><title>&changed11;new (Class method)</title>
 <indexterm><primary>new</primary><secondary>ooSQLPackage class</secondary></indexterm>
 <indexterm><primary>ooSQLPackage class</primary><secondary>new</secondary></indexterm>
 <mediaobject>
@@ -130,61 +132,93 @@
 </mediaobject>
 
 <para>
-  An <computeroutput>ooSQLPackage</computeroutput> object can not be instantiated from Rexx code. Rather, the programmer uses
-  the <link linkend="mthGetPackage">getPackage</link> method of the <computeroutput>ooSQLExtensions</computeroutput> class to
-  get a package object.
+  Loads an ooSQLite package and returns it as a package object that the ooSQLExtensions class does not keep.
 </para>
 <variablelist>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
+  <listitem>
+  <para>
+    The only argument is:
+    <variablelist>
+      <varlistentry><term>libName [required]</term>
+      <listitem>
+      <para>
+        The name of the shared library, or its path name, as for <link linkend="mthLoadLibrary">loadLibrary</link>.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
+  <listitem>
+  <para>
+    Returns a new ooSQLPackage object.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    In general an external ooSQLite package is loaded through the <link linkend="mthLoadPackage">loadPackage</link> method of
-    the <computeroutput>ooSQLExtensions</computeroutput> class. For many use cases, this may be sufficient. Some use cases,
-    such as registering a single function from the package to a specific database connection, require the package object. The
-    loaded package object can be obtained through the <emphasis role="italic">getPackage</emphasis> method.
+    The usual way to load a package is the <link linkend="mthLoadPackage">loadPackage</link> method of the
+    ooSQLExtensions class, which keeps the package under its name: <link linkend="mthGetPackage">getPackage</link>
+    returns it, and <link linkend="mthAutoPackage">autoPackage</link> and the other <emphasis
+    role="italic">auto</emphasis> methods can make it, or its parts, automatic. A package loaded with <emphasis
+    role="italic">new</emphasis> belongs to the program alone: getPackage does not return it, and it can not be made
+    automatic. Its methods work as for any other package; <link linkend="mthRegister">register</link>, for instance,
+    registers it on a connection. Its functions and collations stay usable on the connections where they were registered
+    even after the program drops the object.
+  </para>
+  <para>
+    The package is checked as loadPackage checks it: the library must be an ooSQLite package, and the package must not
+    require a newer version of ooSQLite or of SQLite than the ones in use.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
-    Raises an error condition if invoked from Rexx code.
+    Raises an execution error, 98.900, if the library can not be loaded, if it is not an ooSQLite package, or if the
+    package requires a newer version of ooSQLite or SQLite. The message says which. loadPackage, given the same library,
+    returns false and sets the <link linkend="atrLastErrCodeClsExt">lastErrCode</link> and <link
+    linkend="atrLastErrMsgClsExt">lastErrMsg</link> attributes of the ooSQLExtensions class instead.
+  </para>
+  <para>
+    &changed11;Before ooSQLite 1.1, <emphasis role="italic">new</emphasis> did not raise an error: it returned a package
+    object that could not be used, and any method sent to it crashed the interpreter. It did not check the versions the
+    package requires either. The manual said that the class could not be instantiated from Rexx code.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example is from a program where only a single function in an ooSQLite package is needed to be registered with a
-    database connection:
+    This example loads the examplePackage package with <emphasis role="italic">new</emphasis> and registers it on an open
+    connection; the ooSQLExtensions class does not know the package:
 <programlisting language="rexx">
-
-  -- Load the package
-  success = .ooSQLExtensions~loadPackage(packageFile)
-  if \ success then do
-    say 'Failed to load package'
-    say '  Error code:   ' .ooSQLExtensions~lastErrCode
-    say '  Error message:' .ooSQLExtensions~lastErrMsg
-
-    return .ooSQLExtensions~lastErrCode
-  end
-
-  ...
-
-  dbConn = .ooSQLiteConnection~new(dbName, .ooSQLite~OPEN_READWRITE)
-
-  -- Get the package and register a single function
-  package = .ooSQLExtensions~getPackage('examplePackage')
-
-  function  = package~getFunction('half')
-  if function == .nil then do
-    say 'Failed to get function: half'
-    say '  Error code:   ' package~lastErrCode
-    say '  Error message:' package~lastErrMsg
-
-    return package~lastErrCode
-  end
-
-  dbConn~createFunction('half', function)
-
+  package = .ooSQLPackage~new('examplepackage')
+  say package~register(db)
+  say db~exec("SELECT half(7) AS h;", .true)[1]['H']
+  say .ooSQLExtensions~getPackage('examplePackage') == .nil
+  /* Output:
+  0
+  3.5
+  1
+  */
+</programlisting>
+  </para>
+  <para>
+    The tooNewPackage test package, among the examples of ooSQLite, requires ooSQLite 99.0.0:
+<programlisting language="rexx">
+  signal on syntax
+  package = .ooSQLPackage~new('toonewpackage')
+  say 'not reached'
+syntax:
+  say condition('O')~code
+  parse value condition('O')~message with head ': ' reason
+  say head
+  say reason
+  /* Output:
+  98.900
+  Could not create an ooSQLPackage object
+  Package: tooNewPackage requires ooSQLite version: 99.0.0 current version: 1.0.0.
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>

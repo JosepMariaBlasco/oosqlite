@@ -221,6 +221,21 @@
     again now does nothing.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">new of ooSQLPackage and ooSQLLibrary raises an error when it fails</emphasis></term>
+  <listitem>
+  <para>
+    When the library could not be loaded, or was not an ooSQLite package or library, <link
+    linkend="mthNewClsOOSQLPackage">new</link> of the ooSQLPackage class and <link
+    linkend="mthNewClsOOSQLLibrary">new</link> of the ooSQLLibrary class returned an object that could not be used, with
+    the error in its lastErrCode and lastErrMsg attributes, and any other method sent to it crashed the interpreter. They
+    now raise an execution error, 98.900, whose message says what went wrong. new of the ooSQLPackage class also checks
+    the versions of ooSQLite and SQLite that the package requires, as <link linkend="mthLoadPackage">loadPackage</link>
+    did, and raises the error if they are not met; before, it accepted the package. <link
+    linkend="mthLoadPackage">loadPackage</link> and <link linkend="mthLoadLibrary">loadLibrary</link> are not affected:
+    they still return false and set the attributes of the ooSQLExtensions class. A package or library made with new is
+    not kept by the ooSQLExtensions class, as before.
+  </para>
+  </listitem></varlistentry>
 </variablelist>
 </section>
 
@@ -363,6 +378,13 @@
     object that is not an ooSQLiteConnection.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Packages and libraries that failed to load</emphasis></term>
+  <listitem>
+  <para>
+    See above: the object that new of the ooSQLPackage or ooSQLLibrary class returned for a library that failed to load
+    crashed the interpreter on its first method.
+  </para>
+  </listitem></varlistentry>
 </variablelist>
 </section>
 
@@ -473,6 +495,13 @@
     The message of OO_COLLATION_NOT_AUTOMATIC read "collations X is not an automatically registered collation".
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Package versions are shown as major.minor.level</emphasis></term>
+  <listitem>
+  <para>
+    The message for a package that requires a newer ooSQLite or SQLite showed the versions as internal numbers,
+    "requires ooSQLite version: 6488064 current version: 65536". It now shows them as "99.0.0" and "1.0.0".
+  </para>
+  </listitem></varlistentry>
 </variablelist>
 </section>
 
@@ -576,8 +605,14 @@
     linkend="clsOOSQLPackage">ooSQLPackage</link> classes are now written, with an introduction to the three kinds of
     native extensions, and examples that use the example libraries of ooSQLite. They say what the names of packages and
     libraries are, which differ from the names of their files, what is registered automatically and when, and the errors
-    of each method. The new method of ooSQLPackage is still to be revised. The table of the <link linkend="chpUDExtensions">User Defined Extension Classes</link>
+    of each method. The table of the <link linkend="chpUDExtensions">User Defined Extension Classes</link>
     chapter describes each class.
+  </para></listitem>
+  <listitem><para>
+    The chapter on the <link linkend="clsOOSQLLibrary">ooSQLLibrary</link> class is now written: it was a copy of the
+    template of another class. It documents the <link linkend="mthGetHandle">getHandle</link> method, which was missing,
+    and both new methods (of <link linkend="mthNewClsOOSQLLibrary">ooSQLLibrary</link> and of <link
+    linkend="mthNewClsOOSQLPackage">ooSQLPackage</link>), which the manual said could not be used from Rexx code.
   </para></listitem>
   <listitem><para>
     The chapter on the <link linkend="clsOOSQLite">ooSQLite</link> class was rewritten, with tested examples. It now

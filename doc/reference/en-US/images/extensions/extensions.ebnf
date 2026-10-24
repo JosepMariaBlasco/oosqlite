@@ -25,12 +25,13 @@ extensions_registerbuiltin ::= 'registerBuiltin(' dbConn ( ',' name )? ')'
 function_new ::= 'new'
 
 /* oosqlLibrary.xml */
-library_new ::= 'new'
+library_new ::= 'new(' libName ')'
 library_lasterrcode_get ::= 'lastErrCode'
 library_lasterrmsg_get ::= 'lastErrMsg'
+library_gethandle ::= 'getHandle(' name ')'
 
 /* oosqlPackage.xml */
-package_new ::= 'new'
+package_new ::= 'new(' libName ')'
 package_lasterrcode_get ::= 'lastErrCode'
 package_lasterrmsg_get ::= 'lastErrMsg'
 package_getcollation ::= 'getCollation(' name ')'
