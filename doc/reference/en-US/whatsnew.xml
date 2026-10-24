@@ -221,6 +221,19 @@
     again now does nothing.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Loading a package that is already loaded keeps it</emphasis></term>
+  <listitem>
+  <para>
+    <link linkend="mthLoadPackage">loadPackage</link> of a package that was already loaded made a new package object
+    and replaced the loaded one: <link linkend="mthGetPackage">getPackage</link> then returned the new object. If the
+    package, or one of its functions or collations, had been made automatic, the automatic registration still used the
+    replaced object, and once it was garbage collected, opening a connection could crash the interpreter. Now the
+    package already loaded is kept: loadPackage applies its <emphasis role="italic">dbConn</emphasis> and <emphasis
+    role="italic">makeAuto</emphasis> arguments to it and returns true, and getPackage returns the same object as before.
+    A package of the same name from another file, which used to replace the loaded one, is refused: loadPackage returns
+    false, with the new result code <computeroutput>OO_PACKAGE_ALREADY_LOADED</computeroutput> (1012).
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">new of ooSQLPackage and ooSQLLibrary raises an error when it fails</emphasis></term>
   <listitem>
   <para>
@@ -302,7 +315,8 @@
     <computeroutput>OO_PACKAGE_NOT_AUTOMATIC</computeroutput>,
     <computeroutput>OO_COLLATION_NOT_AUTOMATIC</computeroutput>, and
     <computeroutput>OO_FUNCTION_NOT_AUTOMATIC</computeroutput>. <link linkend="mthErrStr">errStr</link> and <link
-    linkend="rtn-oosqlErrStr">oosqlErrStr</link> describe them; they returned "unknown error".
+    linkend="rtn-oosqlErrStr">oosqlErrStr</link> describe them; they returned "unknown error". A new code, 1012, <computeroutput>OO_PACKAGE_ALREADY_LOADED</computeroutput>, is
+    described under <link linkend="mthLoadPackage">loadPackage</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
@@ -385,6 +399,13 @@
     crashed the interpreter on its first method. So did an object of a subclass of either class whose init method does
     not forward to the superclass's; its methods now raise an execution error, 98.900, saying that the object was not
     initialized.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Automatic packages after loading them again</emphasis></term>
+  <listitem>
+  <para>
+    See above: loading again a package that was automatic, or whose functions or collations were, could crash the
+    interpreter when a connection was opened.
   </para>
   </listitem></varlistentry>
 </variablelist>

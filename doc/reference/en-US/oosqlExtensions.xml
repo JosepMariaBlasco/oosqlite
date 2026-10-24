@@ -205,7 +205,9 @@
     <computeroutput>OO_NO_SUCH_LIBRARY</computeroutput> when the library is not loaded, and
     <computeroutput>OO_PACKAGE_NOT_AUTOMATIC</computeroutput>,
     <computeroutput>OO_COLLATION_NOT_AUTOMATIC</computeroutput>, and
-    <computeroutput>OO_FUNCTION_NOT_AUTOMATIC</computeroutput> when what is stopped from being automatic was not.
+    <computeroutput>OO_FUNCTION_NOT_AUTOMATIC</computeroutput> when what is stopped from being automatic was not, and
+    <computeroutput>OO_PACKAGE_ALREADY_LOADED</computeroutput> when a package of the same name is already loaded from
+    another file.
     Loading a library that can not be found, or that lacks a function, gives the code of the operating system.
   </para>
   </listitem></varlistentry>
@@ -1190,8 +1192,9 @@
     Returns true on success, false on error. On error, the <link linkend="atrLastErrCodeClsExt">lastErrCode</link> and
     <link linkend="atrLastErrMsgClsExt">lastErrMsg</link> attributes tell what went wrong. A package that needs a newer
     version of ooSQLite or SQLite gives <computeroutput>OO_PACKAGE_NOT_VALID</computeroutput>, with a message that names
-    both versions. A failure to register the package on <emphasis role="italic">dbConn</emphasis> is not reported: the
-    method still returns true.
+    both versions. &changed11;Another file with a package of the same name as one already loaded gives
+    <computeroutput>OO_PACKAGE_ALREADY_LOADED</computeroutput>. A failure to register the package on <emphasis
+    role="italic">dbConn</emphasis> is not reported: the method still returns true.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
@@ -1220,7 +1223,15 @@
   </para>
   <para>
     The package is kept under the name that it gives itself, which <link linkend="mthGetPackage">getPackage</link> uses.
-    Loading a package with the same name again replaces it.
+    &changed11;Loading a package that is already loaded, from the same file, keeps the package object already loaded:
+    the method applies <emphasis role="italic">dbConn</emphasis> and <emphasis role="italic">makeAuto</emphasis> to it and
+    returns true. What was made automatic stays so. A package of the same name from another file is refused, with
+    <computeroutput>OO_PACKAGE_ALREADY_LOADED</computeroutput>, and the package already loaded stays.
+  </para>
+  <para>
+    &changed11;Before ooSQLite 1.1, loading a package again made a new package object that replaced the one loaded,
+    whatever the file. If the package, or one of its functions or collations, had been made automatic, opening a
+    connection after the old object was garbage collected could crash the interpreter.
   </para>
   <para>
     &changed11;Before ooSQLite 1.1, a package that needed a newer version was refused, but the <link

@@ -190,6 +190,10 @@ The "ooFoods.rdbx" database file has been corrupted.
 <entry>OO_FUNCTION_NOT_AUTOMATIC</entry>
 <entry>&added11;The function is not an automatically registered function. See <link linkend="mthAutoFunction">autoFunction</link>.</entry>
 </row>
+<row revisionflag="added">
+<entry>OO_PACKAGE_ALREADY_LOADED</entry>
+<entry>&added11;A package with the same name is already loaded from another file. See <link linkend="mthLoadPackage">loadPackage</link>.</entry>
+</row>
 <row>
 <entry id="rowOOSQLiteResultSetFormat" align="center"><emphasis role="bold"></emphasis></entry>
 <entry align="center"><emphasis role="bold">ooSQLite Specific Result Set Format Constants</emphasis></entry>
@@ -2059,6 +2063,10 @@ The "ooFoods.rdbx" database file has been corrupted.
 <row revisionflag="added">
 <entry>OO_FUNCTION_NOT_AUTOMATIC</entry>
 <entry>&added11;The function is not an automatically registered function. See <link linkend="mthAutoFunction">autoFunction</link>.</entry>
+</row>
+<row revisionflag="added">
+<entry>OO_PACKAGE_ALREADY_LOADED</entry>
+<entry>&added11;A package with the same name is already loaded from another file. See <link linkend="mthLoadPackage">loadPackage</link>.</entry>
 </row>
 
 </tbody></tgroup>
