@@ -5017,7 +5017,7 @@ TestCancelAllCleanup:
   -- the codes 1005 to 1011 had no constants
   codes = .Array~of("OO_NO_CSELF", "OO_PACKAGE_NOT_VALID", "OO_NO_SUCH_PACKAGE", -
     "OO_NO_SUCH_LIBRARY", "OO_PACKAGE_NOT_AUTOMATIC", "OO_COLLATION_NOT_AUTOMATIC", -
-    "OO_FUNCTION_NOT_AUTOMATIC")
+    "OO_FUNCTION_NOT_AUTOMATIC", "OO_PACKAGE_ALREADY_LOADED")
   Do i = 1 To codes~items
     self~assertEquals(1004 + i, .ooSQLite~send(codes[i]), -
       "the constant" codes[i])
@@ -5027,14 +5027,14 @@ TestCancelAllCleanup:
     "getPackage of an unknown package gives OO_NO_SUCH_PACKAGE")
 
 ::Method testExtensionResultCodeErrStr
-  -- errStr returned "unknown error" for the codes 1005 to 1011
-  Do code = 1005 To 1011
+  -- errStr returned "unknown error" for the codes 1005 to 1011 (1012 is new)
+  Do code = 1005 To 1012
     self~assertTrue(.ooSQLite~errStr(code) \== "unknown error", -
       "errStr should describe" code":" .ooSQLite~errStr(code))
     self~assertEquals("[".ooSQLite~errStr(code)"]", "["oosqlErrStr(code)"]", -
       "oosqlErrStr should give the same description for" code)
   End
-  self~assertEquals("[unknown error]", "[".ooSQLite~errStr(1012)"]", -
+  self~assertEquals("[unknown error]", "[".ooSQLite~errStr(1013)"]", -
     "errStr of a code after the last one")
 
 ::Method testLoadPackageTooNew
@@ -5134,6 +5134,66 @@ TestCancelAllCleanup:
   self~assertEquals("98.900", err~word(1), "GETHANDLE should raise error 98.900:" err)
   self~assertTrue(err~pos("not initialized") > 0, -
     "GETHANDLE should say the object was not initialized:" err)
+
+::Method testLoadPackageTwiceKeepsThePackage
+  -- loading a package that was already loaded made a second package object
+  -- and dropped the first, which could still be automatic (SIGSEGV)
+  package1 = self~loadTestPackage
+  package2 = self~loadTestPackage
+  self~assertSame(package1, package2, -
+    "loading the same package again should give the package already loaded")
+
+::Method testAutoPackageSurvivesReload
+  -- the automatic list kept a raw pointer to the dropped package object
+  self~assertTrue(.ooSQLExtensions~loadPackage(userExtLib("testpackage"), , .true), -
+    "loadPackage(.., , .true) should succeed")
+  self~loadTestPackage
+  self~churnMemory
+  Do i = 1 To 5
+    db = self~openMemoryDB
+    self~assertEquals(4.5, self~queryValue(db, "SELECT half(9) AS v;"), -
+      "the automatic package should still be registered, connection" i)
+    db~close
+    self~churnMemory
+  End
+  self~assertTrue(.ooSQLExtensions~autoPackage("testPackage", .false), -
+    "the package should still be the automatic one, and can be unmarked")
+
+::Method testAutoFunctionSurvivesReload
+  -- the automatic list kept a raw pointer into the dropped package object
+  self~loadTestPackage
+  self~assertTrue(.ooSQLExtensions~autoFunction("testPackage", "half"), -
+    "autoFunction should succeed")
+  self~loadTestPackage
+  self~churnMemory
+  Do i = 1 To 5
+    db = self~openMemoryDB
+    self~assertEquals(4.5, self~queryValue(db, "SELECT half(9) AS v;"), -
+      "the automatic function should still be registered, connection" i)
+    db~close
+    self~churnMemory
+  End
+  self~assertTrue(.ooSQLExtensions~autoFunction("testPackage", "half", .false), -
+    "the function should still be the automatic one, and can be unmarked")
+
+::Method testLoadPackageSameNameOtherFile
+  -- another file with a package of the same name is refused
+  package = self~loadTestPackage
+  source = userExtLib("testpackage")
+  tempFile = .TemporaryTestFile~new(.nil, "liboosqlite_test_copy." || .File~new(source)~extension)
+  copy = tempFile~fullName
+  Call CharOut copy, CharIn(source, 1, Chars(source))
+  Call Stream source, "C", "CLOSE"
+  Call Stream copy, "C", "CLOSE"
+  success = .ooSQLExtensions~loadPackage(copy)
+  code = .ooSQLExtensions~lastErrCode
+  msg = .ooSQLExtensions~lastErrMsg
+  self~assertFalse(success, "loading another file with the same package name should fail")
+  self~assertEquals(.ooSQLite~OO_PACKAGE_ALREADY_LOADED, code, -
+    "lastErrCode should be OO_PACKAGE_ALREADY_LOADED")
+  self~assertTrue(msg~pos("testPackage") > 0, "lastErrMsg should name the package:" msg)
+  self~assertSame(package, .ooSQLExtensions~getPackage("testPackage"), -
+    "the package loaded first should stay")
 
 ::Method testAutoCollationNotAutomaticMessage
   -- the message said "collations X is not ..."
