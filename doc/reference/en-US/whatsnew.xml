@@ -382,7 +382,9 @@
   <listitem>
   <para>
     See above: the object that new of the ooSQLPackage or ooSQLLibrary class returned for a library that failed to load
-    crashed the interpreter on its first method.
+    crashed the interpreter on its first method. So did an object of a subclass of either class whose init method does
+    not forward to the superclass's; its methods now raise an execution error, 98.900, saying that the object was not
+    initialized.
   </para>
   </listitem></varlistentry>
 </variablelist>

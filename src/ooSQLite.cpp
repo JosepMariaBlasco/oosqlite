@@ -12263,6 +12263,30 @@ RexxMethod3(int, oosqlext_registerBuiltin, RexxObjectPtr, dbConn, OPTIONAL_RexxO
 #define PKG_MODULES_ATTRIBUTE     "ooSQLPackageModuleTableAttribute"
 
 
+/**
+ * Checks that an ooSQLPackage or ooSQLLibrary object has its C data: a subclass
+ * whose init() does not forward to the superclass's leaves the object without
+ * it, and the methods used to crash.  Raises error 98.900 if not.
+ *
+ * @return True if the object can be used.
+ */
+static bool extensionObjectOk(RexxMethodContext *c, void *pCSelf, bool valid, CSTRING className)
+{
+    if ( pCSelf == NULL || ! valid )
+    {
+        char buf[256];
+        snprintf(buf, sizeof(buf), "this %s object was not initialized: the init method of a subclass must forward "
+                 "to the init method of %s", className, className);
+        executionErrorException(c->threadContext, buf);
+        return false;
+    }
+    return true;
+}
+
+#define PACKAGE_OK(ret)  if ( ! extensionObjectOk(context, pCSelf, pCSelf != NULL && ((pCooSQLPackage)pCSelf)->valid, OOSQLPACKAGE_CLASS) ) return ret
+#define LIBRARY_OK(ret)  if ( ! extensionObjectOk(context, pCSelf, pCSelf != NULL && ((pCooSQLLibrary)pCSelf)->valid, "ooSQLLibrary") ) return ret
+
+
 /** ooSQLPackage::init()
  */
 RexxMethod2(RexxObjectPtr, oosqlpack_init, CSTRING, libName, OSELF, self)
@@ -12344,6 +12368,8 @@ RexxMethod2(RexxObjectPtr, oosqlpack_init, CSTRING, libName, OSELF, self)
  */
 RexxMethod1(RexxObjectPtr, oosqlpack_getLastErrCode_atr, CSELF, pCSelf)
 {
+    PACKAGE_OK(NULLOBJECT);
+
     pCooSQLPackage pcp = (pCooSQLPackage)pCSelf;
     return pcp->lastErrCode;
 }
@@ -12352,6 +12378,8 @@ RexxMethod1(RexxObjectPtr, oosqlpack_getLastErrCode_atr, CSELF, pCSelf)
  */
 RexxMethod1(RexxStringObject, oosqlpack_getLastErrMsg_atr, CSELF, pCSelf)
 {
+    PACKAGE_OK(NULLOBJECT);
+
     pCooSQLPackage pcp = (pCooSQLPackage)pCSelf;
     return pcp->lastErrMsg;
 }
@@ -12364,6 +12392,8 @@ RexxMethod1(RexxStringObject, oosqlpack_getLastErrMsg_atr, CSELF, pCSelf)
  */
 RexxMethod2(RexxObjectPtr, oosqlpack_getCollation, RexxObjectPtr, rxName, CSELF, pCSelf)
 {
+    PACKAGE_OK(NULLOBJECT);
+
     pCooSQLPackage pcp  = (pCooSQLPackage)pCSelf;
 
     resetPackageLastErr(context, pcp);
@@ -12420,6 +12450,8 @@ RexxMethod2(RexxObjectPtr, oosqlpack_getCollation, RexxObjectPtr, rxName, CSELF,
  */
 RexxMethod1(RexxObjectPtr, oosqlpack_getCollationNeeded, CSELF, pCSelf)
 {
+    PACKAGE_OK(NULLOBJECT);
+
     pCooSQLPackage pcp  = (pCooSQLPackage)pCSelf;
 
     resetPackageLastErr(context, pcp);
@@ -12456,6 +12488,8 @@ RexxMethod1(RexxObjectPtr, oosqlpack_getCollationNeeded, CSELF, pCSelf)
  */
 RexxMethod2(RexxObjectPtr, oosqlpack_getFunction, RexxObjectPtr, rxName, CSELF, pCSelf)
 {
+    PACKAGE_OK(NULLOBJECT);
+
     pCooSQLPackage pcp  = (pCooSQLPackage)pCSelf;
 
     resetPackageLastErr(context, pcp);
@@ -12511,6 +12545,8 @@ RexxMethod2(RexxObjectPtr, oosqlpack_getFunction, RexxObjectPtr, rxName, CSELF, 
  */
 RexxMethod2(int, oosqlpack_register, RexxObjectPtr, dbConn, CSELF, pCSelf)
 {
+    PACKAGE_OK(SQLITE_MISUSE);
+
     RexxMethodContext *c = context;
     pCooSQLPackage pcp  = (pCooSQLPackage)pCSelf;
 
@@ -12611,6 +12647,8 @@ RexxMethod2(RexxObjectPtr, oosqllib_init, CSTRING, libName, OSELF, self)
  */
 RexxMethod1(RexxObjectPtr, oosqllib_getLastErrCode_atr, CSELF, pCSelf)
 {
+    LIBRARY_OK(NULLOBJECT);
+
     pCooSQLLibrary pcl = (pCooSQLLibrary)pCSelf;
     return pcl->lastErrCode;
 }
@@ -12619,6 +12657,8 @@ RexxMethod1(RexxObjectPtr, oosqllib_getLastErrCode_atr, CSELF, pCSelf)
  */
 RexxMethod1(RexxStringObject, oosqllib_getLastErrMsg_atr, CSELF, pCSelf)
 {
+    LIBRARY_OK(NULLOBJECT);
+
     pCooSQLLibrary pcl = (pCooSQLLibrary)pCSelf;
     return pcl->lastErrMsg;
 }
@@ -12631,6 +12671,8 @@ RexxMethod1(RexxStringObject, oosqllib_getLastErrMsg_atr, CSELF, pCSelf)
  */
 RexxMethod2(RexxObjectPtr, oosqllib_getHandle_cls, RexxObjectPtr, funcName, CSELF, pCSelf)
 {
+    LIBRARY_OK(NULLOBJECT);
+
     RexxMethodContext *c = context;
     pCooSQLLibrary pcl  = (pCooSQLLibrary)pCSelf;
 
