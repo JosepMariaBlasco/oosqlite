@@ -74,7 +74,8 @@
 #define OO_PACKAGE_NOT_AUTOMATIC         1009
 #define OO_COLLATION_NOT_AUTOMATIC       1010
 #define OO_FUNCTION_NOT_AUTOMATIC        1011
-#define OO_ERR_LAST                      1011
+#define OO_PACKAGE_ALREADY_LOADED        1012
+#define OO_ERR_LAST                      1012
 
 #define OO_INTERNAL_ERR_STR              "an unexpected ooSQLite internal error occurred"
 #define OO_WRONG_ARG_TYPE_STR            "an argument to a ooSQLite method or fucntion is the wrong type"
@@ -88,6 +89,7 @@
 #define OO_PACKAGE_NOT_AUTOMATIC_STR     "package %s is not an automatically registered package"
 #define OO_COLLATION_NOT_AUTOMATIC_STR   "collation %s is not an automatically registered collation"
 #define OO_FUNCTION_NOT_AUTOMATIC_STR    "function %s is not an automatically registered function"
+#define OO_PACKAGE_ALREADY_LOADED_STR    "a package named %s is already loaded from another file"
 
 // Descriptions of the codes above whose messages need a name, for errStr()
 #define OO_NO_CSELF_DESC                 "internal error, failed to get the C self of an object"
@@ -96,6 +98,7 @@
 #define OO_PACKAGE_NOT_AUTOMATIC_DESC    "the package is not an automatically registered package"
 #define OO_COLLATION_NOT_AUTOMATIC_DESC  "the collation is not an automatically registered collation"
 #define OO_FUNCTION_NOT_AUTOMATIC_DESC   "the function is not an automatically registered function"
+#define OO_PACKAGE_ALREADY_LOADED_DESC   "a package with the same name is already loaded from another file"
 
 // Use SQLITE_MISUSE for these:
 #define PACKAGE_NO_COLLATIONS_FMT        "this package (%s) contains no collations"

@@ -561,6 +561,7 @@
 ::constant OO_PACKAGE_NOT_AUTOMATIC         1009
 ::constant OO_COLLATION_NOT_AUTOMATIC       1010
 ::constant OO_FUNCTION_NOT_AUTOMATIC        1011
+::constant OO_PACKAGE_ALREADY_LOADED        1012
 
 -- Specifies how a result set is returned to Rexx
 ::constant OO_ARRAY_OF_ARRAYS               1

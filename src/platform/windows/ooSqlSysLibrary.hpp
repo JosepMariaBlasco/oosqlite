@@ -57,6 +57,7 @@ public:
     void reset();
     inline char *getLastErrMsg() { return lastErrMsg == NULL ? (char *)"no error" : lastErrMsg; }
     inline uint32_t getLastErrCode() { return lastErrCode; }
+    inline void *getHandle() { return (void *)libraryHandle; }
 
 protected:
     void setLastErr(const char *api, const char *name);

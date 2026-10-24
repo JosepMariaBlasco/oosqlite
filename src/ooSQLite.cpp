@@ -1035,6 +1035,10 @@ RexxObjectPtr genErrStr(RexxThreadContext *c, int resultCode)
                 str = OO_FUNCTION_NOT_AUTOMATIC_DESC;
                 break;
 
+            case OO_PACKAGE_ALREADY_LOADED :
+                str = OO_PACKAGE_ALREADY_LOADED_DESC;
+                break;
+
             default :
                 break;
         }
@@ -12127,7 +12131,44 @@ RexxMethod4(RexxObjectPtr, oosqlext_loadPackage_cls, CSTRING, libName, OPTIONAL_
         goto done_out;
     }
 
-    context->SendMessage2(pcext->packageTable, "PUT", package, context->String(pcp->packageEntry->packageName));
+    // A package already loaded under this name is kept: loading it again used
+    // to replace the package object, and the automatic lists still pointed
+    // into the dropped one (SIGSEGV after garbage collection).  The same file
+    // gives the same library handle; another file with a package of the same
+    // name is an error.  The new object is dropped, and its reference to the
+    // library released.
+    {
+        RexxStringObject pkgName = context->String(pcp->packageEntry->packageName);
+        RexxObjectPtr    loaded  = context->SendMessage1(pcext->packageTable, "AT", pkgName);
+        if ( loaded != TheNilObj )
+        {
+            pCooSQLPackage loadedPcp = (pCooSQLPackage)context->ObjectToCSelf(loaded);
+            bool           sameFile  = loadedPcp != NULL && loadedPcp->lib->getHandle() == pcp->lib->getHandle();
+
+            if ( ! sameFile )
+            {
+                // Before the unload: the name lives in the library.
+                extensionsFormatLastErr(context, pcext, OO_PACKAGE_ALREADY_LOADED, OO_PACKAGE_ALREADY_LOADED_STR,
+                                        pcp->packageEntry->packageName);
+            }
+
+            pcp->valid        = false;
+            pcp->packageEntry = NULL;
+            pcp->lib->unload();
+
+            if ( ! sameFile )
+            {
+                goto done_out;
+            }
+
+            package = loaded;
+            pcp     = loadedPcp;
+        }
+        else
+        {
+            context->SendMessage2(pcext->packageTable, "PUT", package, pkgName);
+        }
+    }
 
     if ( makeAuto )
     {
