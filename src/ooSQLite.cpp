@@ -10573,42 +10573,90 @@ static void tooManyAutoRegistrations(RexxMethodContext *c, pCooSQLExtensions pce
 
 /**
  * Checks that the current version of ooSQLite and SQLite meets the package
- * requirements
+ * requirements.
  *
- * @param c
- * @param pcp
+ * @param pa    The package entry.
+ * @param buf   Receives the reason when the version is not good enough.
+ * @param size  Size of buf.
  *
- * @return bool
- *
- * @note  The interpreter raises an exception for a similar situation.  We
- *        decided to set the last error attributes instead.  This could change
- *        in the future.
+ * @return True if the package can be used, false otherwise.
  */
-bool validPackageVersion(RexxMethodContext *c, pCooSQLExtensions pcext, pCooSQLPackage pcp)
+static bool packageVersionOk(ooSQLitePackageEntry *pa, char *buf, size_t size)
 {
-    ooSQLitePackageEntry *pa = pcp->packageEntry;
-
-    if ( OOSQLITE_CURRENT_VERSION < pa->reqOOSQLVersion || sqlite3_libversion_number() < pa->reqSQLiteVersion )
+    if ( OOSQLITE_CURRENT_VERSION < pa->reqOOSQLVersion )
     {
-        char buf[512];
-
-        if ( OOSQLITE_CURRENT_VERSION < pa->reqOOSQLVersion )
-        {
-            snprintf(buf, 512, "Package: %s requires ooSQLite version: %d current version: %d",
-                     pa->packageName, pa->reqOOSQLVersion, OOSQLITE_CURRENT_VERSION);
-        }
-        else
-        {
-            snprintf(buf, 512, "Package: %s requires SQLite version: %d current version: %d",
-                     pa->packageName, pa->reqSQLiteVersion, sqlite3_libversion_number());
-        }
-
-        // With pcext: the attributes of the class read the C struct.  (Without
-        // it, the error was lost and they said "no error".)
-        extensionsSetLastErr(c, pcext, buf, OO_PACKAGE_NOT_VALID);
+        snprintf(buf, size, "Package: %s requires ooSQLite version: %d current version: %d",
+                 pa->packageName, pa->reqOOSQLVersion, OOSQLITE_CURRENT_VERSION);
+        return false;
+    }
+    if ( sqlite3_libversion_number() < pa->reqSQLiteVersion )
+    {
+        snprintf(buf, size, "Package: %s requires SQLite version: %d current version: %d",
+                 pa->packageName, pa->reqSQLiteVersion, sqlite3_libversion_number());
         return false;
     }
     return true;
+}
+
+/**
+ * Why the last ooSQLPackage or ooSQLLibrary init() on this thread failed.
+ *
+ * init() raises error 98.900 when the object can not be made.
+ * ooSQLExtensions::loadPackage() and loadLibrary() create the objects with
+ * NEW, and do not raise: they trap the condition and read the reason from
+ * here to set their last error attributes.
+ */
+static thread_local struct
+{
+    bool     failed;
+    uint32_t code;
+    char     msg[512];
+} extInitFailure;
+
+/**
+ * Records why init() failed and raises error 98.900.
+ *
+ * @param c
+ * @param className  "ooSQLPackage" or "ooSQLLibrary".
+ * @param msg        The reason.
+ * @param code       The last error code loadPackage() / loadLibrary() report.
+ *
+ * @return NULLOBJECT, for the caller to return.
+ */
+static RexxObjectPtr extensionInitFailed(RexxMethodContext *c, CSTRING className, CSTRING msg, uint32_t code)
+{
+    char buf[640];
+
+    extInitFailure.failed = true;
+    extInitFailure.code   = code;
+    snprintf(extInitFailure.msg, sizeof(extInitFailure.msg), "%s", msg);
+
+    snprintf(buf, sizeof(buf), "Could not create an %s object: %s", className, msg);
+    executionErrorException(c->threadContext, buf);
+    return NULLOBJECT;
+}
+
+/**
+ * Sends NEW to an ooSQLPackage or ooSQLLibrary class for loadPackage() or
+ * loadLibrary().  If init() failed, the condition it raised is cleared and its
+ * reason set as the last error of ooSQLExtensions.  Any other condition is left
+ * as it is.
+ *
+ * @return The new object, or NULLOBJECT.
+ */
+static RexxObjectPtr newExtensionObject(RexxMethodContext *c, pCooSQLExtensions pcext, RexxClassObject cls,
+                                        RexxObjectPtr libName)
+{
+    extInitFailure.failed = false;
+
+    RexxObjectPtr obj = c->SendMessage1(cls, "NEW", libName);
+    if ( obj == NULLOBJECT && extInitFailure.failed && c->CheckCondition() )
+    {
+        c->ClearCondition();
+        extensionsSetLastErr(c, pcext, extInitFailure.msg, (int)extInitFailure.code);
+    }
+    extInitFailure.failed = false;
+    return obj;
 }
 
 
@@ -11919,7 +11967,7 @@ RexxMethod3(RexxObjectPtr, oosqlext_loadLibrary_cls, RexxObjectPtr, libName, OPT
         goto done_out;
     }
 
-    library = context->SendMessage1(libCls, "NEW", libName);
+    library = newExtensionObject(context, pcext, libCls, libName);
     if ( library == NULLOBJECT )
     {
         goto done_out;
@@ -12050,7 +12098,7 @@ RexxMethod4(RexxObjectPtr, oosqlext_loadPackage_cls, CSTRING, libName, OPTIONAL_
         goto done_out;
     }
 
-    package = context->SendMessage1(packageCls, "NEW", context->String(libName));
+    package = newExtensionObject(context, pcext, packageCls, context->String(libName));
     if ( package == NULLOBJECT )
     {
         goto done_out;
@@ -12069,11 +12117,6 @@ RexxMethod4(RexxObjectPtr, oosqlext_loadPackage_cls, CSTRING, libName, OPTIONAL_
         pcext->lastErrCode = pcp->lastErrCode;
 
         extensionsSetLastErr(context, pcp->lastErrMsg, pcp->lastErrCode);
-        goto done_out;
-    }
-
-    if ( ! validPackageVersion(context, pcext, pcp) )
-    {
         goto done_out;
     }
 
@@ -12243,30 +12286,39 @@ RexxMethod2(RexxObjectPtr, oosqlpack_init, CSTRING, libName, OSELF, self)
     pcp->lib         = lib;
     resetPackageLastErr(context, pcp);
 
+    // A package that can not be used raises an error: the object would be
+    // invalid, and its methods used to crash.  loadPackage() traps it.
     if ( ! lib->load(libName) )
     {
-        pcp->lastErrMsg  = context->String(lib->getLastErrMsg());
-        pcp->lastErrCode = c->UnsignedInt32(lib->getLastErrCode());
-
+        char msg[512];
+        snprintf(msg, sizeof(msg), "%s", lib->getLastErrMsg());
+        uint32_t code = lib->getLastErrCode();
         lib->resetLastErr();
-        extensionsSetLastErr(context, pcp->lastErrMsg, pcp->lastErrCode);
-        return NULLOBJECT;
+        return extensionInitFailed(context, OOSQLPACKAGE_CLASS, msg, code);
     }
 
     OOSQLITE_LOADER loader = (OOSQLITE_LOADER)lib->getProcedure("ooSQLiteGetPackage");
     if ( loader == NULL )
     {
-        pcp->lastErrMsg  = context->String(lib->getLastErrMsg());
-        pcp->lastErrCode = c->UnsignedInt32(lib->getLastErrCode());
-
+        char msg[512];
+        snprintf(msg, sizeof(msg), "%s", lib->getLastErrMsg());
+        uint32_t code = lib->getLastErrCode();
         lib->resetLastErr();
-        extensionsSetLastErr(context, pcp->lastErrMsg, pcp->lastErrCode);
-        return NULLOBJECT;
+        lib->unload();
+        return extensionInitFailed(context, OOSQLPACKAGE_CLASS, msg, code);
     }
 
     context->SetObjectVariable(COLLNEEDED_ATTRIBUTE, TheNilObj);
 
     pcp->packageEntry   = (*loader)(pcp->sqliteAPIs);
+
+    char versionMsg[512];
+    if ( ! packageVersionOk(pcp->packageEntry, versionMsg, sizeof(versionMsg)) )
+    {
+        pcp->packageEntry = NULL;
+        lib->unload();
+        return extensionInitFailed(context, OOSQLPACKAGE_CLASS, versionMsg, OO_PACKAGE_NOT_VALID);
+    }
     pcp->collationTable = rxNewBuiltinObject(context->threadContext, "TABLE");
     pcp->functionTable  = rxNewBuiltinObject(context->threadContext, "TABLE");
     pcp->moduleTable    = rxNewBuiltinObject(context->threadContext, "TABLE");
@@ -12513,25 +12565,26 @@ RexxMethod2(RexxObjectPtr, oosqllib_init, CSTRING, libName, OSELF, self)
     pcl->lib         = lib;
     resetLibraryLastErr(context, pcl);
 
+    // A library that can not be used raises an error: the object would be
+    // invalid, and getHandle() used to crash.  loadLibrary() traps it.
     if ( ! lib->load(libName) )
     {
-        pcl->lastErrMsg  = context->String(lib->getLastErrMsg());
-        pcl->lastErrCode = c->UnsignedInt32(lib->getLastErrCode());
-
+        char msg[512];
+        snprintf(msg, sizeof(msg), "%s", lib->getLastErrMsg());
+        uint32_t code = lib->getLastErrCode();
         lib->resetLastErr();
-        extensionsSetLastErr(context, pcl->lastErrMsg, pcl->lastErrCode);
-        return NULLOBJECT;
+        return extensionInitFailed(context, OOSQLLIBRARY_CLASS, msg, code);
     }
 
     OOSQLITE_API_SETTER setter = (OOSQLITE_API_SETTER)lib->getProcedure("ooSQLiteSetApi");
     if ( setter == NULL )
     {
-        pcl->lastErrMsg  = context->String(lib->getLastErrMsg());
-        pcl->lastErrCode = c->UnsignedInt32(lib->getLastErrCode());
-
+        char msg[512];
+        snprintf(msg, sizeof(msg), "%s", lib->getLastErrMsg());
+        uint32_t code = lib->getLastErrCode();
         lib->resetLastErr();
-        extensionsSetLastErr(context, pcl->lastErrMsg, pcl->lastErrCode);
-        return NULLOBJECT;
+        lib->unload();
+        return extensionInitFailed(context, OOSQLLIBRARY_CLASS, msg, code);
     }
 
     pcl->functionTable = rxNewBuiltinObject(context->threadContext, "TABLE");
