@@ -5108,6 +5108,33 @@ TestCancelAllCleanup:
   self~assertTrue(lib~getHandle("reverse")~isA(.Pointer), -
     "getHandle should work")
 
+::Method testPackageSubclassWithoutSuperInit
+  -- a subclass whose init does not forward to ooSQLPackage's leaves an
+  -- object without its C data: every method crashed (SIGSEGV)
+  package = .PackageWithoutSuperInit~new
+  calls = .array~of(.array~of("LASTERRCODE"), .array~of("LASTERRMSG"), -
+    .array~of("GETCOLLATION", "reverse"), .array~of("GETCOLLATIONNEEDED"), -
+    .array~of("GETFUNCTION", "half"), .array~of("REGISTER", self~openMemoryDB))
+  Do call Over calls
+    If call~items = 1 Then err = self~syntaxErrorOf(package, call[1])
+    Else err = self~syntaxErrorOf(package, call[1], call[2])
+    self~assertEquals("98.900", err~word(1), call[1] "should raise error 98.900:" err)
+    self~assertTrue(err~pos("not initialized") > 0, -
+      call[1] "should say the object was not initialized:" err)
+  End
+
+::Method testLibrarySubclassWithoutSuperInit
+  -- the same for ooSQLLibrary
+  lib = .LibraryWithoutSuperInit~new
+  Do name Over .array~of("LASTERRCODE", "LASTERRMSG")
+    err = self~syntaxErrorOf(lib, name)
+    self~assertEquals("98.900", err~word(1), name "should raise error 98.900:" err)
+  End
+  err = self~syntaxErrorOf(lib, "GETHANDLE", "reverse")
+  self~assertEquals("98.900", err~word(1), "GETHANDLE should raise error 98.900:" err)
+  self~assertTrue(err~pos("not initialized") > 0, -
+    "GETHANDLE should say the object was not initialized:" err)
+
 ::Method testAutoCollationNotAutomaticMessage
   -- the message said "collations X is not ..."
   self~loadTestPackage
@@ -8649,3 +8676,13 @@ Syntax:
   If .RexxInfo~platform~upper~left(7) == "WINDOWS" Then
     Return dir || sep || baseName || ".dll"
   Return dir || sep || "lib" || baseName || ".so"
+
+-- Subclasses whose init does not forward to the superclass's, for the tests
+-- of objects left without their C data.
+::Class PackageWithoutSuperInit Subclass ooSQLPackage
+::Method init
+  Nop
+
+::Class LibraryWithoutSuperInit Subclass ooSQLLibrary
+::Method init
+  Nop
