@@ -5752,6 +5752,11 @@ RexxMethod1(int, oosqlconn_close, CSELF, pCSelf)
 }
 
 
+// Defined with the methods of ooSQLPackage: checks that an object of one of
+// the extension classes has its C data.
+static bool extensionObjectOk(RexxMethodContext *c, void *pCSelf, bool valid, CSTRING className);
+
+
 /** ooSQLiteConnection::collationNeeded()
  *
  *  Registers, or removes a callback that will be invoked whenever an undefined
@@ -5891,6 +5896,10 @@ RexxMethod4(RexxObjectPtr, oosqlconn_collationNeeded, RexxObjectPtr, callbackObj
     else if ( context->IsOfType(callbackObj, "OOSQLCOLLATIONNEEDED") )
     {
         pSQLiteCollationNeededEntry e = (pSQLiteCollationNeededEntry)context->ObjectToCSelf(callbackObj);
+        if ( ! extensionObjectOk(context, e, true, "ooSQLCollationNeeded") )
+        {
+            return NULLOBJECT;
+        }
         rc = registerCollationNeeded(e, pConn);
         return context->Int32(rc);
     }
@@ -6094,6 +6103,10 @@ RexxMethod5(RexxObjectPtr, oosqlconn_createCollation, CSTRING, collationName, Re
     else if ( context->IsOfType(callbackObj, "OOSQLCOLLATION") )
     {
         pSQLiteCollationEntry e = (pSQLiteCollationEntry)context->ObjectToCSelf(callbackObj);
+        if ( ! extensionObjectOk(context, e, true, "ooSQLCollation") )
+        {
+            return NULLOBJECT;
+        }
         // Register under the name given, as for the other kinds of callbacks.
         rc = registerCollation(context, e, pConn, collationName);
         return context->Int32(rc);
@@ -6427,6 +6440,10 @@ RexxMethod8(RexxObjectPtr, oosqlconn_createFunction, CSTRING, functionName, Rexx
     else if ( context->IsOfType(callbackObj, "OOSQLFUNCTION") )
     {
         pSQLiteFunctionEntry e = (pSQLiteFunctionEntry)context->ObjectToCSelf(callbackObj);
+        if ( ! extensionObjectOk(context, e, true, "ooSQLFunction") )
+        {
+            return NULLOBJECT;
+        }
         // Register under the name given, as for the other kinds of callbacks,
         // and with countArgs when it is given; otherwise with the package's.
         rc = registerFunction(context, e, pConn, functionName, argumentExists(3) ? countArgs : NO_COUNT_ARGS);
@@ -12318,9 +12335,10 @@ RexxMethod3(int, oosqlext_registerBuiltin, RexxObjectPtr, dbConn, OPTIONAL_RexxO
 
 
 /**
- * Checks that an ooSQLPackage or ooSQLLibrary object has its C data: a subclass
+ * Checks that an ooSQLPackage, ooSQLLibrary, ooSQLCollation,
+ * ooSQLCollationNeeded or ooSQLFunction object has its C data: a subclass
  * whose init() does not forward to the superclass's leaves the object without
- * it, and the methods used to crash.  Raises error 98.900 if not.
+ * it, and the methods that used it crashed.  Raises error 98.900 if not.
  *
  * @return True if the object can be used.
  */

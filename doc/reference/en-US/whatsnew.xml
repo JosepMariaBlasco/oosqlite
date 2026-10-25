@@ -401,6 +401,17 @@
     initialized.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Collation and function objects of subclasses</emphasis></term>
+  <listitem>
+  <para>
+    An object of a subclass of <link linkend="clsOOSQLCollation">ooSQLCollation</link>, <link
+    linkend="clsOOSQLCollationNeeded">ooSQLCollationNeeded</link>, or <link linkend="clsOOSQLFunction">ooSQLFunction</link>
+    whose init method does not forward to the superclass's crashed the interpreter when it was given to <link
+    linkend="mthCreateCollation">createCollation</link>, <link linkend="mthCollationNeeded">collationNeeded</link>, or
+    <link linkend="mthCreateFunction">createFunction</link>. These methods now raise an execution error, 98.900, saying
+    that the object was not initialized.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Automatic packages after loading them again</emphasis></term>
   <listitem>
   <para>
