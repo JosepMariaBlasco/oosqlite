@@ -212,13 +212,15 @@ private:
  * A test hook.  When the process starts with OOSQLITE_TEST_HOOKS=1, a handle
  * check that succeeds pauses when OOSQLITE_TEST_PIN_PAUSE holds "token ms" with
  * a token not seen before: only the first check after the variable is changed
- * pauses.  The tests use it to stop one thread between the check of a handle
- * and its use, so that another thread can free the handle there.
+ * pauses.  With "token ms kind", only the first check for a handle of that
+ * kind (a HandleKind number) pauses.  The tests use it to stop one thread between
+ * the check of a handle and its use, so that another thread can free the
+ * handle there.
  */
 static bool testHooks = false;
 static char testPauseToken[128] = "";
 
-static void testPinPause()
+static void testPinPause(HandleKind kind1, HandleKind kind2)
 {
 #ifdef _WIN32
     // The tests set the variable with VALUE(..., 'ENVIRONMENT'), which on
@@ -240,14 +242,18 @@ static void testPinPause()
 #endif
 
     int ms = 0;
+    int onlyKind = 0;
     bool fresh = false;
+
+    if ( sscanf(v, "%*s %d %d", &ms, &onlyKind) < 1 || (onlyKind != 0 && onlyKind != (int)kind1 && onlyKind != (int)kind2) )
+    {
+        return;
+    }
 
     sqlite3_mutex_enter(liveHandleMtx);
     if ( strcmp(v, testPauseToken) != 0 && strlen(v) < sizeof(testPauseToken) )
     {
         strcpy(testPauseToken, v);
-        const char *sp = strrchr(v, ' ');
-        ms = sp != NULL ? atoi(sp + 1) : 0;
         fresh = true;
     }
     sqlite3_mutex_leave(liveHandleMtx);
@@ -656,7 +662,7 @@ static void *checkedHandle(RexxThreadContext *c, void *h, HandleKind kind1, Hand
     }
     if ( testHooks )
     {
-        testPinPause();
+        testPinPause(kind1, kind2);
     }
     return h;
 }

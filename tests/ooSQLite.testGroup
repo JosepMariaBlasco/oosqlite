@@ -7313,6 +7313,34 @@ NotOpen:
   self~assertEquals("b", row["Y"])
   db~close
 
+/******************************************************************************/
+/*                                                                            */
+/* Section 44: An argument of a user function used by another thread          */
+/*                                                                            */
+/* See section C13 for the classic interface and the test hook.               */
+/*                                                                            */
+/******************************************************************************/
+
+::Method testPinBindValueDuringCall
+  -- Another thread binds an argument of a user function to a statement of
+  -- the same connection while the function runs: it waits for the
+  -- connection, and then the value is not live (no deadlock with the end of
+  -- the call, which waits for the threads that use its values).  As
+  -- testClassicPinBindValueDuringCall; it needs the test hook too.
+  If Value("OOSQLITE_TEST_HOOKS", , "ENVIRONMENT") \== "1" Then Return
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE t(a);")
+  ins = .ooSQLiteStmt~new(db, "INSERT INTO t VALUES(?);")
+  handler = .PinValueHandler~new(ins)
+  db~createFunction("pinvalue", handler, 1, "xFunc")
+  stmt = .ooSQLiteStmt~new(db, "SELECT pinvalue('abc');")
+  self~assertEquals(.ooSQLite~ROW, stmt~step)
+  stmt~finalize
+  self~assertEquals("88.900 Argument 2, the value handle, is not a live value handle.", handler~worker~wait, -
+    "the value was not live when the worker got the connection")
+  ins~finalize
+  db~close
+
 ::Class "ooSQLiteClassic.testGroup" Subclass ooTestCase Public
 
 --------------------------------------------------------------------------------
@@ -10622,28 +10650,51 @@ Done:
   self~assertEquals(self~notLive(1, "mutex"), -
     self~nullHandleError("oosqlMutexEnter", .array~of(mtx)), "the mutex is freed")
 
-::Method testClassicPinValueOutlivesCall
+::Method testClassicPinCallEndWaitsForValue
   -- Another thread has checked an argument of a user function, and is still
-  -- in its call when the function returns: the value stops being live for
-  -- everyone, and the other thread's pin is dropped later, when its call
-  -- returns.  Twice: the second call gets values at the same addresses.
-  -- Without the hook the race is left to chance, and the worker could check a
-  -- value that is not live any more: the test needs it.
+  -- in its call when the function returns: the end of the call waits for it,
+  -- and then the value is not live.  Twice: the second call gets values at the
+  -- same addresses.  Without the hook the race is left to chance, and the
+  -- worker could check a value that is not live any more: the test needs it.
   If \self~pinHooks Then Return
   db = self~classicOpenMemory
   Call oosqlCreateFunction db, "pinvalue", 1, "classicPinValueCB"
   Do text Over "abc", "def"
+    .local~classicPinAction = "value"
     Call oosqlPrepare db, "SELECT pinvalue('"text"');", "stmt"
+    Call Time "R"
     self~assertEquals(.ooSQLite~ROW, oosqlStep(stmt))
+    waited = Time("E")
+    self~assertTrue(waited > 0.2, "the end of the call waited for the worker:" waited)
     self~assertEquals("ok", oosqlColumnText(stmt, 1))
-    -- The statement stays live until the worker is done: it owns the text
+    self~assertEquals(0, oosqlFinalize(stmt))
     self~assertEquals(text, .local~classicPinWorker~wait, -
       "the worker read the value it had checked")
     self~assertEquals(self~notLive(1, "value"), -
       self~nullHandleError("oosqlValueText", .array~of(.local~classicPinValue)), -
       "the value is not live after the call")
-    self~assertEquals(0, oosqlFinalize(stmt))
   End
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicPinBindValueDuringCall
+  -- Another thread binds an argument of a user function to a statement of
+  -- the same connection while the function runs.  The connection is busy
+  -- until the statement that runs the function is done, so the other thread
+  -- waits for it, and then the value is not live: 88.900, and no deadlock
+  -- with the end of the call, which waits for the threads that use its values
+  If \self~pinHooks Then Return
+  db = self~classicOpenMemory
+  Call oosqlExec db, "CREATE TABLE t(a);"
+  Call oosqlPrepare db, "INSERT INTO t VALUES(?);", "ins"
+  .local~classicPinBindStmt = ins
+  Call oosqlCreateFunction db, "pinvalue", 1, "classicPinValueCB"
+  .local~classicPinAction = "bindValue"
+  Call oosqlPrepare db, "SELECT pinvalue('abc');", "stmt"
+  self~assertEquals(.ooSQLite~ROW, oosqlStep(stmt))
+  self~assertEquals(0, oosqlFinalize(stmt))
+  self~assertEquals(self~notLive(3, "value"), .local~classicPinWorker~wait, -
+    "the value was not live when the worker got the connection")
+  self~assertEquals(0, oosqlFinalize(ins))
   self~assertEquals(0, oosqlClose(db))
 
 ::Method testClassicPinOwnThread
@@ -11431,9 +11482,30 @@ Trapped:
   entered = .false
   answer = ""
 ::Method arm Private
-  -- A fresh token: only the next handle check (this thread's) pauses
-  Call Value "OOSQLITE_TEST_PIN_PAUSE", Random(1, 999999)"."Time("F") "400", -
+  -- A fresh token: only the next handle check (this thread's) pauses; with a
+  -- kind, the next check of a handle of that kind (7: an argument value)
+  Use Arg kind = ""
+  Call Value "OOSQLITE_TEST_PIN_PAUSE", Strip(Random(1, 999999)"."Time("F") "400" kind), -
     "ENVIRONMENT"
+::Method bindValue Unguarded
+  -- Binds v to stmt; a syntax error gives its code and message
+  Use Strict Arg stmt, v
+  self~arm(7)
+  Signal On Syntax
+  self~finish(oosqlBindValue(stmt, 1, v))
+  Return
+Syntax:
+  co = Condition("O")
+  self~finish(co~code co~message)
+::Method ooBindValue Unguarded
+  Use Strict Arg stmt, v
+  self~arm(7)
+  Signal On Syntax
+  self~finish(stmt~bindValue(1, v))
+  Return
+Syntax:
+  co = Condition("O")
+  self~finish(co~code co~message)
 ::Method step Unguarded
   Use Strict Arg stmt
   self~arm
@@ -11481,15 +11553,34 @@ Trapped:
   Return rc
 
 -- Section C13: a user function whose argument another thread checks, and
--- is still using, when the function returns
+-- is still using, when the function returns (.local~classicPinAction: the
+-- method of PinWorker)
 ::Routine classicPinValueCB Public
   Use Arg db, ctx, userData, val
   .local~classicPinValue = val
   w = .PinWorker~new
-  w~startWith("value", .array~of(val))
+  If .local~classicPinAction == "bindValue" Then
+    w~startWith("bindValue", .array~of(.local~classicPinBindStmt, val))
+  Else
+    w~startWith("value", .array~of(val))
   .local~classicPinWorker = w
   Call SysSleep 0.1                 -- the worker is in its pause now
   Call oosqlResultText ctx, "ok"
+  Return 0
+
+-- Section 44 (testPinBindValueDuringCall): the same with the OO interface
+::Class PinValueHandler
+::Attribute worker
+::Method init
+  Expose ins
+  Use Strict Arg ins
+::Method xFunc Unguarded
+  Expose ins worker
+  Use Arg db, ctx, userData, val
+  worker = .PinWorker~new
+  worker~startWith("ooBindValue", .array~of(ins, val))
+  Call SysSleep 0.1                 -- the worker is in its pause now
+  .ooSQLResult~text(ctx, "ok")
   Return 0
 
 -- Section C13: a user function that closes the connection running it
