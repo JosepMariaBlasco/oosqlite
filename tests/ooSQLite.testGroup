@@ -5724,6 +5724,178 @@ ConstantMissing:
 /*                                                                            */
 /******************************************************************************/
 
+/******************************************************************************/
+/*                                                                            */
+/* Section 38: Conditions raised in callbacks                                 */
+/*                                                                            */
+/* A condition other than SYNTAX raised in a callback method, with a SIGNAL   */
+/* ON trap in the caller, made ooRexx unwind through the C frames of SQLite:  */
+/* the statement was left unfinalized (close returned BUSY), and the mutex of */
+/* the connection stayed held.  Now it reaches the caller as SYNTAX: 98.900,  */
+/* with the original condition object in ADDITIONAL, and HALT as 4.1.  SQLite */
+/* stops where it can.  See technical note #58.                               */
+/*                                                                            */
+/******************************************************************************/
+
+::Method conditionInCallback
+  -- Registers a callback of the given kind that raises the condition given
+  -- by action, runs SQL that invokes it, traps what reaches the caller, and
+  -- closes the connection.  Returns a directory with CONDITION, CODE,
+  -- MESSAGE, ADDITIONAL, CALLS and CLOSE.
+  Use Strict Arg kind, action
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_cond.db")
+  dbFile = tempFile~fullName
+  Call SysFileDelete dbFile
+  db = .ooSQLiteConnection~new(dbFile)
+  db~exec("CREATE TABLE t(a TEXT); INSERT INTO t VALUES('b'), ('a'), ('c');")
+  h = .RaisingHandler~new(action)
+  r = .Directory~new
+  r~condition = ""
+  Select Case kind
+    When "busy" Then Do
+      db2 = .ooSQLiteConnection~new(dbFile)
+      db2~exec("BEGIN EXCLUSIVE;")
+      db~busyHandler(h, "cb")
+    End
+    When "commit" Then db~commitHook(h, "cb")
+    When "rollback" Then db~rollbackHook(h, "cb")
+    When "update" Then db~updateHook(h, "cb")
+    When "trace" Then db~trace(h, "cb")
+    When "profile" Then db~profile(h, "cb")
+    When "progress" Then db~progressHandler(h, 1, "cb")
+    When "auth" Then db~setAuthorizer(h, "cb")
+    When "collation" Then db~createCollation("c", h, "cb")
+    When "collneed" Then db~collationNeeded(h, "cb")
+    When "scalar" Then db~createFunction("f", h, 1, "cb")
+    When "step" Then db~createFunction("g", h, 1, , "cb", "fin")
+    When "final" Then db~createFunction("g", h, 1, , "st", "cb")
+    Otherwise Nop
+  End
+  Signal On Syntax Name Trapped
+  Signal On Halt Name Trapped
+  Signal On User Boom Name Trapped
+  Signal On Error Name Trapped
+  Select Case kind
+    When "commit", "update" Then db~exec("INSERT INTO t VALUES('q');")
+    When "rollback" Then db~exec("BEGIN; INSERT INTO t VALUES('q'); ROLLBACK;")
+    When "collation" Then db~exec("SELECT a FROM t ORDER BY a COLLATE c;", .true)
+    When "collneed" Then db~exec("SELECT a FROM t ORDER BY a COLLATE nosuch;", .true)
+    When "scalar" Then db~exec("SELECT f(a) FROM t;", .true)
+    When "step", "final" Then db~exec("SELECT g(a) FROM t;", .true)
+    When "exec" Then db~exec("SELECT a FROM t;", .true, , h, "cb")
+    Otherwise db~exec("SELECT a FROM t;")
+  End
+  Signal Done
+Trapped:
+  co = Condition("O")
+  r~condition = co~condition
+  r~code = co~code
+  r~message = co~message
+  r~additional = co~additional
+Done:
+  Signal Off Syntax
+  Signal Off Halt
+  Signal Off User Boom
+  Signal Off Error
+  r~calls = h~calls
+  Select Case kind
+    When "busy" Then Do
+      db2~exec("COMMIT;")
+      db2~close
+    End
+    When "trace" Then db~trace(.nil)
+    When "profile" Then db~profile(.nil)
+    When "progress" Then db~progressHandler(.nil, 0)
+    When "auth" Then db~setAuthorizer(.nil)
+    Otherwise Nop
+  End
+  r~close = db~close
+  Call SysFileDelete dbFile
+  Return r
+
+::Method assertUserAsSyntax
+  -- A USER condition raised in the callback "cb" of the given kind arrives as
+  -- SYNTAX 98.900 and leaves the connection closable
+  Use Strict Arg kind
+  r = self~conditionInCallback(kind, "USER")
+  self~assertEquals("SYNTAX", r~condition, kind": the condition that reaches the caller")
+  self~assertEquals(98.900, r~code, kind": the code")
+  self~assertEquals('The USER BOOM condition was raised in the callback "cb": boom-user.', r~message, kind": the message")
+  self~assertEquals("USER BOOM", r~additional[2]~condition, kind": the original condition in ADDITIONAL")
+  self~assertEquals(0, r~close, kind": close")
+  Return r
+
+::Method testConditionInCallbackBusy
+  self~assertUserAsSyntax("busy")
+
+::Method testConditionInCallbackCommit
+  self~assertUserAsSyntax("commit")
+
+::Method testConditionInCallbackRollback
+  self~assertUserAsSyntax("rollback")
+
+::Method testConditionInCallbackUpdate
+  self~assertUserAsSyntax("update")
+
+::Method testConditionInCallbackTrace
+  self~assertUserAsSyntax("trace")
+
+::Method testConditionInCallbackProfile
+  self~assertUserAsSyntax("profile")
+
+::Method testConditionInCallbackProgress
+  self~assertUserAsSyntax("progress")
+
+::Method testConditionInCallbackAuthorizer
+  self~assertUserAsSyntax("auth")
+
+::Method testConditionInCallbackCollation
+  self~assertUserAsSyntax("collation")
+
+::Method testConditionInCallbackCollationNeeded
+  self~assertUserAsSyntax("collneed")
+
+::Method testConditionInCallbackScalar
+  r = self~assertUserAsSyntax("scalar")
+  self~assertEquals(1, r~calls, "the statement stops at the first row")
+
+::Method testConditionInCallbackStep
+  r = self~assertUserAsSyntax("step")
+  self~assertEquals(1, r~calls, "the statement stops at the first row")
+
+::Method testConditionInCallbackFinal
+  self~assertUserAsSyntax("final")
+
+::Method testConditionInCallbackExec
+  r = self~assertUserAsSyntax("exec")
+  self~assertEquals(1, r~calls, "exec stops at the first row")
+
+::Method testConditionInCallbackHalt
+  -- HALT arrives as SYNTAX 4.1, as an untrapped HALT does
+  Do kind Over .Array~of("commit", "scalar", "exec")
+    r = self~conditionInCallback(kind, "HALT")
+    self~assertEquals("SYNTAX", r~condition, kind": the condition")
+    self~assertEquals(4.1, r~code, kind": the code")
+    self~assertEquals("HALT", r~additional[2]~condition, kind": the original condition in ADDITIONAL")
+    self~assertEquals(0, r~close, kind": close")
+  End
+
+::Method testConditionInCallbackError
+  r = self~conditionInCallback("exec", "ERROR")
+  self~assertEquals("SYNTAX", r~condition)
+  self~assertEquals(98.900, r~code)
+  self~assertEquals('The ERROR condition was raised in the callback "cb": boom-error.', r~message)
+  self~assertEquals(0, r~close)
+
+::Method testConditionInCallbackSyntax
+  -- SYNTAX arrives as itself, as before, and now stops the statement
+  r = self~conditionInCallback("scalar", "SYNTAX")
+  self~assertEquals("SYNTAX", r~condition)
+  self~assertEquals(93.900, r~code)
+  self~assertEquals("boom-syntax.", r~message)
+  self~assertEquals(1, r~calls, "the statement stops at the first row")
+  self~assertEquals(0, r~close)
+
 ::Class "ooSQLiteClassic.testGroup" Subclass ooTestCase Public
 
 --------------------------------------------------------------------------------
@@ -8683,6 +8855,104 @@ Syntax:
 
 /******************************************************************************/
 /*                                                                            */
+/* Section C11: Classic — conditions raised in callbacks                      */
+/*                                                                            */
+/* The callback routine of oosqlExec had no name in the C data: a routine     */
+/* that returned no value, or raised USER or ERROR, crashed (SIGSEGV).  A     */
+/* USER or ERROR in any callback routine was lost (44.1, "No data returned"). */
+/* Now they arrive as SYNTAX 98.900, HALT as 4.1, and SQLite stops where it   */
+/* can (section 38).                                                          */
+/*                                                                            */
+/******************************************************************************/
+
+::Method classicConditionInCallback
+  -- As conditionInCallback in section 38, for the classic routines, with
+  -- the callback routine named rtn
+  Use Strict Arg kind, action, rtn = "classicRaisingCB"
+  .local~classicRaiseAction = action
+  .local~classicRaiseCalls = 0
+  db = self~classicOpenMemory
+  Call oosqlExec db, "CREATE TABLE t(a TEXT); INSERT INTO t VALUES('b'), ('a'), ('c');"
+  r = .Directory~new
+  r~condition = ""
+  Select Case kind
+    When "commit" Then Call oosqlCommitHook db, rtn
+    When "scalar" Then Call oosqlCreateFunction db, "f", 1, rtn
+    Otherwise Nop
+  End
+  Signal On Syntax Name Trapped
+  Signal On Halt Name Trapped
+  Signal On User Boom Name Trapped
+  Signal On Error Name Trapped
+  Select Case kind
+    When "commit" Then Call oosqlExec db, "INSERT INTO t VALUES('q');"
+    When "scalar" Then Call oosqlExec db, "SELECT f(a) FROM t;", .true
+    When "exec" Then Call oosqlExec db, "SELECT a FROM t;", .true, , rtn
+  End
+  Signal Done
+Trapped:
+  co = Condition("O")
+  r~condition = co~condition
+  r~code = co~code
+  r~message = co~message
+  r~additional = co~additional
+Done:
+  Signal Off Syntax
+  Signal Off Halt
+  Signal Off User Boom
+  Signal Off Error
+  r~calls = .local~classicRaiseCalls
+  If kind == "commit" Then Call oosqlCommitHook db, ""
+  r~close = oosqlClose(db)
+  Return r
+
+::Method testClassicConditionInExecCallback
+  -- A USER condition crashed oosqlExec (SIGSEGV)
+  r = self~classicConditionInCallback("exec", "USER")
+  self~assertEquals("SYNTAX", r~condition)
+  self~assertEquals(98.900, r~code)
+  self~assertEquals('The USER BOOM condition was raised in the callback "classicRaisingCB": boom-user.', r~message)
+  self~assertEquals("USER BOOM", r~additional[2]~condition)
+  self~assertEquals(1, r~calls, "oosqlExec stops at the first row")
+  self~assertEquals(0, r~close)
+
+::Method testClassicConditionErrorInExecCallback
+  -- An ERROR condition crashed oosqlExec (SIGSEGV)
+  r = self~classicConditionInCallback("exec", "ERROR")
+  self~assertEquals(98.900, r~code)
+  self~assertEquals('The ERROR condition was raised in the callback "classicRaisingCB": boom-error.', r~message)
+  self~assertEquals(0, r~close)
+
+::Method testClassicExecCallbackNoReturn
+  -- A callback routine of oosqlExec that returns no value crashed (SIGSEGV)
+  r = self~classicConditionInCallback("exec", "", "classicNoReturnCB")
+  self~assertEquals(44.1, r~code)
+  self~assertEquals('No data returned from function "classicNoReturnCB".', r~message)
+  self~assertEquals(0, r~close)
+
+::Method testClassicExecCallbackBadReturn
+  -- The message named the routine "(null)"
+  r = self~classicConditionInCallback("exec", "", "classicBadReturnCB")
+  self~assertEquals(98.900, r~code)
+  self~assertEquals("The return from routine classicBadReturnCB() must be a whole number; found abc.", r~message)
+  self~assertEquals(0, r~close)
+
+::Method testClassicConditionInCommitHook
+  -- USER was lost: the caller got 44.1, "No data returned"
+  r = self~classicConditionInCallback("commit", "USER")
+  self~assertEquals(98.900, r~code)
+  self~assertEquals('The USER BOOM condition was raised in the callback "classicRaisingCB": boom-user.', r~message)
+  self~assertEquals(0, r~close)
+
+::Method testClassicConditionInFunction
+  -- HALT arrives as 4.1, as before, and now stops the statement
+  r = self~classicConditionInCallback("scalar", "HALT")
+  self~assertEquals(4.1, r~code)
+  self~assertEquals(1, r~calls, "the statement stops at the first row")
+  self~assertEquals(0, r~close)
+
+/******************************************************************************/
+/*                                                                            */
 /* Callback routines for Section C6                                           */
 /*                                                                            */
 /* These ::Routine definitions implement the callbacks for classic callback   */
@@ -9028,6 +9298,25 @@ Syntax:
   Call oosqlResultInt ctx, oosqlValueInt(val) + 1
   Return 0
 
+::Routine classicRaisingCB Public
+  -- Section C11: raises the condition named by .local~classicRaiseAction
+  .local~classicRaiseCalls += 1
+  Select Case .local~classicRaiseAction
+    When "SYNTAX" Then Raise Syntax 93.900 Array("boom-syntax")
+    When "HALT" Then Raise Halt Description "boom-halt"
+    When "USER" Then Raise User Boom Description "boom-user"
+    When "ERROR" Then Raise Error 7 Description "boom-error"
+  End
+  Return 0
+
+::Routine classicNoReturnCB Public
+  .local~classicRaiseCalls += 1
+  Return
+
+::Routine classicBadReturnCB Public
+  .local~classicRaiseCalls += 1
+  Return "abc"
+
 /******************************************************************************/
 /*                                                                            */
 /* userExtLib — full path of a test library in examples/user.extensions      */
@@ -9070,3 +9359,29 @@ Syntax:
 ::Class StmtWithoutSuperInit Subclass ooSQLiteStmt
 ::Method init
   Nop
+
+-- Section 38: a callback handler that raises a condition
+::Class RaisingHandler
+::Attribute calls
+::Method init
+  Expose action calls
+  Use Strict Arg action
+  calls = 0
+::Method cb Unguarded
+  Expose action calls
+  calls += 1
+  Select Case action
+    When "SYNTAX" Then Raise Syntax 93.900 Array("boom-syntax")
+    When "HALT" Then Raise Halt Description "boom-halt"
+    When "USER" Then Raise User Boom Description "boom-user"
+    When "ERROR" Then Raise Error 7 Description "boom-error"
+  End
+  Return 0
+::Method st Unguarded
+  Use Arg db, ctx, agg
+  If agg == .nil Then Return .Directory~new
+  Return agg
+::Method fin Unguarded
+  Use Arg db, ctx
+  .ooSQLResult~int(ctx, 1)
+  Return 0
