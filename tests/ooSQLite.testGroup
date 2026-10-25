@@ -7230,6 +7230,23 @@ NotOpen:
     "the library's lastErrMsg names the function:" lib~lastErrMsg)
   self~assertTrue(lib~lastErrCode \= 0, "the library's lastErrCode is set")
 
+::Method testKeptPackageLastErrGoesWithIt
+  -- The error is kept by the object, not forever: a package object that is
+  -- dropped (loadPackage drops one when the package is loaded already) lets
+  -- its lastErrMsg be collected with it
+  package = .ooSQLPackage~new(userExtLib("testpackage"))
+  w = .WeakReference~new(package~lastErrMsg)
+  Drop package
+  Call churnMemory
+  self~assertSame(.nil, w~value, "the message went with the package")
+
+::Method testKeptLibraryLastErrGoesWithIt
+  lib = .ooSQLLibrary~new(userExtLib("testlibrary"))
+  w = .WeakReference~new(lib~lastErrMsg)
+  Drop lib
+  Call churnMemory
+  self~assertSame(.nil, w~value, "the message went with the library")
+
 /******************************************************************************/
 /*                                                                            */
 /* Section 43: The rows exec sends to a callback method                       */
