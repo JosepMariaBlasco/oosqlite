@@ -5898,6 +5898,55 @@ Done:
   self~assertEquals(1, r~calls, "the statement stops at the first row")
   self~assertEquals(0, r~close)
 
+/******************************************************************************/
+/*                                                                            */
+/* Section 39: Callbacks on another thread                                    */
+/*                                                                            */
+/* A callback runs on the thread that executes the SQL.  When that was not    */
+/* the thread that registered it, the callback ran in a context of its own,  */
+/* and a condition raised in it was lost: the thread that executed the SQL    */
+/* only got the result code.  Now it gets the condition, as section 38 says.  */
+/*                                                                            */
+/******************************************************************************/
+
+::Method onAnotherThread
+  -- Runs sql on db in another thread, and returns what reached that thread
+  Use Strict Arg db, sql, iface = "oo"
+  w = .CallbackWorker~new
+  w~start("run", db, sql, iface)
+  Return w~wait
+
+::Method testCallbackOnAnotherThreadCommitHook
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE t(a TEXT);")
+  h = .RaisingHandler~new("USER")
+  db~commitHook(h, "cb")
+  r = self~onAnotherThread(db, "INSERT INTO t VALUES('q');")
+  self~assertEquals('SYNTAX 98.900 The USER BOOM condition was raised in the callback "cb": boom-user.', r)
+  db~commitHook(.nil)
+  self~assertEquals(0, db~close)
+
+::Method testCallbackOnAnotherThreadFunction
+  -- SYNTAX was lost too: the thread only got rc 1
+  db = self~openMemoryDB
+  h = .RaisingHandler~new("SYNTAX")
+  db~createFunction("f", h, 1, "cb")
+  r = self~onAnotherThread(db, "SELECT f(1);")
+  self~assertEquals("SYNTAX 93.900 boom-syntax.", r)
+  self~assertEquals(1, h~calls)
+  self~assertEquals(0, db~close)
+
+::Method testCallbackOnAnotherThreadWorks
+  -- Without a condition the callback just runs on that thread
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE t(a TEXT);")
+  h = .RaisingHandler~new("")
+  db~updateHook(h, "cb")
+  self~assertEquals("rc 0", self~onAnotherThread(db, "INSERT INTO t VALUES('q');"))
+  self~assertEquals(1, h~calls)
+  db~updateHook(.nil)
+  self~assertEquals(0, db~close)
+
 ::Class "ooSQLiteClassic.testGroup" Subclass ooTestCase Public
 
 --------------------------------------------------------------------------------
@@ -8973,6 +9022,18 @@ Done:
   self~assertEquals(1, r~calls, "the statement stops at the first row")
   self~assertEquals(0, r~close)
 
+::Method testClassicCallbackOnAnotherThread
+  -- Section 39 of the OO tests, for a classic callback routine
+  .local~classicRaiseAction = "USER"
+  .local~classicRaiseCalls = 0
+  db = self~classicOpenMemory
+  Call oosqlCreateFunction db, "f", 1, "classicRaisingCB"
+  w = .CallbackWorker~new
+  w~start("run", db, "SELECT f(1);", "classic")
+  self~assertEquals('SYNTAX 98.900 The USER BOOM condition was raised in the callback "classicRaisingCB": boom-user.', w~wait)
+  self~assertEquals(1, .local~classicRaiseCalls)
+  self~assertEquals(0, oosqlClose(db))
+
 /******************************************************************************/
 /*                                                                            */
 /* Callback routines for Section C6                                           */
@@ -9417,6 +9478,7 @@ OO1:
     When "HALT" Then Raise Halt Description "boom-halt"
     When "USER" Then Raise User Boom Description "boom-user"
     When "ERROR" Then Raise Error 7 Description "boom-error"
+    Otherwise Nop
   End
   Return 0
 ::Method st Unguarded
@@ -9427,3 +9489,29 @@ OO1:
   Use Arg db, ctx
   .ooSQLResult~int(ctx, 1)
   Return 0
+
+-- Section 39: runs SQL on another thread and keeps what reached it
+::Class CallbackWorker
+::Method init
+  Expose done answer
+  done = .false
+  answer = ""
+::Method run Unguarded
+  Use Strict Arg db, sql, iface
+  Signal On Syntax Name Trapped
+  Signal On User Boom Name Trapped
+  If iface == "oo" Then rc = db~exec(sql)
+  Else rc = oosqlExec(db, sql)
+  self~finish("rc" rc)
+  Return
+Trapped:
+  co = Condition("O")
+  self~finish(co~condition co~code co~message)
+::Method finish
+  Expose done answer
+  Use Strict Arg answer
+  done = .true
+::Method wait
+  Expose done answer
+  Guard On When done
+  Return answer
