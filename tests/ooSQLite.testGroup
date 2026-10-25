@@ -6719,6 +6719,7 @@ ConstantMissing:
   Signal On Halt Name Trapped
   Signal On User Boom Name Trapped
   Signal On Error Name Trapped
+  Signal On NoString Name Trapped
   Select Case kind
     When "commit", "update" Then db~exec("INSERT INTO t VALUES('q');")
     When "rollback" Then db~exec("BEGIN; INSERT INTO t VALUES('q'); ROLLBACK;")
@@ -6741,6 +6742,7 @@ Done:
   Signal Off Halt
   Signal Off User Boom
   Signal Off Error
+  Signal Off NoString
   r~calls = h~calls
   Select Case kind
     When "busy" Then Do
@@ -6840,6 +6842,34 @@ Done:
   self~assertEquals(1, r~calls, "the statement stops at the first row")
   self~assertEquals(0, r~close)
 
+--------------------------------------------------------------------------------
+-- A callback that returns an object with no string value                     --
+--------------------------------------------------------------------------------
+
+::Method testCallbackReturnsObject
+  -- With SIGNAL ON NOSTRING in the caller, converting the reply raised
+  -- NOSTRING inside SQLite: ooRexx unwound through its C frames, and the
+  -- statement was left unfinalized (close returned BUSY).  Now the reply is
+  -- an invalid return, SYNTAX 98.900, after SQLite returns.
+  kinds = .Array~of("busy", "commit", "rollback", "update", "trace", "profile", -
+    "progress", "auth", "collation", "collneed", "scalar", "final", "exec")
+  Do kind Over kinds
+    r = self~conditionInCallback(kind, "OBJECT")
+    self~assertEquals("SYNTAX", r~condition, kind": the condition that reaches the caller")
+    self~assertEquals(98.900, r~code, kind": the code")
+    self~assertEquals("The return from method cb() must be a whole number; found an Object.", -
+      r~message, kind": the message")
+    self~assertEquals(0, r~close, kind": close")
+  End
+
+::Method testCallbackReturnsMutableBuffer
+  -- An object with a MAKESTRING method is a valid reply, as before
+  Do kind Over .Array~of("commit", "progress", "collation", "scalar", "exec")
+    r = self~conditionInCallback(kind, "MUTABLE")
+    self~assertEquals("", r~condition, kind": no condition")
+    self~assertEquals(0, r~close, kind": close")
+  End
+
 /******************************************************************************/
 /*                                                                            */
 /* Section 39: Callbacks on another thread                                    */
@@ -6888,6 +6918,134 @@ Done:
   self~assertEquals(1, h~calls)
   db~updateHook(.nil)
   self~assertEquals(0, db~close)
+
+/******************************************************************************/
+/*                                                                            */
+/* Section 40: Arguments with no string value                                 */
+/*                                                                            */
+/* An argument declared as a string in the native code (CSTRING) is checked  */
+/* by the interpreter: an object with no string value (no MAKESTRING method,  */
+/* like .Object~new) raises 88.909.  The arguments that accept more than one  */
+/* kind of object were converted with ObjectToStringValue(), which raises     */
+/* NOSTRING when the caller traps it: ooRexx unwound through the native code, */
+/* which was left half done, and without the trap "an Object" was used (a     */
+/* database file named "an Object").  Now they raise 88.909 too, before doing */
+/* anything; a String or an object with MAKESTRING is accepted, as before.    */
+/*                                                                            */
+/******************************************************************************/
+
+::Method assertNoStringValue
+  -- Runs code with SIGNAL ON NOSTRING and SIGNAL ON SYNTAX, and checks that
+  -- it raises 88.909 (or 88.9xx, for an item of an Array)
+  Use Strict Arg code, v, what, expected = 88.909
+  r = noStringTrap(code, v)
+  self~assertEquals("SYNTAX" expected, r, what)
+
+::Method testNoStringOpen
+  v = .Directory~new
+  v~obj = .Object~new
+  Call SysFileDelete "an Object"
+  self~assertNoStringValue("x = .ooSQLiteConnection~new(v~obj)", v, "ooSQLiteConnection~new")
+  self~assertFalse(SysFileExists("an Object"), "no database file named 'an Object'")
+  v~db = self~openMemoryDB
+  self~assertNoStringValue("x = .ooSQLiteBackup~new(v~db, v~obj)", v, "ooSQLiteBackup~new")
+  self~assertFalse(SysFileExists("an Object"), "no backup file named 'an Object'")
+  v~db~close
+
+::Method testNoStringPragma
+  v = .Directory~new
+  v~obj = .Object~new
+  v~db = self~openMemoryDB
+  before = v~db~pragma("cache_size")
+  self~assertNoStringValue("x = v~db~pragma('cache_size', v~obj)", v, "pragma value")
+  self~assertNoStringValue("x = v~db~pragma('table_info', v~obj)", v, "pragma list value")
+  self~assertEquals(before, v~db~pragma("cache_size"), "the pragma did not run")
+  -- A MutableBuffer has a string value
+  v~db~pragma("cache_size", .MutableBuffer~new("123"))
+  self~assertEquals(123, v~db~pragma("cache_size"), "a MutableBuffer is accepted")
+  v~db~close
+
+::Method testNoStringNull
+  v = .Directory~new
+  v~obj = .Object~new
+  v~db = self~openMemoryDB
+  v~stmt = .ooSQLiteStmt~new(v~db, "SELECT NULL;")
+  oldClassNull = .ooSQLite~null
+  self~assertNoStringValue("v~db~null = v~obj", v, "ooSQLiteConnection~null=")
+  self~assertNoStringValue("v~stmt~null = v~obj", v, "ooSQLiteStmt~null=")
+  self~assertNoStringValue(".ooSQLite~null = v~obj", v, "ooSQLite~null=")
+  self~assertEquals(oldClassNull, .ooSQLite~null, "ooSQLite~null is unchanged")
+  v~stmt~null = .MutableBuffer~new("<null>")
+  self~assertEquals("<null>", v~stmt~null, "a MutableBuffer is accepted")
+  v~stmt~finalize
+  v~db~close
+
+::Method testNoStringCallbackNames
+  v = .Directory~new
+  v~obj = .Object~new
+  v~db = self~openMemoryDB
+  v~h = .RaisingHandler~new("")
+  self~assertNoStringValue("x = v~db~createFunction('f', v~h, 1, v~obj)", v, "createFunction method name")
+  self~assertNoStringValue("x = v~db~createFunction('g', v~h, 1, , v~obj, 'fin')", v, "createFunction step name")
+  self~assertNoStringValue("x = v~db~createFunction('g', v~h, 1, , 'st', v~obj)", v, "createFunction final name")
+  self~assertNoStringValue("x = v~db~createCollation('c', v~h, v~obj)", v, "createCollation method name")
+  stmt = .ooSQLiteStmt~new(v~db, "SELECT f(1), g(1);")
+  self~assertTrue(stmt~initCode \= 0, "no function was registered")
+  stmt~finalize
+  v~db~close
+
+::Method testNoStringBuiltinNames
+  v = .Directory~new
+  v~obj = .Object~new
+  v~db = self~openMemoryDB
+  .ooSQLExtensions~resetAutoBuiltin
+  self~assertNoStringValue("x = .ooSQLExtensions~registerBuiltin(v~db, v~obj)", v, "registerBuiltin name")
+  self~assertNoStringValue("x = .ooSQLExtensions~registerBuiltin(v~db, .Array~of('rot13', v~obj))", -
+    v, "registerBuiltin Array item", 88.900)
+  self~assertNoStringValue("x = .ooSQLExtensions~autoBuiltin(v~obj)", v, "autoBuiltin name")
+  self~assertNoStringValue("x = .ooSQLExtensions~autoBuiltin(.Array~of(v~obj))", v, -
+    "autoBuiltin Array item", 88.900)
+  self~assertNoStringValue("x = .ooSQLExtensions~cancelAutoBuiltin(v~obj)", v, "cancelAutoBuiltin name")
+  self~assertNoStringValue("x = .ooSQLExtensions~cancelAutoBuiltin(.Array~of(v~obj))", v, -
+    "cancelAutoBuiltin Array item", 88.900)
+  self~assertEquals(0, .ooSQLExtensions~registerBuiltin(v~db, .MutableBuffer~new("rot13")), -
+    "a MutableBuffer is accepted")
+  self~assertEquals("nhgb", self~queryValue(v~db, "SELECT rot13('auto') AS v;"))
+  .ooSQLExtensions~resetAutoBuiltin
+  v~db~close
+
+::Method testNoStringLibraryNames
+  v = .Directory~new
+  v~obj = .Object~new
+  self~assertNoStringValue("x = .ooSQLExtensions~getLibrary(v~obj)", v, "getLibrary name")
+  self~assertNoStringValue("x = .ooSQLExtensions~getPackage(v~obj)", v, "getPackage name")
+  .ooSQLExtensions~loadLibrary(userExtLib("testlibrary"))
+  v~lib = .ooSQLExtensions~getLibrary("testlibrary")
+  self~assertNoStringValue("x = v~lib~getHandle(v~obj)", v, "ooSQLLibrary~getHandle name")
+  v~package = self~loadTestPackage
+  self~assertNoStringValue("x = v~package~getFunction(v~obj)", v, "ooSQLPackage~getFunction name")
+  self~assertNoStringValue("x = v~package~getCollation(v~obj)", v, "ooSQLPackage~getCollation name")
+  self~assertTrue(v~lib~getHandle(.MutableBuffer~new("reverse"))~isA(.Pointer), -
+    "a MutableBuffer is accepted")
+
+::Method testNoStringEnquote
+  v = .Directory~new
+  v~obj = .Object~new
+  self~assertNoStringValue("x = .ooSQLite~enquote(v~obj)", v, "enquote value")
+  self~assertNoStringValue("x = .ooSQLite~enquote(.Array~of('a', v~obj))", v, "enquote Array item", 88.900)
+  self~assertEquals("'it''s', NULL", .ooSQLite~enquote(.Array~of(.MutableBuffer~new("it's"), .nil)), -
+    "a MutableBuffer is accepted")
+
+::Method testNoStringInErrorMessage
+  -- The text of an object in an error message was got with
+  -- ObjectToStringValue() too, and raised NOSTRING instead of the error
+  v = .Directory~new
+  self~assertEquals("SYNTAX 88.900", noStringTrap("x = .ooSQLiteStmt~new(.Object~new, 'SELECT 1;')", v))
+  Signal On Syntax Name WrongClass
+  x = .ooSQLiteStmt~new(.Object~new, "SELECT 1;")
+WrongClass:
+  self~assertEquals("Argument 1 must be of the ooSQLiteConnection class; found an Object.", -
+    Condition("O")~message)
 
 ::Class "ooSQLiteClassic.testGroup" Subclass ooTestCase Public
 
@@ -9897,6 +10055,7 @@ Syntax:
   Signal On Halt Name Trapped
   Signal On User Boom Name Trapped
   Signal On Error Name Trapped
+  Signal On NoString Name Trapped
   Select Case kind
     When "commit" Then Call oosqlExec db, "INSERT INTO t VALUES('q');"
     When "scalar" Then Call oosqlExec db, "SELECT f(a) FROM t;", .true
@@ -9914,6 +10073,7 @@ Done:
   Signal Off Halt
   Signal Off User Boom
   Signal Off Error
+  Signal Off NoString
   r~calls = .local~classicRaiseCalls
   If kind == "commit" Then Call oosqlCommitHook db, ""
   r~close = oosqlClose(db)
@@ -9963,6 +10123,17 @@ Done:
   self~assertEquals(4.1, r~code)
   self~assertEquals(1, r~calls, "the statement stops at the first row")
   self~assertEquals(0, r~close)
+
+::Method testClassicCallbackReturnsObject
+  -- Section 38: a reply with no string value raised NOSTRING inside SQLite
+  Do kind Over .Array~of("commit", "scalar", "exec")
+    r = self~classicConditionInCallback(kind, "OBJECT")
+    self~assertEquals("SYNTAX", r~condition, kind": the condition")
+    self~assertEquals(98.900, r~code, kind": the code")
+    self~assertEquals("The return from routine classicRaisingCB() must be a whole number;" -
+      "found an Object.", r~message, kind": the message")
+    self~assertEquals(0, r~close, kind": close")
+  End
 
 ::Method testClassicCallbackOnAnotherThread
   -- Section 39 of the OO tests, for a classic callback routine
@@ -10242,6 +10413,24 @@ Done:
   self~assertEquals("cannot find end of central directory record", oosqlErrMsg(db))
   Call oosqlFinalize stmt
   self~assertEquals(0, oosqlClose(db))
+
+/******************************************************************************/
+/*                                                                            */
+/* Section C15: Classic — arguments with no string value                      */
+/*                                                                            */
+/******************************************************************************/
+
+::Method testClassicNoStringEnquote
+  -- Section 40 of the OO tests: ooSQLiteEnquote converted a single value with
+  -- ObjectToStringValue(), which raises NOSTRING when the caller traps it
+  v = .Directory~new
+  v~obj = .Object~new
+  self~assertEquals("SYNTAX 88.909", noStringTrap("x = ooSQLiteEnquote(v~obj)", v))
+  self~assertEquals("'it''s'", ooSQLiteEnquote(.MutableBuffer~new("it's")), -
+    "a MutableBuffer is accepted")
+  s. = ""; s.0 = 2; s.1 = "a"; s.2 = .Object~new
+  v~stem = s.
+  self~assertEquals("SYNTAX 88.900", noStringTrap("x = ooSQLiteEnquote(v~stem)", v), "a stem item")
 
 ::Routine classicCommitHookCB Public
   Use Arg userData
@@ -10606,8 +10795,23 @@ OO1:
     When "HALT" Then Raise Halt Description "boom-halt"
     When "USER" Then Raise User Boom Description "boom-user"
     When "ERROR" Then Raise Error 7 Description "boom-error"
+    When "OBJECT" Then Return .Object~new
+    When "MUTABLE" Then Return .MutableBuffer~new("0")
   End
   Return 0
+
+::Routine noStringTrap Public
+  -- Sections 40 and C15: runs code with SIGNAL ON NOSTRING and SIGNAL ON
+  -- SYNTAX; returns "none", "NOSTRING", or "SYNTAX" and the code
+  Use Strict Arg code, v
+  Signal On NoString Name TrapNoString
+  Signal On Syntax Name TrapSyntax
+  Interpret code
+  Return "none"
+TrapNoString:
+  Return "NOSTRING"
+TrapSyntax:
+  Return "SYNTAX" Condition("O")~code
 
 ::Routine classicNoReturnCB Public
   .local~classicRaiseCalls += 1
@@ -10675,6 +10879,8 @@ OO1:
     When "HALT" Then Raise Halt Description "boom-halt"
     When "USER" Then Raise User Boom Description "boom-user"
     When "ERROR" Then Raise Error 7 Description "boom-error"
+    When "OBJECT" Then Return .Object~new
+    When "MUTABLE" Then Return .MutableBuffer~new("0")
     Otherwise Nop
   End
   Return 0
