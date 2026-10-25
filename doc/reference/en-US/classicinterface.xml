@@ -656,6 +656,17 @@
   with it too, so <emphasis role="italic">oosqlMutexFree</emphasis> waits until that thread has entered the mutex and
   that routine has returned.
 </para>
+<para revisionflag="changed">
+  &changed11;The context and the argument values of a user defined function, which a callback can give to another
+  thread, are valid only until the function returns: SQLite frees them then. So the end of the call waits, in the same
+  way, while another thread is running a routine with the context or one of the values, or a class method of <link
+  linkend="clsOOSQLResult">ooSQLResult</link> or <link linkend="clsOOSQLValue">ooSQLValue</link>; afterwards they are
+  not live. <link linkend="rtn-oosqlBindValue">oosqlBindValue</link> and the <link linkend="mthBindValue">bindValue</link>
+  method enter the connection of their statement before they check the value, so that a thread that binds a value of a
+  function running on that same connection does not hold the value while it waits for the connection, which would make
+  each thread wait for the other. Before ooSQLite 1.1, the call ended at once, and the other thread could use a value
+  that SQLite had freed.
+</para>
 <para>
   A thread never waits for itself: a callback routine can free a handle that the routine running the callback is using,
   with the same results as before. Two threads can still wait for each other for ever: for example, when callback

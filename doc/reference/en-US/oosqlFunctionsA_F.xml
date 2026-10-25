@@ -1343,6 +1343,12 @@
     finalized, and a value passed to a user defined function whose invocation has ended raise a syntax error, 88.900. A
     value whose statement has been stepped again or reset is not detected, and has unpredictable results: see <link linkend="sctClassicHandles">Handles</link>.
   </para>
+  <para revisionflag="changed">
+    &changed11;The value can also be an argument of a user defined function that another thread is running on the
+    connection of the statement. The connection is entered first, and the value checked once it is entered: SQLite holds
+    the connection until the statement that runs the function is done, so the function has ended by then, and the value
+    raises 88.900. See <link linkend="sctClassicHandles">Handles</link>.
+  </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>

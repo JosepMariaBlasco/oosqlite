@@ -789,6 +789,18 @@
     linkend="mthExec">exec</link> does. Only programs that read the attributes after a successful call see a difference.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">The values of a user function used by another thread</emphasis></term>
+  <listitem>
+  <para>
+    A callback of a user defined function can give its context or its argument values to another thread. When the
+    function returned while that thread was still using one of them, SQLite freed it under that thread, which read freed
+    memory. The end of the call now waits for such a thread, as the routines that free a handle do (see <link
+    linkend="sctClassicHandles">Handles</link>), and the values are not live afterwards. <link
+    linkend="rtn-oosqlBindValue">oosqlBindValue</link> and <link linkend="mthBindValue">bindValue</link> now enter the
+    connection of their statement before they check the value, so that binding a value of a function that runs on the
+    same connection gives 88.900 instead of making the two threads wait for each other.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">The error of loadExtension names the file</emphasis></term>
   <listitem>
   <para>
