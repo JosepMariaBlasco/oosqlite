@@ -296,16 +296,14 @@ static void registerHandle(void *h, HandleKind kind, void *owner)
 }
 
 /**
- * Removes a handle, or counts it once less.
+ * Removes a handle, or counts it once less.  The registry mutex must be held.
  */
-static void unregisterHandle(void *h)
+static void unregisterLocked(void *h)
 {
-    if ( h == NULL || liveHandles == NULL )
+    if ( h == NULL )
     {
         return;
     }
-
-    sqlite3_mutex_enter(liveHandleMtx);
 
     std::unordered_map<void *, LiveHandle>::iterator it = liveHandles->find(h);
     if ( it != liveHandles->end() )
@@ -319,8 +317,6 @@ static void unregisterHandle(void *h)
             liveHandles->erase(it);
         }
     }
-
-    sqlite3_mutex_leave(liveHandleMtx);
 }
 
 /**
@@ -616,13 +612,60 @@ static void registerCallHandles(sqlite3_context *sqlContext, int argc, sqlite3_v
     }
 }
 
+/**
+ * Whether a thread other than this one has h pinned, and h would be removed
+ * now (not a context or value shared with an outer call).  The registry mutex
+ * must be held.
+ */
+static bool callHandlePinnedByOthers(void *h)
+{
+    if ( h == NULL )
+    {
+        return false;
+    }
+    std::unordered_map<void *, LiveHandle>::iterator it = liveHandles->find(h);
+    return it != liveHandles->end() && it->second.count == 1 && it->second.pins > ownPins(h);
+}
+
+/**
+ * At the end of the call: SQLite frees the context and the values when the
+ * function returns, so a thread that is using one of them (see Handles in use)
+ * is waited for.  That thread can not be waiting for this one: the routines
+ * that check a context or a value do not wait for anything after the check,
+ * except bindValue, which takes the connection of its statement before it
+ * checks the value (see oosqlBindValue).
+ */
 static void unregisterCallHandles(sqlite3_context *sqlContext, int argc, sqlite3_value **argv)
 {
-    unregisterHandle(sqlContext);
+    if ( liveHandles == NULL )
+    {
+        return;
+    }
+
+    RegistryLock lock;
+    lock.lock();
+
+    for (;;)
+    {
+        bool pinned = callHandlePinnedByOthers(sqlContext);
+        for ( int i = 0; i < argc && ! pinned; i++ )
+        {
+            pinned = callHandlePinnedByOthers(argv[i]);
+        }
+        if ( ! pinned )
+        {
+            break;
+        }
+        waitLocked(lock);
+    }
+
+    unregisterLocked(sqlContext);
     for ( int i = 0; i < argc; i++ )
     {
-        unregisterHandle(argv[i]);
+        unregisterLocked(argv[i]);
     }
+
+    lock.unlock();
 }
 
 /**
@@ -684,6 +727,34 @@ static inline sqlite3_value *checkedValue(RexxThreadContext *c, void *_value, si
     return (sqlite3_value *)checkedHandle(c, _value, hkValue, hkColValue, "value", pos, NULL);
 }
 
+
+/**
+ * Binds a value, checked, to a statement: bindValue and oosqlBindValue.
+ *
+ * The connection of the statement is entered before the value is checked.
+ * The value may be an argument of a user function that another thread is
+ * running on that connection, which it holds until its statement is done;
+ * the end of that call waits for the threads that use its values (see
+ * unregisterCallHandles()).  Checking the value first would pin it while this
+ * thread waits for the connection, and each thread would wait for the other.
+ * Entered first, the value is checked once the call has ended: not live.
+ *
+ * @param pos  The position of the value argument, for the error.
+ */
+static int bindCheckedValue(RexxThreadContext *c, sqlite3_stmt *stmt, int index, POINTER value, size_t pos)
+{
+    sqlite3_mutex *mtx = sqlite3_db_mutex(sqlite3_db_handle(stmt));
+    sqlite3_mutex_enter(mtx);
+
+    int rc = SQLITE_MISUSE;
+    if ( checkedValue(c, value, pos) != NULL )
+    {
+        rc = sqlite3_bind_value(stmt, index, (sqlite3_value *)value);
+    }
+
+    sqlite3_mutex_leave(mtx);
+    return rc;
+}
 
 /**
  * The callback trampoline.
@@ -9581,12 +9652,8 @@ RexxMethod3(int, oosqlstmt_bindValue, int32_t, index, POINTER, value, CSELF, pCS
     {
         return SQLITE_MISUSE;
     }
-    if ( checkedValue(context->threadContext, value, 2) == NULL )
-    {
-        return SQLITE_MISUSE;
-    }
 
-    return sqlite3_bind_value(pCstmt->stmt, index, (sqlite3_value *)value);
+    return bindCheckedValue(context->threadContext, pCstmt->stmt, index, value, 2);
 }
 
 
@@ -14649,12 +14716,8 @@ RexxRoutine3(int, oosqlBindValue_rtn, POINTER, _stmt, int32_t, index, POINTER, v
     {
         return SQLITE_MISUSE;
     }
-    if ( checkedValue(context->threadContext, value, 3) == NULL )
-    {
-        return SQLITE_MISUSE;
-    }
 
-    return sqlite3_bind_value(stmt, index, (sqlite3_value *)value);
+    return bindCheckedValue(context->threadContext, stmt, index, value, 3);
 }
 
 /** oosqlBindZeroBlob()
