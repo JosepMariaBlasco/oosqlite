@@ -507,6 +507,21 @@
     now syntax errors, 88.900, as described above and in <link linkend="sctClassicHandles">Handles</link>.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Classic handles freed by another thread</emphasis></term>
+  <listitem>
+  <para>
+    A routine checked its handle and then used it, and another thread could free the handle in between: <link
+    linkend="rtn-oosqlFinalize">oosqlFinalize</link> while another thread was in <link
+    linkend="rtn-oosqlStep">oosqlStep</link> with the statement, <link linkend="rtn-oosqlBackupFinish">oosqlBackupFinish</link>
+    during <link linkend="rtn-oosqlBackupStep">oosqlBackupStep</link>, <link linkend="rtn-oosqlClose">oosqlClose</link>
+    during <link linkend="rtn-oosqlExec">oosqlExec</link>, a statement finalized while another thread read one of its
+    values, or <link linkend="rtn-oosqlMutexFree">oosqlMutexFree</link> while another thread left the mutex. The
+    interpreter crashed, read freed memory, or, for a connection, the other thread's SQL failed with MISUSE. The
+    routines that free a handle now wait until no other thread is using it, as described in <link
+    linkend="sctClassicHandles">Handles</link>. A program that did this got a crash before; now one of its threads may
+    wait for a moment. The routines of the classic interface take about 25 nanoseconds more for each call.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">The callback routine of oosqlExec</emphasis></term>
   <listitem>
   <para>

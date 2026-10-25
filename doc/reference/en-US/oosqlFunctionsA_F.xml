@@ -140,7 +140,7 @@
 </variablelist>
 </section>  <!-- End oosqlAutoExtension() -->
 
-<section id="rtn-oosqlBackupFinish"><title>oosqlBackupFinish</title>
+<section id="rtn-oosqlBackupFinish" revisionflag="changed"><title>&changed11;oosqlBackupFinish</title>
 <indexterm><primary>oosqlBackupFinish</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlBackupFinish</secondary></indexterm>
 <mediaobject>
@@ -187,12 +187,16 @@
     role="italic">oosqlBackupFinish</emphasis> has been called, <emphasis role="italic">buHandle</emphasis> is no longer
     valid and must not be used in any other call to a function.
   </para>
+  <para revisionflag="changed">
+    &changed11;If another thread is using the backup, for example in <link linkend="rtn-oosqlBackupStep">oosqlBackupStep</link>,
+    <emphasis role="italic">oosqlBackupFinish</emphasis> waits until it is done (see <link linkend="sctClassicHandles">Handles</link>).
+  </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
   <listitem>
   <para>
     The functionality of the <emphasis role="italic">oosqlBackupFinish</emphasis> routine is similar to that of the
-  <ulink url="">sqlite3_backup_finish</ulink> SQLite API
+  <ulink url="http://www.sqlite.org/c3ref/backup_finish.html">sqlite3_backup_finish</ulink> SQLite API
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
@@ -1917,6 +1921,11 @@
     returns BUSY leaves the connection open, and its handle valid. Before ooSQLite 1.1 a closed connection was not
     detected, and could crash the interpreter. In the object orientated interface, closing an ooSQLiteConnection object
     that is already closed does nothing.
+  </para>
+  <para revisionflag="changed">
+    &changed11;If another thread is using the connection, or one of its statements, <emphasis
+    role="italic">oosqlClose</emphasis> waits until it is done; while it closes the connection, other threads that start a
+    routine with it wait to know whether it was closed (see <link linkend="sctClassicHandles">Handles</link>).
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
@@ -4995,6 +5004,11 @@ call oosqlCreateFunction db, "double"
     syntax error, 88.900, when it is given it; before ooSQLite 1.1 this was not detected, and could crash the
     interpreter. See <link linkend="sctClassicHandles">Handles</link> for the limits of the check. Dropping the variable that holds the handle, as the example does,
     prevents using it by mistake.
+  </para>
+  <para revisionflag="changed">
+    &changed11;If another thread is using the statement, or one of its values from <link
+    linkend="rtn-oosqlColumnValue">oosqlColumnValue</link>, <emphasis role="italic">oosqlFinalize</emphasis> waits until it
+    is done (see <link linkend="sctClassicHandles">Handles</link>).
   </para>
   <para>
     All the statements of a connection should be finalized before the connection is closed: while there is any statement

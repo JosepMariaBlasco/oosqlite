@@ -644,12 +644,29 @@
   do, prevents using it by mistake.
 </para>
 <para>
-  The check is made when a routine starts, so it can not protect a routine that is already running from another thread
-  that frees its handle. A program that shares a handle between threads must make sure that no thread finalizes,
-  closes, finishes, or frees it while another thread is using it; otherwise the interpreter can crash, as SQLite itself
-  says for its handles. In the object orientated interface, the methods of a connection or a statement object are
-  guarded, so ooRexx runs them one at a time for each object, and a statement finalized by another thread raises a
-  syntax error in the next method.
+  A handle can be shared by several threads. The routines that free a handle, <link
+  linkend="rtn-oosqlFinalize">oosqlFinalize</link>, <link linkend="rtn-oosqlClose">oosqlClose</link>, <link
+  linkend="rtn-oosqlBackupFinish">oosqlBackupFinish</link>, and <link linkend="rtn-oosqlMutexFree">oosqlMutexFree</link>,
+  wait while another thread is running a routine with that handle, or with a handle that belongs to it, such as a value
+  of <emphasis role="italic">oosqlColumnValue</emphasis> for a statement. Then they free it, and the other threads get the
+  syntax error described above the next time they use it. While <emphasis role="italic">oosqlClose</emphasis> closes a
+  connection, the routines that other threads start with that connection wait to know whether it was closed or, if
+  <emphasis role="italic">oosqlClose</emphasis> returns <computeroutput>BUSY</computeroutput>, is still open. A thread
+  that is waiting to enter a mutex with <link linkend="rtn-oosqlMutexEnter">oosqlMutexEnter</link> is running a routine
+  with it too, so <emphasis role="italic">oosqlMutexFree</emphasis> waits until that thread has entered the mutex and
+  that routine has returned.
+</para>
+<para>
+  A thread never waits for itself: a callback routine can free a handle that the routine running the callback is using,
+  with the same results as before. Two threads can still wait for each other for ever: for example, when callback
+  routines running on two threads each free a handle that the other thread is using, or when a thread frees a mutex
+  that it holds while another thread is waiting to enter it. Before ooSQLite 1.1, a handle checked by one thread could be
+  freed by another thread before the first one used it, and the interpreter could crash.
+</para>
+<para>
+  In the object orientated interface, the methods of a connection or a statement object are guarded, so ooRexx runs
+  them one at a time for each object, and a statement finalized by another thread raises a syntax error in the next
+  method.
 </para>
 <para>
   Before ooSQLite 1.1, only null handles were detected. A handle that was not valid any more, or was of another kind,

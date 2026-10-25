@@ -845,7 +845,9 @@
     thread for ever, and leaving a mutex that the thread does not hold, or freeing it while it is held, can crash the
     interpreter. ooSQLite can not detect these. &changed11;A mutex that has been freed, and the mutex of a connection
     that has been closed, raise a syntax error, 88.900, in every mutex routine (see <link linkend="sctClassicHandles">Handles</link>); before ooSQLite 1.1 they could
-    crash the interpreter too.
+    crash the interpreter too. <link linkend="rtn-oosqlMutexFree">oosqlMutexFree</link> waits while another thread is
+    entering, trying, or leaving the mutex: a thread that frees a mutex it holds while another thread waits to enter it
+    blocks both threads for ever.
   </para>
   <para>
     Every mutex allocated with <emphasis role="italic">oosqlMutexAlloc</emphasis> must be freed with <link
@@ -1022,6 +1024,10 @@
     <emphasis role="italic">oosqlMutexFree</emphasis> raises a syntax error, 88.900 (see <link linkend="sctClassicHandles">Handles</link>); before ooSQLite 1.1 it
     freed the memory again, or freed the mutex of the connection, and the process could abort or crash. See the remarks
     of <link linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link> for the rules that all the mutex routines follow.
+  </para>
+  <para revisionflag="changed">
+    &changed11;If another thread is entering, trying, or leaving the mutex, <emphasis role="italic">oosqlMutexFree</emphasis>
+    waits until that routine has returned (see <link linkend="sctClassicHandles">Handles</link>).
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
