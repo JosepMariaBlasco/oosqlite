@@ -2764,21 +2764,21 @@ TestBusyDeregCleanup:
 /* linked into liboosqlite.so. These tests cover listBuiltins,                */
 /* registerBuiltin, autoBuiltin, cancelAutoBuiltin, and resetAutoBuiltin.      */
 /*                                                                            */
-/* All ten builtins are available (with SQLite 3.29.0 only eight were, base64 */
-/* and csv were missing).                                                     */
+/* All twelve builtins are available (with SQLite 3.29.0 only eight were,    */
+/* base64 and csv were missing; compress and zipFile were added in 1.1).      */
 /*                                                                            */
 /******************************************************************************/
 
 --------------------------------------------------------------------------------
--- listBuiltins: returns an Array with 10 entries, each a Directory           --
+-- listBuiltins: returns an Array with 12 entries, each a Directory           --
 --------------------------------------------------------------------------------
 
 ::Method testListBuiltins
   builtins = .ooSQLExtensions~listBuiltins
   self~assertTrue(builtins~isA(.Array), -
     "listBuiltins should return an Array")
-  self~assertEquals(10, builtins~items, -
-    "listBuiltins should return 10 entries")
+  self~assertEquals(12, builtins~items, -
+    "listBuiltins should return 12 entries")
   -- Verify each entry is a Directory with NAME and DESCRIPTION
   entry = builtins[1]
   self~assertTrue(entry~isA(.Directory), -
@@ -2798,8 +2798,9 @@ TestBusyDeregCleanup:
   Do i = 1 To builtins~items
     names~put(builtins[i]["NAME"])
   End
-  expected = .Array~of("base64", "csv", "ieee754", "nextChar", -
-    "percentile", "regExp", "rot13", "spellFix", "toType", "wholeNumber")
+  expected = .Array~of("base64", "compress", "csv", "ieee754", "nextChar", -
+    "percentile", "regExp", "rot13", "spellFix", "toType", "wholeNumber", -
+    "zipFile")
   Do name Over expected
     self~assertTrue(names~hasIndex(name), -
       "listBuiltins should include" name)
@@ -5018,6 +5019,350 @@ AggregateErrorTrapped:
   End
   stmt~finalize
   db~close
+
+/******************************************************************************/
+/*                                                                            */
+/* Tier 5F — compress builtin extension (zlib)                                */
+/*                                                                            */
+/* compress(X) returns a blob: the size of X as a variable-length integer     */
+/* (seven bits per byte, the last byte has 0x80 set), then X in the zlib      */
+/* format.  uncompress(Y) returns the original bytes, always as a blob.       */
+/* zlib is compiled into liboosqlite.so (src/zlib).                           */
+/*                                                                            */
+/******************************************************************************/
+
+--------------------------------------------------------------------------------
+-- compress: not available until it is registered                             --
+--------------------------------------------------------------------------------
+
+::Method testCompressNotRegistered
+  db = self~openMemoryDB
+  stmt = .ooSQLiteStmt~new(db, "SELECT compress('x');")
+  self~assertEquals(1, stmt~initCode, "compress is not there before registering")
+  self~assertEquals("no such function: compress", db~errMsg)
+  stmt~finalize
+  self~assertEquals(0, .ooSQLExtensions~registerBuiltin(db, "compress"), -
+    "registerBuiltin('compress')")
+  stmt = .ooSQLiteStmt~new(db, "SELECT compress('x'), uncompress(x'00');")
+  self~assertEquals(0, stmt~initCode, "both functions are there now")
+  stmt~finalize
+  db~close
+
+--------------------------------------------------------------------------------
+-- compress: a text round trip                                                --
+--------------------------------------------------------------------------------
+
+::Method testCompressRoundTrip
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "compress")
+  rows = self~tier5Rows(db, "SELECT typeof(compress('Hello, world'))," -
+    "typeof(uncompress(compress('Hello, world')))," -
+    "CAST(uncompress(compress('Hello, world')) AS TEXT);")
+  self~assertEquals("blob", rows[1][1], "compress returns a blob")
+  self~assertEquals("blob", rows[1][2], "uncompress returns a blob, even for text")
+  self~assertEquals("Hello, world", rows[1][3], "the text comes back")
+  db~close
+
+--------------------------------------------------------------------------------
+-- compress: the size prefix and the zlib header                              --
+--------------------------------------------------------------------------------
+
+::Method testCompressFormat
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "compress")
+  -- 3000 = 23 * 128 + 56: bytes 17 and B8 (0x38 + 0x80, the last one)
+  -- 5 = one byte, 85.  Then the zlib header, 78 xx.
+  rows = self~tier5Rows(db, "SELECT hex(substr(compress(zeroblob(3000)), 1, 3))," -
+    "length(compress(zeroblob(3000))), length(uncompress(compress(zeroblob(3000))))," -
+    "hex(substr(compress('abcde'), 1, 2));")
+  self~assertEquals("17B878", rows[1][1], "size prefix, then zlib")
+  self~assertTrue(rows[1][2] < 100, "3000 zero bytes compress well:" rows[1][2])
+  self~assertEquals(3000, rows[1][3], "3000 bytes come back")
+  self~assertEquals("8578", rows[1][4], "a one-byte size prefix")
+  db~close
+
+--------------------------------------------------------------------------------
+-- compress: binary data through columnBlob and bindBlob                      --
+--------------------------------------------------------------------------------
+
+::Method testCompressBlobThroughRexx
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "compress")
+  data = Copies(XRange("00"x, "FF"x), 20)
+  stmt = .ooSQLiteStmt~new(db, "SELECT compress(?);")
+  self~assertEquals(0, stmt~bindBlob(1, data), "bindBlob")
+  self~assertEquals(stmt~ROW, stmt~step)
+  packed = stmt~columnBlob(1)
+  stmt~finalize
+  self~assertTrue(packed~length < data~length, "smaller:" packed~length)
+  self~assertEquals("2880", packed~left(2)~c2x, "5120 = 40 * 128 + 0")
+  -- Back, from the Rexx string
+  stmt = .ooSQLiteStmt~new(db, "SELECT uncompress(?);")
+  self~assertEquals(0, stmt~bindBlob(1, packed), "bindBlob")
+  self~assertEquals(stmt~ROW, stmt~step)
+  self~assertEquals(stmt~BLOB, stmt~columnType(1), "a blob")
+  self~assertTrue(data == stmt~columnBlob(1), "the same 5120 bytes")
+  stmt~finalize
+  db~close
+
+--------------------------------------------------------------------------------
+-- compress: a compressed column                                              --
+--------------------------------------------------------------------------------
+
+::Method testCompressColumn
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "compress")
+  self~assertEquals(0, db~exec("CREATE TABLE docs(id INTEGER PRIMARY KEY," -
+    "body BLOB);"), db~errMsg)
+  stmt = .ooSQLiteStmt~new(db, "INSERT INTO docs(body) VALUES(compress(?));")
+  Do i = 1 To 50
+    stmt~bindText(1, Copies("line" i "of the document" || "0a"x, i))
+    self~assertEquals(stmt~DONE, stmt~step, "insert" i)
+    stmt~reset
+  End
+  stmt~finalize
+  rows = self~tier5Rows(db, "SELECT count(*), count(uncompress(body)) FROM docs;")
+  self~assertEquals(50, rows[1][1], "50 rows")
+  self~assertEquals(50, rows[1][2], "every body uncompresses")
+  rows = self~tier5Rows(db, "SELECT CAST(uncompress(body) AS TEXT) FROM docs" -
+    "WHERE id = 3;")
+  self~assertEquals(Copies("line 3 of the document" || "0a"x, 3), rows[1][1], -
+    "row 3")
+  rows = self~tier5Rows(db, "SELECT sum(length(body)) < sum(length(uncompress(body)))" -
+    "FROM docs;")
+  self~assertEquals(1, rows[1][1], "the table holds less than the text")
+  db~close
+
+--------------------------------------------------------------------------------
+-- compress: NULL and data that is not compressed                             --
+--------------------------------------------------------------------------------
+
+::Method testCompressInvalid
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "compress")
+  -- compress(NULL) compresses no bytes; it comes back as an empty blob
+  rows = self~tier5Rows(db, "SELECT typeof(compress(NULL))," -
+    "typeof(uncompress(compress(NULL))), length(uncompress(compress(NULL)));")
+  self~assertEquals("blob", rows[1][1], "compress(NULL) is a blob")
+  self~assertEquals("blob", rows[1][2], "and comes back as a blob")
+  self~assertEquals(0, rows[1][3], "with no bytes")
+  -- Anything that is not compress() output gives NULL, not an error
+  stmt = .ooSQLiteStmt~new(db, "SELECT uncompress(x'0102'), uncompress('plain text')," -
+    "uncompress(NULL), uncompress(x'85789C');")
+  self~assertEquals(stmt~ROW, stmt~step, "not an error")
+  Do i = 1 To stmt~columnCount
+    self~assertEquals(5, stmt~columnType(i), "column" i "is NULL")
+  End
+  stmt~finalize
+  db~close
+
+/******************************************************************************/
+/*                                                                            */
+/* Tier 5G — zipfile builtin extension (ZIP archives, zlib)                   */
+/*                                                                            */
+/* zipfile(F) is a table-valued function that reads the archive F (a file    */
+/* name or a blob); CREATE VIRTUAL TABLE ... USING zipfile(F) gives a table  */
+/* that also writes the file; zipfile(name, ...) is an aggregate that builds */
+/* an archive as a blob.  Columns: name, mode, mtime, sz, rawdata, data,     */
+/* method.                                                                    */
+/*                                                                            */
+/******************************************************************************/
+
+--------------------------------------------------------------------------------
+-- zipfile: not available until it is registered                              --
+--------------------------------------------------------------------------------
+
+::Method testZipFileNotRegistered
+  db = self~openMemoryDB
+  stmt = .ooSQLiteStmt~new(db, "SELECT * FROM zipfile('x.zip');")
+  self~assertEquals(1, stmt~initCode, "zipfile is not there before registering")
+  self~assertEquals("no such table: zipfile", db~errMsg)
+  stmt~finalize
+  self~assertEquals(0, .ooSQLExtensions~registerBuiltin(db, "zipFile"), -
+    "registerBuiltin('zipFile')")
+  stmt = .ooSQLiteStmt~new(db, "SELECT * FROM zipfile('x.zip');")
+  self~assertEquals(0, stmt~initCode, "the table-valued function is there now")
+  stmt~finalize
+  db~close
+
+--------------------------------------------------------------------------------
+-- zipfile: write an archive with a virtual table, read it back               --
+--------------------------------------------------------------------------------
+
+::Method testZipFileWriteRead
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "zipFile")
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite-test-write.zip")
+  zipName = tempFile~fullName
+  Call SysFileDelete zipName
+  self~assertEquals(0, db~exec("CREATE VIRTUAL TABLE z USING zipfile('" || -
+    zipName || "');"), db~errMsg)
+  big = Copies("ooSQLite ", 200)
+  stmt = .ooSQLiteStmt~new(db, "INSERT INTO z(name, mtime, data) VALUES(?, ?, ?);")
+  stmt~bindText(1, "small.txt"); stmt~bindInt(2, 1700000000)
+  stmt~bindText(3, "Hello")
+  self~assertEquals(stmt~DONE, stmt~step, "insert small.txt:" db~errMsg)
+  stmt~reset
+  stmt~bindText(1, "docs/big.txt"); stmt~bindInt(2, 1700000100)
+  stmt~bindText(3, big)
+  self~assertEquals(stmt~DONE, stmt~step, "insert docs/big.txt:" db~errMsg)
+  stmt~finalize
+  self~assertEquals(0, db~exec("INSERT INTO z(name, mode) VALUES('empty/'," -
+    "16877);"), "a directory:" db~errMsg)
+  db~close
+  -- The file is a ZIP archive: a local file header first
+  self~assertTrue(SysFileExists(zipName), "the archive was written")
+  s = .Stream~new(zipName)
+  head = s~charIn(1, 4)
+  s~close
+  self~assertEquals("504B0304", head~c2x, "PK 03 04")
+  -- Read it back with the table-valued function, on a new connection
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "zipFile")
+  rows = self~tier5Rows(db, "SELECT name, mode, mtime, sz, method," -
+    "CAST(data AS TEXT), length(rawdata) FROM zipfile('" || zipName || "')" -
+    "ORDER BY name;")
+  self~assertEquals(3, rows~items, "three entries")
+  self~assertEquals("docs/big.txt", rows[1][1])
+  self~assertEquals(33188, rows[1][2], "default mode: a file, 0644")
+  self~assertEquals(1700000100, rows[1][3], "mtime")
+  self~assertEquals(big~length, rows[1][4], "sz is the uncompressed size")
+  self~assertEquals(8, rows[1][5], "deflated: it compresses well")
+  self~assertTrue(big == rows[1][6], "the data")
+  self~assertTrue(rows[1][7] < big~length, "rawdata is smaller:" rows[1][7])
+  self~assertEquals("empty/", rows[2][1], "the directory")
+  self~assertEquals(16877, rows[2][2], "mode of the directory")
+  self~assertEquals(0, rows[2][4], "no data")
+  self~assertEquals("small.txt", rows[3][1])
+  self~assertEquals(5, rows[3][4], "sz")
+  self~assertEquals(0, rows[3][5], "stored: deflating 5 bytes does not pay")
+  self~assertEquals("Hello", rows[3][6], "the data")
+  self~assertEquals(5, rows[3][7], "rawdata is the data itself")
+  db~close
+
+--------------------------------------------------------------------------------
+-- zipfile: UPDATE and DELETE rewrite the archive                             --
+--------------------------------------------------------------------------------
+
+::Method testZipFileUpdateDelete
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "zipFile")
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite-test-update.zip")
+  zipName = tempFile~fullName
+  Call SysFileDelete zipName
+  db~exec("CREATE VIRTUAL TABLE z USING zipfile('" || zipName || "');")
+  self~assertEquals(0, db~exec("INSERT INTO z(name, data) VALUES('a.txt', 'one')," -
+    "('b.txt', 'two'), ('c.txt', 'three');"), db~errMsg)
+  self~assertEquals(0, db~exec("UPDATE z SET data = 'TWO' WHERE name = 'b.txt';"), -
+    db~errMsg)
+  self~assertEquals(0, db~exec("UPDATE z SET name = 'cc.txt' WHERE name = 'c.txt';"), -
+    db~errMsg)
+  self~assertEquals(0, db~exec("DELETE FROM z WHERE name = 'a.txt';"), db~errMsg)
+  db~close
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "zipFile")
+  rows = self~tier5Rows(db, "SELECT name, CAST(data AS TEXT) FROM zipfile('" || -
+    zipName || "') ORDER BY name;")
+  self~assertEquals(2, rows~items, "two entries left")
+  self~assertEquals("b.txt", rows[1][1]); self~assertEquals("TWO", rows[1][2])
+  self~assertEquals("cc.txt", rows[2][1]); self~assertEquals("three", rows[2][2])
+  db~close
+
+--------------------------------------------------------------------------------
+-- zipfile: the aggregate builds an archive as a blob, read back from Rexx    --
+--------------------------------------------------------------------------------
+
+::Method testZipFileAggregateBlob
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "zipFile")
+  stmt = .ooSQLiteStmt~new(db, "SELECT zipfile(column1, column2) FROM" -
+    "(VALUES('one.txt', 'first'), ('two.bin', x'00FF00FF'));")
+  self~assertEquals(stmt~ROW, stmt~step, db~errMsg)
+  self~assertEquals(stmt~BLOB, stmt~columnType(1), "a blob")
+  archive = stmt~columnBlob(1)
+  stmt~finalize
+  self~assertEquals("504B0304", archive~left(4)~c2x, "a ZIP archive")
+  self~assertEquals("504B0506", archive~right(22)~left(4)~c2x, -
+    "the end of central directory record")
+  -- The Rexx string, bound back, is read by the table-valued function
+  stmt = .ooSQLiteStmt~new(db, "SELECT name, sz, data FROM zipfile(?) ORDER BY name;")
+  self~assertEquals(0, stmt~bindBlob(1, archive), "bindBlob")
+  self~assertEquals(stmt~ROW, stmt~step, db~errMsg)
+  self~assertEquals("one.txt", stmt~columnText(1))
+  self~assertEquals("first", stmt~columnBlob(3))
+  self~assertEquals(stmt~ROW, stmt~step)
+  self~assertEquals("two.bin", stmt~columnText(1))
+  self~assertEquals(4, stmt~columnInt(2), "sz")
+  self~assertTrue("00FF00FF"x == stmt~columnBlob(3), "binary data")
+  self~assertEquals(stmt~DONE, stmt~step, "two entries")
+  stmt~finalize
+  db~close
+
+--------------------------------------------------------------------------------
+-- zipfile: errors                                                            --
+--------------------------------------------------------------------------------
+
+::Method testZipFileErrors
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "zipFile")
+  msg = self~tier5StepError(db, "SELECT * FROM zipfile('/no/such/dir/x.zip');")
+  self~assertEquals("cannot open file: /no/such/dir/x.zip", msg)
+  msg = self~tier5StepError(db, "SELECT * FROM zipfile(x'00010203');")
+  self~assertEquals("cannot find end of central directory record", msg)
+  self~assertEquals(1, db~exec("CREATE VIRTUAL TABLE bad USING zipfile();"), -
+    "no file name")
+  self~assertEquals("zipfile constructor requires one argument", db~errMsg)
+  -- A duplicate name and a bad mode are refused when written
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite-test-errors.zip")
+  zipName = tempFile~fullName
+  Call SysFileDelete zipName
+  db~exec("CREATE VIRTUAL TABLE z USING zipfile('" || zipName || "');")
+  self~assertEquals(0, db~exec("INSERT INTO z(name, data) VALUES('a', 'x');"), -
+    db~errMsg)
+  self~assertEquals(19, db~exec("INSERT INTO z(name, data) VALUES('a', 'y');"), -
+    "a duplicate name is SQLITE_CONSTRAINT")
+  self~assertEquals('duplicate name: "a"', db~errMsg)
+  self~assertEquals(1, db~exec("INSERT INTO z(name, mode, data) VALUES('b'," -
+    "'nonsense', 'y');"), "a bad mode")
+  self~assertEquals("zipfile: parse error in mode: nonsense", db~errMsg)
+  db~close
+  -- The rows that were accepted are in the file
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "zipFile")
+  rows = self~tier5Rows(db, "SELECT name, CAST(data AS TEXT) FROM zipfile('" || -
+    zipName || "');")
+  self~assertEquals(1, rows~items, "one entry")
+  self~assertEquals("x", rows[1][2], "the first data")
+  db~close
+
+--------------------------------------------------------------------------------
+-- compress and zipFile: automatic registration                               --
+--------------------------------------------------------------------------------
+
+::Method testZipFileCompressAuto
+  Signal On Syntax Name TestZipAutoCleanup
+  .ooSQLExtensions~resetAutoBuiltin
+  self~assertEquals(0, .ooSQLExtensions~autoBuiltin("zipFile"), "autoBuiltin zipFile")
+  self~assertEquals(0, .ooSQLExtensions~autoBuiltin("COMPRESS"), -
+    "autoBuiltin COMPRESS (names are case-insensitive)")
+  db = self~openMemoryDB
+  rows = self~tier5Rows(db, "SELECT hex(uncompress(compress('ab')))," -
+    "(SELECT count(*) FROM zipfile((SELECT zipfile('n', 'd'))));")
+  self~assertEquals("6162", rows[1][1], "compress is automatic")
+  self~assertEquals(1, rows[1][2], "zipfile is automatic")
+  db~close
+  self~assertEquals(0, .ooSQLExtensions~cancelAutoBuiltin("compress"))
+  db = self~openMemoryDB
+  stmt = .ooSQLiteStmt~new(db, "SELECT compress('x');")
+  self~assertEquals(1, stmt~initCode, "compress is no longer automatic")
+  stmt~finalize
+  db~close
+  .ooSQLExtensions~resetAutoBuiltin
+  Return
+
+TestZipAutoCleanup:
+  .ooSQLExtensions~resetAutoBuiltin
+  Raise Propagate
 
 /******************************************************************************/
 /*                                                                            */
@@ -9836,6 +10181,67 @@ Done:
 /******************************************************************************/
 
 /* --- commitHook callbacks --- */
+
+/******************************************************************************/
+/*                                                                            */
+/* Section C14: Classic — the compress and zipFile builtins                   */
+/*                                                                            */
+/******************************************************************************/
+
+--------------------------------------------------------------------------------
+-- compress: binary data through oosqlBindBlob and oosqlColumnBlob            --
+--------------------------------------------------------------------------------
+
+::Method testClassicCompress
+  db = self~classicOpenMemory
+  self~assertEquals(0, ooSQLiteRegisterBuiltin(db, "compress"), "register compress")
+  data = Copies(XRange("00"x, "FF"x), 4)
+  Call oosqlPrepare db, "SELECT compress(?);", "stmt"
+  self~assertEquals(0, oosqlBindBlob(stmt, 1, data))
+  self~assertEquals(.ooSQLite~ROW, oosqlStep(stmt))
+  self~assertEquals(.ooSQLite~BLOB, oosqlColumnType(stmt, 1), "a BLOB")
+  packed = oosqlColumnBlob(stmt, 1)
+  Call oosqlFinalize stmt
+  self~assertEquals("088078", packed~left(3)~c2x, "1024 = 8 * 128 + 0, then zlib")
+  Call oosqlPrepare db, "SELECT uncompress(?), uncompress(x'0102');", "stmt"
+  self~assertEquals(0, oosqlBindBlob(stmt, 1, packed))
+  self~assertEquals(.ooSQLite~ROW, oosqlStep(stmt))
+  self~assertEquals(1024, oosqlColumnBytes(stmt, 1), "1024 bytes")
+  self~assertTrue(data == oosqlColumnBlob(stmt, 1), "the same bytes")
+  self~assertEquals(5, oosqlColumnType(stmt, 2), "not compressed: NULL")
+  Call oosqlFinalize stmt
+  self~assertEquals(0, oosqlClose(db))
+
+--------------------------------------------------------------------------------
+-- zipFile: an archive built as a blob, read back through oosqlBindBlob       --
+--------------------------------------------------------------------------------
+
+::Method testClassicZipFile
+  db = self~classicOpenMemory
+  self~assertEquals(0, ooSQLiteRegisterBuiltin(db, "zipFile"), "register zipFile")
+  -- zipfile(name, mode, mtime, data): a NULL mode is a file, 0644
+  Call oosqlPrepare db, "SELECT zipfile(column1, NULL, column2, column3) FROM" -
+    "(VALUES('a.txt', 1700000000, 'alpha'), ('b.txt', 1700000001, 'beta'));", "stmt"
+  self~assertEquals(.ooSQLite~ROW, oosqlStep(stmt), oosqlErrMsg(db))
+  archive = oosqlColumnBlob(stmt, 1)
+  Call oosqlFinalize stmt
+  self~assertEquals("504B0304", archive~left(4)~c2x, "a ZIP archive")
+  Call oosqlPrepare db, "SELECT name, mtime, data FROM zipfile(?) ORDER BY name;", "stmt"
+  self~assertEquals(0, oosqlBindBlob(stmt, 1, archive))
+  self~assertEquals(.ooSQLite~ROW, oosqlStep(stmt), oosqlErrMsg(db))
+  self~assertEquals("a.txt", oosqlColumnText(stmt, 1))
+  self~assertEquals(1700000000, oosqlColumnInt(stmt, 2), "mtime")
+  self~assertEquals("alpha", oosqlColumnBlob(stmt, 3))
+  self~assertEquals(.ooSQLite~ROW, oosqlStep(stmt))
+  self~assertEquals("beta", oosqlColumnBlob(stmt, 3))
+  self~assertEquals(.ooSQLite~DONE, oosqlStep(stmt), "two entries")
+  Call oosqlFinalize stmt
+  -- An error from the extension reaches oosqlErrMsg
+  Call oosqlPrepare db, "SELECT * FROM zipfile(x'00');", "stmt"
+  self~assertEquals(1, oosqlStep(stmt), "not an archive")
+  self~assertEquals("cannot find end of central directory record", oosqlErrMsg(db))
+  Call oosqlFinalize stmt
+  self~assertEquals(0, oosqlClose(db))
 
 ::Routine classicCommitHookCB Public
   Use Arg userData
