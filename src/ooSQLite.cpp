@@ -4359,6 +4359,49 @@ RexxMethod1(RexxObjectPtr, oosql_getNull_atr_cls, CSELF, pCSelf)
 {
     return ((pCooSQLiteClass)pCSelf)->nullObj;
 }
+/**
+ * A copy of the string value of an object, to be kept as the value that shows
+ * SQL NULL (the null attribute), protected with a global reference.
+ *
+ * The copy is a plain String with every character of the value, "00"x
+ * included.  The CSELF of the ooSQLite class, of a connection and of a
+ * statement each keeps its own copy, and releases it when it is replaced.
+ *
+ * It used to keep, besides the copy, a pointer to the string value of the
+ * argument (nullStr), and to make the copies for new connections and
+ * statements from that pointer: the argument was garbage collected, and the
+ * pointer then showed garbage.  The copies stopped at the first "00"x too.
+ * See technical note #64.
+ *
+ * @param c      Thread context we are operating in.
+ * @param o      The object: a String already kept by the caller, or the
+ *               argument of a null attribute setter.
+ * @param pos    The position of the argument, for the error raised when it
+ *               has no string value, or 0 when o is a String.
+ *
+ * @return The copy, or NULLOBJECT with a condition raised.
+ */
+static RexxObjectPtr keptNullValue(RexxThreadContext *c, RexxObjectPtr o, size_t pos)
+{
+    RexxObjectPtr s = o;
+    if ( pos != 0 )
+    {
+        s = stringObject(c, o);
+        if ( s == NULLOBJECT )
+        {
+            if ( ! c->CheckCondition() )
+            {
+                c->RaiseException1(Rexx_Error_Invalid_argument_string, c->StringSize(pos));
+            }
+            return NULLOBJECT;
+        }
+    }
+
+    RexxStringObject str  = (RexxStringObject)s;
+    RexxStringObject copy = c->NewString(c->StringData(str), c->StringLength(str));
+    return c->RequestGlobalReference(copy);
+}
+
 /** ooSQLite::null  [attribute set]
  *
  *  @note  The default value to use for SQL NULL is set in this, the ooSQLite
@@ -4368,11 +4411,9 @@ RexxMethod1(RexxObjectPtr, oosql_getNull_atr_cls, CSELF, pCSelf)
  *         If the NULL value is the nil object, we do not need to worry about
  *         garbage collection.  If it is a Rexx string value, we do.  When the
  *         NULL attribute is set, we release the global reference on the old
- *         value if it was a Rexx string object.  For the connection object, we
- *         do not want to release the global reference on the global default
- *         value, so for that object we create a new Rexx string  for the
- *         object.  This is why we save the CSTRING value of the global NULL
- *         value.
+ *         value if it was a Rexx string object.  Each new connection object
+ *         gets its own copy of the global default value (keptNullValue()),
+ *         so that it can release it without touching the global one.
  */
 RexxMethod2(RexxObjectPtr, oosql_setNull_atr_cls, RexxObjectPtr, nullObj, CSELF, pCSelf)
 {
@@ -4382,19 +4423,15 @@ RexxMethod2(RexxObjectPtr, oosql_setNull_atr_cls, RexxObjectPtr, nullObj, CSELF,
     if ( nullObj == TheNilObj )
     {
         pCoosql->nullObj = nullObj;
-        pCoosql->nullStr = NULL;
     }
     else
     {
-        CSTRING nullStr = requiredStringValue(context->threadContext, nullObj, 1);
-        if ( nullStr == NULL )
+        RexxObjectPtr copy = keptNullValue(context->threadContext, nullObj, 1);
+        if ( copy == NULLOBJECT )
         {
             return NULLOBJECT;
         }
-        pCoosql->nullStr = nullStr;
-        pCoosql->nullObj = context->String(pCoosql->nullStr);
-
-        context->RequestGlobalReference(pCoosql->nullObj);
+        pCoosql->nullObj = copy;
     }
 
     if ( oldNull != TheNilObj )
@@ -5866,8 +5903,10 @@ static void setDBInitStatusFile(RexxMethodContext *c, pCooSQLiteConn pConn, CSTR
     RexxStringObject rxName = c->String(file);
     c->SetObjectVariable("rxFileName", rxName);
 
+    // The name used in error messages comes from the String kept in the object
+    // variable: file may be a temporary (File~absolutePath), see note #64.
     pConn->rxFileName = rxName;
-    pConn->fileName   = file;
+    pConn->fileName   = c->CString(rxName);
 }
 
 /**
@@ -5953,10 +5992,7 @@ static bool setDBDefaults(RexxMethodContext *c, pCooSQLiteConn pConn, pCooSQLite
     }
     else
     {
-        pConn->nullStr = pCsc->nullStr;
-        pConn->nullObj = c->String(pConn->nullStr);
-
-        c->RequestGlobalReference(pConn->nullObj);
+        pConn->nullObj = keptNullValue(c->threadContext, pCsc->nullObj, 0);
     }
     return true;
 }
@@ -6156,8 +6192,8 @@ RexxMethod1(RexxObjectPtr, oosqlconn_getNull_atr, CSELF, pCSelf)
  *         the existing, (if it is not the nil object,) and create a new Rexx
  *         string if needed.
  *
- *         This same pattern is followed for a new statement object, which is
- *         why we save the CSTRING value of the attribute here.
+ *         This same pattern is followed for a new statement object, which gets
+ *         its own copy of the connection's value (keptNullValue()).
  */
 RexxMethod2(RexxObjectPtr, oosqlconn_setNull_atr, RexxObjectPtr, nullObj, CSELF, pCSelf)
 {
@@ -6171,19 +6207,15 @@ RexxMethod2(RexxObjectPtr, oosqlconn_setNull_atr, RexxObjectPtr, nullObj, CSELF,
     if ( nullObj == TheNilObj )
     {
         pConn->nullObj = nullObj;
-        pConn->nullStr = NULL;
     }
     else
     {
-        CSTRING nullStr = requiredStringValue(context->threadContext, nullObj, 1);
-        if ( nullStr == NULL )
+        RexxObjectPtr copy = keptNullValue(context->threadContext, nullObj, 1);
+        if ( copy == NULLOBJECT )
         {
             return NULLOBJECT;
         }
-        pConn->nullStr = nullStr;
-        pConn->nullObj = context->String(pConn->nullStr);
-
-        context->RequestGlobalReference(pConn->nullObj);
+        pConn->nullObj = copy;
     }
 
     if ( oldNull != TheNilObj )
@@ -6251,6 +6283,7 @@ RexxMethod5(RexxObjectPtr, oosqlconn_init, RexxObjectPtr, rxFile, OPTIONAL_int32
             pConn->initCode    = OO_UNEXPECTED_RESULT;
             pConn->lastErrMsg  = context->String("the database file, specified as a File object, "
                                          "could not be converted to a string file name");
+            context->SetObjectVariable("rxLastErrMsg", pConn->lastErrMsg);
             return NULLOBJECT;
         }
     }
@@ -7559,7 +7592,10 @@ RexxMethod7(RexxObjectPtr, oosqlconn_exec, CSTRING, sql, OPTIONAL_logical_t, doC
         }
 
         cbc.callbackContext = context->threadContext;
-        cbc.nullObj         = pConn->nullObj;
+
+        // A callback may change the null attribute, and the connection then
+        // releases the value the exec started with: the exec keeps it.  Note #64.
+        cbc.nullObj         = context->RequestGlobalReference(pConn->nullObj);
 
         if ( argumentExists(4) )
         {
@@ -7623,6 +7659,8 @@ RexxMethod7(RexxObjectPtr, oosqlconn_exec, CSTRING, sql, OPTIONAL_logical_t, doC
             }
             sqlite3_free(cbc.indexes);
         }
+
+        context->ReleaseGlobalReference(cbc.nullObj);
     }
     else
     {
@@ -9101,13 +9139,12 @@ RexxMethod2(RexxObjectPtr, oosqlstmt_setNull_atr, RexxObjectPtr, nullObj, CSELF,
     }
     else
     {
-        CSTRING nullStr = requiredStringValue(context->threadContext, nullObj, 1);
-        if ( nullStr == NULL )
+        RexxObjectPtr copy = keptNullValue(context->threadContext, nullObj, 1);
+        if ( copy == NULLOBJECT )
         {
             return NULLOBJECT;
         }
-        pCstmt->nullObj = context->String(nullStr);
-        context->RequestGlobalReference(pCstmt->nullObj);
+        pCstmt->nullObj = copy;
     }
 
     if ( oldNull != TheNilObj )
@@ -9221,8 +9258,7 @@ RexxMethod4(RexxObjectPtr, oosqlstmt_init, RexxObjectPtr, db, CSTRING, sql, OPTI
         }
         else
         {
-            pCstmt->nullObj = context->String(pConn->nullStr);
-            context->RequestGlobalReference(pCstmt->nullObj);
+            pCstmt->nullObj = keptNullValue(context->threadContext, pConn->nullObj, 0);
         }
 
         context->SetObjectVariable("__rxTail", pCstmt->tail);
@@ -11127,8 +11163,6 @@ RexxMethod1(int, oosqlmtx_try, CSELF, pCSelf)
  *  as a container to hold them, retrieve them, and unload / release them.
  */
 #define OOSQLEXTENSIONS_CLASS     "ooSQLExtensions"
-#define LAST_ERR_MSG_ATTRIBUTE    "extensionsLastErrMsgAttribute"
-#define LAST_ERR_CODE_ATTRIBUTE   "extensionsLastErrCodeAttribute"
 #define LIBRARY_TABLE_ATTRIBUTE   "extensionsLibraryTableAttribute"
 #define PACKAGE_TABLE_ATTRIBUTE   "extensionsPackageTableAttribute"
 
@@ -11177,24 +11211,44 @@ static void setLibBaseName(pCooSQLLibrary pcl, CSTRING libName)
 }
 
 /**
- * Sets the last error attributes of the object whose method context we are
- * operating in.
+ * Replaces the last error message and code kept in the CSELF of an
+ * ooSQLExtensions, ooSQLPackage or ooSQLLibrary object.
  *
- * @param c
+ * The lastErrMsg and lastErrCode attributes return what is kept there, so the
+ * objects must stay alive for as long as they are kept.  They are protected
+ * with a global reference, taken here for the new ones and released for the
+ * old ones (ooRexx counts global references: the same object can be kept in
+ * two places, as when the ooSQLExtensions class takes the error of a package).
+ *
+ * They used to be kept alive by an object variable instead, set on the object
+ * whose method was running: that was the wrong object when the error of a
+ * library was set from a method of ooSQLExtensions, and the reset functions
+ * set the variable to the null string while keeping "no error".  See
+ * technical note #64.
+ *
+ * @param c            Thread context we are operating in.
+ * @param msgField     The lastErrMsg field.
+ * @param codeField    The lastErrCode field.
  * @param lastErrMsg   Error message.
  * @param lastErrCode  Error code.
- *
- * @note We use this as a generic function for the ooSQLExtensions,
- *       ooSQLPackage, and ooSQLLibrary classes.
  */
-void extensionsSetLastErr(RexxMethodContext *c, RexxStringObject lastErrMsg, RexxObjectPtr lastErrCode)
+static void keepLastErr(RexxThreadContext *c, RexxStringObject *msgField, RexxObjectPtr *codeField,
+                        RexxStringObject lastErrMsg, RexxObjectPtr lastErrCode)
 {
-    c->SetObjectVariable(LAST_ERR_MSG_ATTRIBUTE, lastErrMsg);
-    c->SetObjectVariable(LAST_ERR_CODE_ATTRIBUTE, lastErrCode);
-}
-void extensionsSetLastErr(RexxMethodContext *c, CSTRING lastErrMsg, int lastErrCode)
-{
-    extensionsSetLastErr(c, c->String(lastErrMsg), c->Int32(lastErrCode));
+    RexxStringObject oldMsg  = *msgField;
+    RexxObjectPtr    oldCode = *codeField;
+
+    *msgField  = (RexxStringObject)c->RequestGlobalReference(lastErrMsg);
+    *codeField = c->RequestGlobalReference(lastErrCode);
+
+    if ( oldMsg != NULLOBJECT )
+    {
+        c->ReleaseGlobalReference(oldMsg);
+    }
+    if ( oldCode != NULLOBJECT )
+    {
+        c->ReleaseGlobalReference(oldCode);
+    }
 }
 
 /**
@@ -11208,9 +11262,7 @@ void extensionsSetLastErr(RexxMethodContext *c, CSTRING lastErrMsg, int lastErrC
 void extensionsSetLastErr(RexxMethodContext *c, pCooSQLExtensions pcext, RexxStringObject lastErrMsg,
                           RexxObjectPtr lastErrCode)
 {
-    pcext->lastErrCode = lastErrCode;
-    pcext->lastErrMsg  = lastErrMsg;
-    extensionsSetLastErr(c, lastErrMsg, lastErrCode);
+    keepLastErr(c->threadContext, &pcext->lastErrMsg, &pcext->lastErrCode, lastErrMsg, lastErrCode);
 }
 void extensionsSetLastErr(RexxMethodContext *c, pCooSQLExtensions pcext, CSTRING lastErrMsg, int lastErrCode)
 {
@@ -11227,13 +11279,24 @@ void extensionsSetLastErr(RexxMethodContext *c, pCooSQLExtensions pcext, CSTRING
  */
 void packageSetLastErr(RexxMethodContext *c, pCooSQLPackage pcp, RexxStringObject lastErrMsg, RexxObjectPtr lastErrCode)
 {
-    pcp->lastErrCode = lastErrCode;
-    pcp->lastErrMsg  = lastErrMsg;
-    extensionsSetLastErr(c, lastErrMsg, lastErrCode);
+    keepLastErr(c->threadContext, &pcp->lastErrMsg, &pcp->lastErrCode, lastErrMsg, lastErrCode);
 }
 void packageSetLastErr(RexxMethodContext *c, pCooSQLPackage pcp, CSTRING lastErrMsg, int lastErrCode)
 {
     packageSetLastErr(c, pcp, c->String(lastErrMsg), c->Int32(lastErrCode));
+}
+
+/**
+ * Sets the last error attributes for a ooSQLLibrary object.
+ *
+ * @param c
+ * @param pcl
+ * @param lastErrMsg   Error message.
+ * @param lastErrCode  Error code.
+ */
+void librarySetLastErr(RexxMethodContext *c, pCooSQLLibrary pcl, RexxStringObject lastErrMsg, RexxObjectPtr lastErrCode)
+{
+    keepLastErr(c->threadContext, &pcl->lastErrMsg, &pcl->lastErrCode, lastErrMsg, lastErrCode);
 }
 
 /**
@@ -11244,35 +11307,29 @@ void packageSetLastErr(RexxMethodContext *c, pCooSQLPackage pcp, CSTRING lastErr
  */
 void resetExtensionsLastErr(RexxMethodContext *c, pCooSQLExtensions pcext)
 {
-    pcext->lastErrCode = TheZeroObj;
-    pcext->lastErrMsg  = c->String("no error");
-    extensionsSetLastErr(c, c->NullString(), TheZeroObj);
+    extensionsSetLastErr(c, pcext, c->String("no error"), TheZeroObj);
 }
 
 /**
- * Sets the last error attributes of the ooSQLPackage object back to the no
+ * Sets the last error attributes of an ooSQLPackage object back to the no
  * error state.
  *
  * @param c
  */
 void resetPackageLastErr(RexxMethodContext *c, pCooSQLPackage pcp)
 {
-    pcp->lastErrCode = TheZeroObj;
-    pcp->lastErrMsg  = c->String("no error");
-    extensionsSetLastErr(c, c->NullString(), TheZeroObj);
+    packageSetLastErr(c, pcp, c->String("no error"), TheZeroObj);
 }
 
 /**
- * Sets the last error attributes of the ooSQLLibrary object back to the no
+ * Sets the last error attributes of an ooSQLLibrary object back to the no
  * error state.
  *
  * @param c
  */
 void resetLibraryLastErr(RexxMethodContext *c, pCooSQLLibrary pcl)
 {
-    pcl->lastErrCode = TheZeroObj;
-    pcl->lastErrMsg  = c->String("no error");
-    extensionsSetLastErr(c, c->NullString(), TheZeroObj);
+    librarySetLastErr(c, pcl, c->String("no error"), TheZeroObj);
 }
 
 /**
@@ -11293,9 +11350,7 @@ static void extensionsFormatLastErr(RexxMethodContext *c, pCooSQLExtensions pcex
 
     snprintf(buf, 512, fmt, insert);
 
-    pcext->lastErrMsg  = c->String(buf);
-    pcext->lastErrCode = c->UnsignedInt32(code);
-    extensionsSetLastErr(c, pcext->lastErrMsg, pcext->lastErrCode);
+    extensionsSetLastErr(c, pcext, c->String(buf), c->UnsignedInt32(code));
 }
 static void extensionsFormatLastErr(RexxMethodContext *c, pCooSQLExtensions pcext, uint32_t code, CSTRING fmt,
                                     RexxObjectPtr insert)
@@ -11320,9 +11375,7 @@ static void packageFormatLastErr(RexxMethodContext *c, pCooSQLPackage pcp, uint3
 
     snprintf(buf, 512, fmt, insert);
 
-    pcp->lastErrMsg  = c->String(buf);
-    pcp->lastErrCode = c->UnsignedInt32(code);
-    extensionsSetLastErr(c, pcp->lastErrMsg, pcp->lastErrCode);
+    packageSetLastErr(c, pcp, c->String(buf), c->UnsignedInt32(code));
 }
 static void packageFormatLastErr(RexxMethodContext *c, pCooSQLPackage pcp, uint32_t code, CSTRING fmt, RexxObjectPtr insert)
 {
@@ -11336,10 +11389,7 @@ static void extensionsFormatBuiltinErr(RexxMethodContext *c, pCooSQLExtensions p
 
     snprintf(buffer, sizeof(buffer), fmt, argPos, list, name);
 
-    pcext->lastErrCode = c->Int32(rc);
-    pcext->lastErrMsg  = c->String(buffer);
-
-    extensionsSetLastErr(c, pcext->lastErrMsg, pcext->lastErrCode);
+    extensionsSetLastErr(c, pcext, c->String(buffer), c->Int32(rc));
 }
 
 static void tooManyAutoRegistrations(RexxMethodContext *c, pCooSQLExtensions pcext, CSTRING type, size_t n)
@@ -11348,10 +11398,7 @@ static void tooManyAutoRegistrations(RexxMethodContext *c, pCooSQLExtensions pce
 
     snprintf(buf, 256, "the number of automatically registered %s can not exceed %zd", type, n);
 
-    pcext->lastErrCode = c->Int32(SQLITE_MISUSE);
-    pcext->lastErrMsg  = c->String(buf);
-
-    extensionsSetLastErr(c, pcext->lastErrMsg, pcext->lastErrCode);
+    extensionsSetLastErr(c, pcext, c->String(buf), c->Int32(SQLITE_MISUSE));
 }
 
 
@@ -11930,11 +11977,8 @@ bool resolveFunction(RexxMethodContext *c, pCooSQLLibrary pcl, RexxObjectPtr rxN
     void       *func = lib->getProcedure(procName);
     if ( func == NULL )
     {
-        pcl->lastErrMsg  = c->String(lib->getLastErrMsg());
-        pcl->lastErrCode = c->UnsignedInt32(lib->getLastErrCode());
-
+        librarySetLastErr(c, pcl, c->String(lib->getLastErrMsg()), c->UnsignedInt32(lib->getLastErrCode()));
         lib->resetLastErr();
-        extensionsSetLastErr(c, pcl->lastErrMsg, pcl->lastErrCode);
         return false;
     }
 
@@ -12236,9 +12280,7 @@ RexxMethod4(RexxObjectPtr, oosqlext_autoCollation_cls, RexxObjectPtr, packageNam
     {
         pCooSQLPackage pcp = (pCooSQLPackage)context->ObjectToCSelf(package);
 
-        pcext->lastErrCode = pcp->lastErrCode;
-        pcext->lastErrMsg  = pcp->lastErrMsg;
-        extensionsSetLastErr(context, pcext->lastErrMsg, pcext->lastErrCode);
+        extensionsSetLastErr(context, pcext, pcp->lastErrMsg, pcp->lastErrCode);
 
         return TheFalseObj;
     }
@@ -12398,9 +12440,7 @@ RexxMethod4(RexxObjectPtr, oosqlext_autoFunction_cls, RexxObjectPtr, packageName
     {
         pCooSQLPackage pcp = (pCooSQLPackage)context->ObjectToCSelf(package);
 
-        pcext->lastErrCode = pcp->lastErrCode;
-        pcext->lastErrMsg  = pcp->lastErrMsg;
-        extensionsSetLastErr(context, pcext->lastErrMsg, pcext->lastErrCode);
+        extensionsSetLastErr(context, pcext, pcp->lastErrMsg, pcp->lastErrCode);
 
         return TheFalseObj;
     }
@@ -12813,10 +12853,7 @@ RexxMethod3(RexxObjectPtr, oosqlext_loadLibrary_cls, RexxObjectPtr, libName, OPT
 
     if ( ! pcl->valid )
     {
-        pcext->lastErrMsg  = pcl->lastErrMsg;
-        pcext->lastErrCode = pcl->lastErrCode;
-
-        extensionsSetLastErr(context, pcl->lastErrMsg, pcl->lastErrCode);
+        extensionsSetLastErr(context, pcext, pcl->lastErrMsg, pcl->lastErrCode);
         goto done_out;
     }
 
@@ -12849,10 +12886,7 @@ RexxMethod3(RexxObjectPtr, oosqlext_loadLibrary_cls, RexxObjectPtr, libName, OPT
 
                 if ( ! resolveFunction(context, pcl, rxName) )
                 {
-                    pcext->lastErrMsg  = pcl->lastErrMsg;
-                    pcext->lastErrCode = pcl->lastErrCode;
-
-                    extensionsSetLastErr(context, pcl->lastErrMsg, pcl->lastErrCode);
+                    extensionsSetLastErr(context, pcext, pcl->lastErrMsg, pcl->lastErrCode);
                     result = TheFalseObj;
                     break;
                 }
@@ -12862,10 +12896,7 @@ RexxMethod3(RexxObjectPtr, oosqlext_loadLibrary_cls, RexxObjectPtr, libName, OPT
         {
             if ( ! resolveFunction(context, pcl, procedures) )
             {
-                pcext->lastErrMsg  = pcl->lastErrMsg;
-                pcext->lastErrCode = pcl->lastErrCode;
-
-                extensionsSetLastErr(context, pcl->lastErrMsg, pcl->lastErrCode);
+                extensionsSetLastErr(context, pcext, pcl->lastErrMsg, pcl->lastErrCode);
                 result = TheFalseObj;
             }
         }
@@ -12944,10 +12975,7 @@ RexxMethod4(RexxObjectPtr, oosqlext_loadPackage_cls, CSTRING, libName, OPTIONAL_
 
     if ( ! pcp->valid )
     {
-        pcext->lastErrMsg  = pcp->lastErrMsg;
-        pcext->lastErrCode = pcp->lastErrCode;
-
-        extensionsSetLastErr(context, pcp->lastErrMsg, pcp->lastErrCode);
+        extensionsSetLastErr(context, pcext, pcp->lastErrMsg, pcp->lastErrCode);
         goto done_out;
     }
 

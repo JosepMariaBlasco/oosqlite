@@ -285,7 +285,6 @@ typedef struct _oosqlConnCSelf {
     const char         *fileName;           // The database file name.
     RexxObjectPtr       rexxSelf;           // The Rexx ooSQLiteConnection object.
     RexxObjectPtr       nullObj;            // Default representation of SQL NULL for this connection
-    CSTRING             nullStr;            // If nullObj is a Rexx string object, the string value of the object
     RexxObjectPtr       stmtBag;            // The bag holding prepared statments (which is really a set.)
     RexxStringObject    rxFileName;         // The Rexx string object database file name.
     RexxStringObject    lastErrMsg;         // sqlite3_errmsg()
@@ -386,7 +385,6 @@ typedef struct _oosqlclassCSelf {
     pSQLiteFunctionEntry  *autoFunctions;
     pSQLiteCollationEntry *autoCollations;
     RexxObjectPtr         nullObj;            // Default representation of SQL NULL
-    CSTRING               nullStr;            // If nullObj is a Rexx string object, the string value of the object
     ResultSetType         format;             // The default format of a result set for the current process.
     size_t                countPackages;
     size_t                countFunctions;
