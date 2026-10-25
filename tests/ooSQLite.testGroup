@@ -223,6 +223,12 @@ Return testResult
   self~assertTrue(v~words = 1, "version(C) should be a single word:" v)
   self~assertTrue(v~pos(".") > 0, "version(C) should contain a dot:" v)
 
+::Method testVersionIs11
+  -- ooSQLite 1.1: the version is 1.1.0.0, with a fixed build level (the
+  -- build level was the SVN revision until 1.0.2.13107)
+  self~assertEquals("1.1.0.0", .ooSQLite~version("C"), "version(C)")
+  self~assertEquals("1.1.0.0", ooSQLiteVersion("compact"), "ooSQLiteVersion('compact')")
+
 ::Method testVersionFull
   v = .ooSQLite~version("F")
   self~assertTrue(v~pos("ooSQLite") > 0, "version(F) should mention ooSQLite")
@@ -5063,6 +5069,8 @@ TestCancelAllCleanup:
     "lastErrCode should be OO_PACKAGE_NOT_VALID")
   self~assertTrue(.ooSQLExtensions~lastErrMsg~pos("requires ooSQLite version") > 0, -
     "lastErrMsg should say why:" .ooSQLExtensions~lastErrMsg)
+  self~assertTrue(.ooSQLExtensions~lastErrMsg~pos("current version: 1.1.0") > 0, -
+    "the current version of packages should be 1.1.0:" .ooSQLExtensions~lastErrMsg)
   self~assertNull(.ooSQLExtensions~getPackage("tooNewPackage"), -
     "the package should not be kept")
 
@@ -8199,7 +8207,7 @@ Syntax:
 
 ::Method testClassicOoSQLiteVersionCompact
   ver = ooSQLiteVersion("compact")
-  -- Should be a version number like "1.0.0.12617"
+  -- Should be a version number like "1.1.0.0"
   self~assertTrue(ver~pos(".") > 0, -
     "ooSQLiteVersion('compact') should contain dots:" ver)
   -- Should not contain the word "ooSQLite" (just the number)
