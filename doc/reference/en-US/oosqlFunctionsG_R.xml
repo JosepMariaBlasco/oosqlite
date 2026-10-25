@@ -2022,16 +2022,17 @@
       <para>
         The data of the blob: a String, a Buffer, or a MutableBuffer object, as for <link
         linkend="rtn-oosqlBindBlob">oosqlBindBlob</link>, such as the one returned by <link
-        linkend="rtn-oosqlValueBlob">oosqlValueBlob</link>, or a Pointer object to the data. Before ooSQLite 1.1 only a
-        Pointer was accepted.
+        linkend="rtn-oosqlValueBlob">oosqlValueBlob</link>. Before ooSQLite 1.1 only a Pointer to the data, with its
+        size, was accepted; a Pointer is not accepted any more, because ooSQLite can not check its size, and SQLite
+        copied that many bytes from any address.
       </para>
       </listitem></varlistentry>
-      <varlistentry revisionflag="changed"><term>&changed11;size [optional with a String, Buffer, or MutableBuffer, required with a Pointer]</term>
+      <varlistentry revisionflag="changed"><term>&changed11;size [optional]</term>
       <listitem>
       <para>
         The number of bytes of the blob. With a String, a Buffer, or a MutableBuffer, the blob is made of the first
         <emphasis role="italic">size</emphasis> bytes of the data, which must be from 0 to the length of the data; if
-        it is omitted, all the data is used. With a Pointer it is the number of bytes to copy from that address.
+        it is omitted, all the data is used.
       </para>
       </listitem></varlistentry>
     </variablelist>

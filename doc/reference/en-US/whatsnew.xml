@@ -361,9 +361,12 @@
     interface could not return a blob at all.
   </para>
   <para>
-    Both now also accept a String, a Buffer, or a MutableBuffer, as <link linkend="mthBindBlob">bindBlob</link> and
-    <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> do, and the size is then optional. A Pointer and a size are
-    still accepted, so existing code keeps working.
+    Both now accept a String, a Buffer, or a MutableBuffer, as <link linkend="mthBindBlob">bindBlob</link> and
+    <link linkend="rtn-oosqlBindBlob">oosqlBindBlob</link> do, and the size is optional. A Pointer is not accepted any
+    more: ooSQLite can not know the size of the data it points to, so SQLite copied as many bytes as the size said
+    from any address, which put memory of the process in the result, or crashed it for a large size. No routine or
+    method of ooSQLite 1.1 returns a Pointer to data (<emphasis role="italic">oosqlValueBlob</emphasis> returns a
+    String), and code that passes what it returns, with its size, keeps working.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Result code constants of the extension classes</emphasis></term>
