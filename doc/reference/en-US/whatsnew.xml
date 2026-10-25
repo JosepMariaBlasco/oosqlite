@@ -838,8 +838,9 @@
     Subversion repository (<computeroutput>incubator/APICommon</computeroutput>), now included in the source tree.
   </para></listitem>
   <listitem><para>
-    The repository contains a test suite of more than 400 tests, written with ooRexxUnit, the framework of the ooRexx test
-    suite. It covers the object orientated and the classic interfaces, the callbacks, the builtin extensions, and the
+    The repository contains a test suite of more than 550 tests, written with ooRexxUnit, the framework of the ooRexx test
+    suite. It covers the object orientated and the classic interfaces, the callbacks, the builtin extensions, the SQLite
+    features compiled into the library (the math functions, the csv virtual table, R-Tree and Geopoly), and the
     loading of extension libraries and packages, with the test libraries in
     <computeroutput>examples/user.extensions</computeroutput>.
   </para></listitem>
