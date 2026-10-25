@@ -129,6 +129,11 @@
   SQL, not with <computeroutput>SIGNAL ON USER</computeroutput>.
 </para>
 <para revisionflag="added">
+  A callback runs on the thread that executes the SQL, which need not be the thread that registered it, and the
+  condition reaches that thread. Before ooSQLite 1.1, a condition raised in a callback that ran on a thread other than
+  the one that registered it, SYNTAX included, was lost: that thread only got the result code of SQLite.
+</para>
+<para revisionflag="added">
   The reason is that a SIGNAL to a trap in the caller would have to leave SQLite in the middle of its work. Before
   ooSQLite 1.1, a condition other than SYNTAX raised in a callback method did reach a <computeroutput>SIGNAL ON</computeroutput> trap in the caller
   as itself, but it left the statement SQLite was running unfinalized, so that the connection could not be closed, and

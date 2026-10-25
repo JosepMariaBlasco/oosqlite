@@ -642,6 +642,15 @@
     linkend="mthExec">exec</link> does. Only programs that read the attributes after a successful call see a difference.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Conditions raised in callbacks on another thread</emphasis></term>
+  <listitem>
+  <para>
+    A callback runs on the thread that executes the SQL. When that was not the thread that registered it, ooSQLite ran
+    the callback in a context of its own, and discarded any condition raised in it, SYNTAX included: the thread that
+    executed the SQL only got the result code. Now the condition reaches that thread, as described in <link
+    linkend="sctOOCallbacks">Callback Methods</link>.
+  </para>
+  </listitem></varlistentry>
 </variablelist>
 </section>
 

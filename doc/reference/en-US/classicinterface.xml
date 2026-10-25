@@ -644,6 +644,14 @@
   do, prevents using it by mistake.
 </para>
 <para>
+  The check is made when a routine starts, so it can not protect a routine that is already running from another thread
+  that frees its handle. A program that shares a handle between threads must make sure that no thread finalizes,
+  closes, finishes, or frees it while another thread is using it; otherwise the interpreter can crash, as SQLite itself
+  says for its handles. In the object orientated interface, the methods of a connection or a statement object are
+  guarded, so ooRexx runs them one at a time for each object, and a statement finalized by another thread raises a
+  syntax error in the next method.
+</para>
+<para>
   Before ooSQLite 1.1, only null handles were detected. A handle that was not valid any more, or was of another kind,
   had unpredictable results, and often crashed the interpreter.
 </para>
