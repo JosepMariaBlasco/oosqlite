@@ -361,6 +361,7 @@ typedef struct _oosqlPackageCSelf {
     RexxObjectPtr         moduleTable;
     RexxStringObject      lastErrMsg;
     RexxObjectPtr         lastErrCode;
+    RexxArrayObject       lastErrHolder;   // Keeps lastErrMsg and lastErrCode alive: an object variable
     bool                  valid;            // False if we failed to load the package table, this object is not usable
 } CooSQLPackage;
 typedef CooSQLPackage *pCooSQLPackage;
@@ -374,6 +375,7 @@ typedef struct _oosqlLibraryCSelf {
     RexxObjectPtr         rexxSelf;
     RexxStringObject      lastErrMsg;
     RexxObjectPtr         lastErrCode;
+    RexxArrayObject       lastErrHolder;   // Keeps lastErrMsg and lastErrCode alive: an object variable
     bool                  valid;            // False if some error happened during init(), this object is not usable
 } CooSQLLibrary;
 typedef CooSQLLibrary *pCooSQLLibrary;
@@ -399,6 +401,7 @@ typedef struct _oosqlExtensionsCSelf {
     RexxObjectPtr      rexxSelf;
     RexxStringObject   lastErrMsg;
     RexxObjectPtr      lastErrCode;
+    RexxArrayObject    lastErrHolder;   // Keeps lastErrMsg and lastErrCode alive: an object variable
     pCooSQLiteClass    pCsc;          // Pointer to the .ooSQLite CSelf struct, uses a lazy init.
 } CooSQLExtensions;
 typedef CooSQLExtensions *pCooSQLExtensions;

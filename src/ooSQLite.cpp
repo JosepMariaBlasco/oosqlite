@@ -11150,6 +11150,7 @@ RexxMethod1(int, oosqlmtx_try, CSELF, pCSelf)
  */
 #define OOSQLEXTENSIONS_CLASS     "ooSQLExtensions"
 #define LIBRARY_TABLE_ATTRIBUTE   "extensionsLibraryTableAttribute"
+#define LAST_ERR_HOLDER_ATTRIBUTE "extensionsLastErrHolderAttribute"
 #define PACKAGE_TABLE_ATTRIBUTE   "extensionsPackageTableAttribute"
 
 /**
@@ -11201,40 +11202,46 @@ static void setLibBaseName(pCooSQLLibrary pcl, CSTRING libName)
  * ooSQLExtensions, ooSQLPackage or ooSQLLibrary object.
  *
  * The lastErrMsg and lastErrCode attributes return what is kept there, so the
- * objects must stay alive for as long as they are kept.  They are protected
- * with a global reference, taken here for the new ones and released for the
- * old ones (ooRexx counts global references: the same object can be kept in
- * two places, as when the ooSQLExtensions class takes the error of a package).
+ * objects must stay alive for as long as they are kept, and no longer.  They
+ * are also put in an Array of the object itself (lastErrHolder), referenced by
+ * an object variable set in its init(): they live as long as the object, and
+ * go with it when it is collected.  The Array is reached through the CSELF, so
+ * this works whatever method is running, a method of ooSQLExtensions setting
+ * the error of a library included.
  *
- * They used to be kept alive by an object variable instead, set on the object
- * whose method was running: that was the wrong object when the error of a
- * library was set from a method of ooSQLExtensions, and the reset functions
- * set the variable to the null string while keeping "no error".  See
- * technical note #64.
+ * They used to be kept alive by an object variable set here instead, which
+ * is set on the object whose method is running: that was the wrong object
+ * when the error of a library was set from a method of ooSQLExtensions, and
+ * the reset functions set the variable to the null string while keeping
+ * "no error".  See technical note #64.
  *
  * @param c            Thread context we are operating in.
+ * @param holder       The lastErrHolder Array of the object.
  * @param msgField     The lastErrMsg field.
  * @param codeField    The lastErrCode field.
  * @param lastErrMsg   Error message.
  * @param lastErrCode  Error code.
  */
-static void keepLastErr(RexxThreadContext *c, RexxStringObject *msgField, RexxObjectPtr *codeField,
-                        RexxStringObject lastErrMsg, RexxObjectPtr lastErrCode)
+static void keepLastErr(RexxThreadContext *c, RexxArrayObject holder, RexxStringObject *msgField,
+                        RexxObjectPtr *codeField, RexxStringObject lastErrMsg, RexxObjectPtr lastErrCode)
 {
-    RexxStringObject oldMsg  = *msgField;
-    RexxObjectPtr    oldCode = *codeField;
+    c->ArrayPut(holder, lastErrMsg, 1);
+    c->ArrayPut(holder, lastErrCode, 2);
 
-    *msgField  = (RexxStringObject)c->RequestGlobalReference(lastErrMsg);
-    *codeField = c->RequestGlobalReference(lastErrCode);
+    *msgField  = lastErrMsg;
+    *codeField = lastErrCode;
+}
 
-    if ( oldMsg != NULLOBJECT )
-    {
-        c->ReleaseGlobalReference(oldMsg);
-    }
-    if ( oldCode != NULLOBJECT )
-    {
-        c->ReleaseGlobalReference(oldCode);
-    }
+/**
+ * Creates the Array that keeps the last error of an ooSQLExtensions,
+ * ooSQLPackage or ooSQLLibrary object alive, and makes it an object variable
+ * of that object.  Called from its init(), before the last error is set.
+ */
+static RexxArrayObject newLastErrHolder(RexxMethodContext *c)
+{
+    RexxArrayObject holder = c->NewArray(2);
+    c->SetObjectVariable(LAST_ERR_HOLDER_ATTRIBUTE, holder);
+    return holder;
 }
 
 /**
@@ -11248,7 +11255,7 @@ static void keepLastErr(RexxThreadContext *c, RexxStringObject *msgField, RexxOb
 void extensionsSetLastErr(RexxMethodContext *c, pCooSQLExtensions pcext, RexxStringObject lastErrMsg,
                           RexxObjectPtr lastErrCode)
 {
-    keepLastErr(c->threadContext, &pcext->lastErrMsg, &pcext->lastErrCode, lastErrMsg, lastErrCode);
+    keepLastErr(c->threadContext, pcext->lastErrHolder, &pcext->lastErrMsg, &pcext->lastErrCode, lastErrMsg, lastErrCode);
 }
 void extensionsSetLastErr(RexxMethodContext *c, pCooSQLExtensions pcext, CSTRING lastErrMsg, int lastErrCode)
 {
@@ -11265,7 +11272,7 @@ void extensionsSetLastErr(RexxMethodContext *c, pCooSQLExtensions pcext, CSTRING
  */
 void packageSetLastErr(RexxMethodContext *c, pCooSQLPackage pcp, RexxStringObject lastErrMsg, RexxObjectPtr lastErrCode)
 {
-    keepLastErr(c->threadContext, &pcp->lastErrMsg, &pcp->lastErrCode, lastErrMsg, lastErrCode);
+    keepLastErr(c->threadContext, pcp->lastErrHolder, &pcp->lastErrMsg, &pcp->lastErrCode, lastErrMsg, lastErrCode);
 }
 void packageSetLastErr(RexxMethodContext *c, pCooSQLPackage pcp, CSTRING lastErrMsg, int lastErrCode)
 {
@@ -11282,7 +11289,7 @@ void packageSetLastErr(RexxMethodContext *c, pCooSQLPackage pcp, CSTRING lastErr
  */
 void librarySetLastErr(RexxMethodContext *c, pCooSQLLibrary pcl, RexxStringObject lastErrMsg, RexxObjectPtr lastErrCode)
 {
-    keepLastErr(c->threadContext, &pcl->lastErrMsg, &pcl->lastErrCode, lastErrMsg, lastErrCode);
+    keepLastErr(c->threadContext, pcl->lastErrHolder, &pcl->lastErrMsg, &pcl->lastErrCode, lastErrMsg, lastErrCode);
 }
 
 /**
@@ -12140,6 +12147,7 @@ RexxMethod1(RexxObjectPtr, oosqlext_init_cls, OSELF, self)
         // them from object variables, or the garbage collector frees them.
         context->SetObjectVariable(LIBRARY_TABLE_ATTRIBUTE, pcext->libraryTable);
         context->SetObjectVariable(PACKAGE_TABLE_ATTRIBUTE, pcext->packageTable);
+        pcext->lastErrHolder = newLastErrHolder(context);
         resetExtensionsLastErr(context, pcext);
     }
     return NULLOBJECT;
@@ -13197,9 +13205,10 @@ RexxMethod2(RexxObjectPtr, oosqlpack_init, CSTRING, libName, OSELF, self)
     void *sysLibBuf = context->BufferData(libBuffer);
     ooSqlSysLibrary *lib = new (sysLibBuf) ooSqlSysLibrary();
 
-    pcp->sqliteAPIs  = oosqlite3_get_routines();
-    pcp->rexxSelf    = self;
-    pcp->lib         = lib;
+    pcp->sqliteAPIs    = oosqlite3_get_routines();
+    pcp->rexxSelf      = self;
+    pcp->lib           = lib;
+    pcp->lastErrHolder = newLastErrHolder(context);
     resetPackageLastErr(context, pcp);
 
     // A package that can not be used raises an error: the object would be
@@ -13496,9 +13505,10 @@ RexxMethod2(RexxObjectPtr, oosqllib_init, CSTRING, libName, OSELF, self)
     void *sysLibBuf = context->BufferData(libBuffer);
     ooSqlSysLibrary *lib = new (sysLibBuf) ooSqlSysLibrary();
 
-    pcl->sqliteAPIs  = oosqlite3_get_routines();
-    pcl->rexxSelf    = self;
-    pcl->lib         = lib;
+    pcl->sqliteAPIs    = oosqlite3_get_routines();
+    pcl->rexxSelf      = self;
+    pcl->lib           = lib;
+    pcl->lastErrHolder = newLastErrHolder(context);
     resetLibraryLastErr(context, pcl);
 
     // A library that can not be used raises an error: the object would be
