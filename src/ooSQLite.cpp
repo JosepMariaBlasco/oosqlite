@@ -6942,8 +6942,10 @@ RexxMethod3(int, oosqlconn_limit, int, id, int, value, CSELF, pCSelf)
 /** ooSQLiteConnection::loadExtension()
  *
  *
- *  @notes  If an error happens loading the extension, the lastErrMsg and
- *          lastErrCode attributes are set.
+ *  @notes  The lastErrMsg and lastErrCode attributes are always set, as exec
+ *          does: to the error if loading the extension fails, and to no
+ *          error if it succeeds.  SQLite does not record the error in the
+ *          connection, so errCode and errMsg do not report it.
  */
 RexxMethod3(int, oosqlconn_loadExtension, CSTRING, library, OPTIONAL_CSTRING, entryPoint, CSELF, pCSelf)
 {
@@ -6956,10 +6958,21 @@ RexxMethod3(int, oosqlconn_loadExtension, CSTRING, library, OPTIONAL_CSTRING, en
     char *errMsg = NULL;
 
     int rc = sqlite3_load_extension(pConn->db, library, entryPoint, &errMsg);
-    if ( rc != SQLITE_OK && errMsg != NULL )
+    if ( rc != SQLITE_OK )
     {
-        ooSQLiteErr(context, pConn, rc, errMsg, true);
-        sqlite3_free(errMsg);
+        if ( errMsg != NULL )
+        {
+            ooSQLiteErr(context, pConn, rc, errMsg, true);
+            sqlite3_free(errMsg);
+        }
+        else
+        {
+            ooSQLiteErr(context, pConn, rc, "error code, but sqlite3 did not set an error message", true);
+        }
+    }
+    else
+    {
+        ooSQLiteNoErr(context, pConn);
     }
 
     return rc;
