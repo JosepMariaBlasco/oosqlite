@@ -5743,7 +5743,9 @@ ConstantMissing:
   -- closes the connection.  Returns a directory with CONDITION, CODE,
   -- MESSAGE, ADDITIONAL, CALLS and CLOSE.
   Use Strict Arg kind, action
-  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_cond.db")
+  -- A name for each case: when a TemporaryTestFile object is collected, it
+  -- deletes its file, which must not be the file of a later case
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_cond_"kind"_"action".db")
   dbFile = tempFile~fullName
   Call SysFileDelete dbFile
   db = .ooSQLiteConnection~new(dbFile)

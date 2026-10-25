@@ -317,6 +317,77 @@ static inline sqlite3_value *checkedValue(RexxThreadContext *c, void *_value, si
 
 
 /**
+ * The callback trampoline.
+ *
+ * Every callback into Rexx (a method of a callback object, or a public
+ * routine) goes through this routine.  A condition raised in a callback and
+ * not trapped there propagates to the nearest Rexx activation that traps it;
+ * when that is the caller of the ooSQLite method or routine that is running
+ * SQLite, ooRexx unwinds to it with a C++ throw through the C frames of SQLite
+ * and of ooSQLite: the statement SQLite was running was never finalized, and
+ * the mutex of the connection stayed held.  The trampoline traps every
+ * condition first.  SYNTAX is raised again as itself, and becomes the pending
+ * condition of the thread, as it always did; any other condition becomes a
+ * SYNTAX error that keeps the original condition object as its second
+ * ADDITIONAL item: 4.1 for HALT, as an untrapped HALT, and 98.900 for the
+ * rest.  The callback then tells SQLite to stop where SQLite allows it, and
+ * the condition reaches the caller once SQLite has returned.
+ *
+ * Arguments: the callback object or routine, the name of the method or
+ * routine, the array of arguments, and whether it is a method.  It returns
+ * what the callback returns, or nothing.
+ */
+static const char *callbackTrampolineSource =
+    "use arg target, name, args, isMethod\n"
+    "signal on any name trapped\n"
+    "drop result\n"
+    "if isMethod then target~sendWith(name, args)\n"
+    "else target~callWith(args)\n"
+    "if var('RESULT') then return result\n"
+    "return\n"
+    "trapped:\n"
+    "  co = condition('O')\n"
+    "  if co~condition == 'SYNTAX' then raise propagate\n"
+    "  if co~condition == 'HALT' then raise syntax 4.1 array('HALT', co)\n"
+    "  m = 'The' co~condition 'condition was raised in the callback \"'name'\"'\n"
+    "  if co~description \\== '' then m = m':' co~description\n"
+    "  raise syntax 98.900 array(m, co)\n";
+
+static RexxRoutineObject TheCallbackTrampoline = NULLOBJECT;
+
+// The SQLite error of a statement stopped by a condition in a user function.
+#define CALLBACK_CONDITION_MSG "a Rexx condition was raised in the user defined function"
+
+/**
+ * Invokes a callback, a method of callbackObj or the routine rtn, through the
+ * callback trampoline.
+ *
+ * @param name  The name of the method, or of the routine (for the messages).
+ */
+static RexxObjectPtr callbackDispatch(RexxThreadContext *c, bool isMethod, RexxObjectPtr callbackObj,
+                                      CSTRING mthName, RexxRoutineObject rtn, CSTRING rtnName,
+                                      RexxArrayObject args)
+{
+    if ( TheCallbackTrampoline == NULLOBJECT )
+    {
+        return isMethod ? c->SendMessage(callbackObj, mthName, args) : c->CallRoutine(rtn, args);
+    }
+
+    CSTRING          name   = isMethod ? mthName : rtnName;
+    RexxStringObject rxName = c->String(name == NULL ? "" : name);
+    RexxArrayObject  targs  = c->ArrayOfFour(isMethod ? callbackObj : (RexxObjectPtr)rtn, rxName, args,
+                                             isMethod ? TheTrueObj : TheFalseObj);
+
+    RexxObjectPtr reply = c->CallRoutine(TheCallbackTrampoline, targs);
+
+    c->ReleaseLocalReference(rxName);
+    c->ReleaseLocalReference(targs);
+
+    return reply;
+}
+
+
+/**
  * RexxPackageLoader function.
  *
  * The package loader function is called when the library package is first
@@ -354,6 +425,13 @@ void RexxEntry ooSQLiteLoad(RexxThreadContext *c)
         executionErrorException(c, "Could not allocate required mutex, abort on package load");
     }
 #endif
+
+    RexxRoutineObject tramp = c->NewRoutine("ooSQLiteCallbackTrampoline", callbackTrampolineSource,
+                                            strlen(callbackTrampolineSource));
+    if ( tramp != NULLOBJECT )
+    {
+        TheCallbackTrampoline = (RexxRoutineObject)c->RequestGlobalReference(tramp);
+    }
 
     liveHandleMtx = sqlite3_mutex_alloc(SQLITE_MUTEX_FAST);
     liveHandles   = new (std::nothrow) std::unordered_map<void *, LiveHandle>;
@@ -1529,7 +1607,9 @@ static bool replyIsGood(RexxThreadContext *c, RexxObjectPtr reply, wholenumber_t
 {
     bool result = true;
 
-    if ( checkForCondition(c, false) )
+    // A condition raised in the callback is left pending, not printed: it
+    // reaches the caller once SQLite has returned.
+    if ( c->CheckCondition() )
     {
         result = false;
     }
@@ -1543,11 +1623,8 @@ static bool replyIsGood(RexxThreadContext *c, RexxObjectPtr reply, wholenumber_t
         }
         else
         {
-            noRoutineReturnException(c, rtnName);
+            noRoutineReturnException(c, rtnName == NULL ? "" : rtnName);
         }
-
-        // This is used to print out the condition we just raised.
-        checkForCondition(c, false);
     }
     else if ( ! c->WholeNumber(reply, rc) )
     {
@@ -1618,14 +1695,7 @@ static int authorizerCallback(void *data, int op, const char *str1, const char *
         c->ArrayPut(args, d->userData, 6);
     }
 
-    if ( isMethod )
-    {
-        reply = c->SendMessage(d->callbackObj, d->callbackMethod, args);
-    }
-    else
-    {
-        reply = c->CallRoutine(d->callbackRtn, args);
-    }
+    reply = callbackDispatch(c, isMethod, d->callbackObj, d->callbackMethod, d->callbackRtn, d->routineName, args);
 
     // If rc turns out to not be one of the 3 acceptable returns, then SQLite
     // will deal with it, so we don't check what the actual value of rc is.
@@ -1690,14 +1760,7 @@ static int busyCallBack(void *data, int countInvoked)
         args = c->ArrayOfTwo(count, d->userData);
     }
 
-    if ( isMethod )
-    {
-        reply = c->SendMessage(d->callbackObj, d->callbackMethod, args);
-    }
-    else
-    {
-        reply = c->CallRoutine(d->callbackRtn, args);
-    }
+    reply = callbackDispatch(c, isMethod, d->callbackObj, d->callbackMethod, d->callbackRtn, d->routineName, args);
 
     if ( ! replyIsGood(c, reply, &rc, d->callbackMethod, d->routineName, isMethod) )
     {
@@ -1750,14 +1813,7 @@ static int collationCallback(void* data, int len1, const void* str1, int len2, c
         args = c->ArrayOfThree(rxStr1, rxStr2, d->userData);
     }
 
-    if ( isMethod )
-    {
-        reply = c->SendMessage(d->callbackObj, d->callbackMethod, args);
-    }
-    else
-    {
-        reply = c->CallRoutine(d->callbackRtn, args);
-    }
+    reply = callbackDispatch(c, isMethod, d->callbackObj, d->callbackMethod, d->callbackRtn, d->routineName, args);
 
     if ( ! replyIsGood(c, reply, &cmp, d->callbackMethod, d->routineName, isMethod) )
     {
@@ -1841,14 +1897,7 @@ static void collationNeededCallback(void *data, sqlite3* db, int eTextRep, const
         }
     }
 
-    if ( isMethod )
-    {
-        reply = c->SendMessage(d->callbackObj, d->callbackMethod, args);
-    }
-    else
-    {
-        reply = c->CallRoutine(d->callbackRtn, args);
-    }
+    reply = callbackDispatch(c, isMethod, d->callbackObj, d->callbackMethod, d->callbackRtn, d->routineName, args);
 
     // We just check for errors, we do not actually use rc.
     replyIsGood(c, reply, &rc, d->callbackMethod, d->routineName, isMethod);
@@ -1911,14 +1960,7 @@ static int commitHookCallback(void *data)
         args = c->ArrayOfOne(d->userData);
     }
 
-    if ( isMethod )
-    {
-        reply = c->SendMessage(d->callbackObj, d->callbackMethod, args);
-    }
-    else
-    {
-        reply = c->CallRoutine(d->callbackRtn, args);
-    }
+    reply = callbackDispatch(c, isMethod, d->callbackObj, d->callbackMethod, d->callbackRtn, d->routineName, args);
 
     if ( ! replyIsGood(c, reply, &rc, d->callbackMethod, d->routineName, isMethod) )
     {
@@ -1982,14 +2024,7 @@ static void profileHookCallback(void *data, const char *statement, sqlite3_uint6
         args = c->ArrayOfThree(rxStmt, rxNano, d->userData);
     }
 
-    if ( isMethod )
-    {
-        reply = c->SendMessage(d->callbackObj, d->callbackMethod, args);
-    }
-    else
-    {
-        reply = c->CallRoutine(d->callbackRtn, args);
-    }
+    reply = callbackDispatch(c, isMethod, d->callbackObj, d->callbackMethod, d->callbackRtn, d->routineName, args);
 
     // We just check this, which may raise an exception, but don't do anything
     // else.
@@ -2043,14 +2078,7 @@ static int progressCallback(void *data)
         args = c->ArrayOfOne(d->userData);
     }
 
-    if ( isMethod )
-    {
-        reply = c->SendMessage(d->callbackObj, d->callbackMethod, args);
-    }
-    else
-    {
-        reply = c->CallRoutine(d->callbackRtn, args);
-    }
+    reply = callbackDispatch(c, isMethod, d->callbackObj, d->callbackMethod, d->callbackRtn, d->routineName, args);
 
     // If the return from Rexx is not good, we return 1 to interrupt the
     // operation.
@@ -2110,14 +2138,7 @@ static void rollbackHookCallback(void *data)
         args = c->ArrayOfOne(d->userData);
     }
 
-    if ( isMethod )
-    {
-        reply = c->SendMessage(d->callbackObj, d->callbackMethod, args);
-    }
-    else
-    {
-        reply = c->CallRoutine(d->callbackRtn, args);
-    }
+    reply = callbackDispatch(c, isMethod, d->callbackObj, d->callbackMethod, d->callbackRtn, d->routineName, args);
 
     // We just check this, which may raise an exception, but don't do anything
     // else.
@@ -2179,14 +2200,7 @@ static void traceHookCallback(void *data, const char *statement)
         args = c->ArrayOfTwo(rxStmt, d->userData);
     }
 
-    if ( isMethod )
-    {
-        reply = c->SendMessage(d->callbackObj, d->callbackMethod, args);
-    }
-    else
-    {
-        reply = c->CallRoutine(d->callbackRtn, args);
-    }
+    reply = callbackDispatch(c, isMethod, d->callbackObj, d->callbackMethod, d->callbackRtn, d->routineName, args);
 
     // We just check this, which may raise an exception, but don't do anything
     // else.
@@ -2254,14 +2268,7 @@ static void updateHookCallback(void *data, int op, const char *dbName, const cha
         c->ArrayPut(args, d->userData, 5);
     }
 
-    if ( isMethod )
-    {
-        reply = c->SendMessage(d->callbackObj, d->callbackMethod, args);
-    }
-    else
-    {
-        reply = c->CallRoutine(d->callbackRtn, args);
-    }
+    reply = callbackDispatch(c, isMethod, d->callbackObj, d->callbackMethod, d->callbackRtn, d->routineName, args);
 
     // We just check this, which may raise an exception if the Rexx method or
     // routine has problems, but don't do anything else.
@@ -2342,19 +2349,15 @@ static void functionCallback(sqlite3_context *sqlContext, int argc, sqlite3_valu
 
     registerCallHandles(sqlContext, argc, argv);
 
-    if ( isMethod )
-    {
-        reply = c->SendMessage(pcf->callbackObj, pcf->funcMethod, args);
-    }
-    else
-    {
-        reply = c->CallRoutine(pcf->funcRtn, args);
-    }
+    reply = callbackDispatch(c, isMethod, pcf->callbackObj, pcf->funcMethod, pcf->funcRtn, pcf->funcName, args);
 
     unregisterCallHandles(sqlContext, argc, argv);
 
-    // We just check for errors, we do not actually use rc.
-    replyIsGood(c, reply, &rc, pcf->funcMethod, pcf->funcName, isMethod);
+    // The value returned is not used.  A condition stops the statement.
+    if ( ! replyIsGood(c, reply, &rc, pcf->funcMethod, pcf->funcName, isMethod) )
+    {
+        sqlite3_result_error(sqlContext, CALLBACK_CONDITION_MSG, -1);
+    }
 
 
     if ( c == pcf->callbackContext )
@@ -2468,20 +2471,13 @@ static void stepCallback(sqlite3_context *sqlContext, int argc, sqlite3_value **
 
     registerCallHandles(sqlContext, argc, argv);
 
-    if ( isMethod )
-    {
-        reply = c->SendMessage(pcf->callbackObj, pcf->stepMethod, args);
-    }
-    else
-    {
-        reply = c->CallRoutine(pcf->stepRtn, args);
-    }
+    reply = callbackDispatch(c, isMethod, pcf->callbackObj, pcf->stepMethod, pcf->stepRtn, pcf->stepName, args);
 
     unregisterCallHandles(sqlContext, argc, argv);
 
-    if ( checkForCondition(c, false) )
+    if ( c->CheckCondition() )
     {
-        sqlite3_result_error_code(sqlContext, SQLITE_MISUSE);
+        sqlite3_result_error(sqlContext, CALLBACK_CONDITION_MSG, -1);
         return;
     }
     else if ( reply == NULLOBJECT )
@@ -2495,10 +2491,7 @@ static void stepCallback(sqlite3_context *sqlContext, int argc, sqlite3_value **
             noRoutineReturnException(c, pcf->stepName);
         }
 
-        // This is used to print out the condition we just raised.
-        checkForCondition(c, false);
-
-        sqlite3_result_error_code(sqlContext, SQLITE_MISUSE);
+        sqlite3_result_error(sqlContext, CALLBACK_CONDITION_MSG, -1);
         return;
     }
 
@@ -2581,19 +2574,15 @@ static void finalCallback(sqlite3_context *sqlContext)
 
     registerCallHandles(sqlContext, 0, NULL);
 
-    if ( isMethod )
-    {
-        reply = c->SendMessage(pcf->callbackObj, pcf->finalMethod, args);
-    }
-    else
-    {
-        reply = c->CallRoutine(pcf->finalRtn, args);
-    }
+    reply = callbackDispatch(c, isMethod, pcf->callbackObj, pcf->finalMethod, pcf->finalRtn, pcf->finalName, args);
 
     unregisterCallHandles(sqlContext, 0, NULL);
 
-    // We just check for errors, we do not actually use rc.
-    replyIsGood(c, reply, &rc, pcf->finalMethod, pcf->finalName, isMethod);
+    // The value returned is not used.  A condition stops the statement.
+    if ( ! replyIsGood(c, reply, &rc, pcf->finalMethod, pcf->finalName, isMethod) )
+    {
+        sqlite3_result_error(sqlContext, CALLBACK_CONDITION_MSG, -1);
+    }
 
     // There is only a global reference to release if a step invocation
     // produced an aggregate object.
@@ -2649,14 +2638,7 @@ wholenumber_t genExecCall2Rexx(pCGenericCallback d, RexxObjectPtr record)
         args = c->ArrayOfThree(record, count, d->userData);
     }
 
-    if ( isMethod )
-    {
-        reply = c->SendMessage(d->callbackObj, d->callbackMethod, args);
-    }
-    else
-    {
-        reply = c->CallRoutine(d->callbackRtn, args);
-    }
+    reply = callbackDispatch(c, isMethod, d->callbackObj, d->callbackMethod, d->callbackRtn, d->routineName, args);
 
     if ( ! replyIsGood(c, reply, &rc, d->callbackMethod, d->routineName, isMethod) )
     {
@@ -2798,14 +2780,7 @@ static int execCallBackArray(void *data, int ncols, char **values, char **header
             args = c->ArrayOfThree(rows, count, d->userData);
         }
 
-        if ( isMethod )
-        {
-            reply = c->SendMessage(d->callbackObj, d->callbackMethod, args);
-        }
-        else
-        {
-            reply = c->CallRoutine(d->callbackRtn, args);
-        }
+        reply = callbackDispatch(c, isMethod, d->callbackObj, d->callbackMethod, d->callbackRtn, d->routineName, args);
 
         if ( ! replyIsGood(c, reply, &rc, d->callbackMethod, d->routineName, isMethod) )
         {
@@ -15124,6 +15099,7 @@ RexxRoutine5(RexxObjectPtr, oosqlExec_rtn, POINTER, _db, CSTRING, sql, OPTIONAL_
         if ( argumentExists(5) )
         {
             cbc.callbackRtn = getCallerRoutine(context, rtnName);
+            cbc.routineName = rtnName;
             if ( cbc.callbackRtn == NULLOBJECT )
             {
                 return noSuchRoutineException(context->threadContext, rtnName, 5);
