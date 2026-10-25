@@ -1,0 +1,96 @@
+name: Platforms
+
+# Windows and macOS, run on demand (Actions > Platforms > Run workflow, or
+# "gh workflow run platforms.yml").  The CI workflow (ci.yml) runs on Linux at
+# every push and must stay fast; this one checks that the other platforms
+# still build (the library, the example libraries and the shell) and pass the
+# suite.  ooRexx is SourceForge's portable build at
+# the revision ci.yml pins (OOREXX_REV), via scripts/setup-oorexx-portable.sh.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    name: Windows (x64)
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install ooRexx (portable)
+        shell: bash
+        run: |
+          home=$(scripts/setup-oorexx-portable.sh windows.x86_64 "$RUNNER_TEMP/oorexx")
+          echo "REXX_HOME=$(cygpath -w "$home")" >> "$GITHUB_ENV"
+          cygpath -w "$home/bin" >> "$GITHUB_PATH"
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build
+        shell: cmd
+        run: nmake /NOLOGO /F Makefile.win all
+
+      - name: Try the shell
+        shell: cmd
+        run: |
+          bin\windows\ooSQLite3.exe :memory: "SELECT sqlite_version(), sqlite_compileoption_used('ENABLE_FTS5');"
+
+      - name: Test
+        shell: bash
+        working-directory: tests
+        run: |
+          rexx -v
+          export PATH="$(cygpath -u "$PWD/../bin/windows"):$PATH"
+          export REXX_PATH="$(cygpath -w "$PWD/framework");$(cygpath -w "$PWD/../bin/windows")"
+          # Lets the tests of section C13 force their race (tests/ooSQLite.testGroup)
+          export OOSQLITE_TEST_HOOKS=1
+          rexx ooSQLite.testGroup 2>&1 | tr -d '\r' | tee test-output.txt
+          # The test group exits with 0 even when tests fail, so the summary
+          # decides.  If the process crashes there is no summary and this fails.
+          grep -Eq '^Tests ran: +[1-9]' test-output.txt
+          grep -Eq '^Failures: +0$' test-output.txt
+          grep -Eq '^Errors: +0$' test-output.txt
+
+  macos:
+    name: macOS (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            arch: arm64
+          - os: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install ooRexx (portable)
+        run: |
+          home=$(scripts/setup-oorexx-portable.sh macos.arm64.x86_64 "$RUNNER_TEMP/oorexx")
+          echo "REXX_HOME=$home" >> "$GITHUB_ENV"
+          echo "$home/bin" >> "$GITHUB_PATH"
+
+      - name: Build
+        run: make -f Makefile.mac all -j"$(sysctl -n hw.ncpu)" REXX_HOME="$REXX_HOME"
+
+      - name: Try the shell
+        run: |
+          bin/macos/oosqlite3 :memory: "SELECT sqlite_version(), sqlite_compileoption_used('ENABLE_FTS5');"
+
+      - name: Test
+        working-directory: tests
+        run: |
+          rexx -v
+          export DYLD_LIBRARY_PATH="$PWD/../bin/macos"
+          export REXX_PATH="$PWD/framework:$PWD/../bin/macos"
+          # Lets the tests of section C13 force their race (tests/ooSQLite.testGroup)
+          export OOSQLITE_TEST_HOOKS=1
+          rexx ooSQLite.testGroup 2>&1 | tee test-output.txt
+          # The test group exits with 0 even when tests fail, so the summary
+          # decides.  If the process crashes there is no summary and this fails.
+          grep -Eq '^Tests ran: +[1-9]' test-output.txt
+          grep -Eq '^Failures: +0$' test-output.txt
+          grep -Eq '^Errors: +0$' test-output.txt
