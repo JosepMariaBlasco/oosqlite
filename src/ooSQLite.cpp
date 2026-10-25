@@ -16166,18 +16166,6 @@ RexxRoutine0(RexxStringObject, oosqlVersion_rtn)
 
 
 
-/** oosqlTest()
- *
- *  Private routine to use for quick tests.  Code varies as to what it does.
- */
-RexxRoutine1(int, oosqlTest_rtn, CSTRING, varName)
-{
-    context->SetContextVariable(varName, context->NewPointer(NULL));
-
-    return SQLITE_OK;
-}
-
-
 #define __rtn_helper_class "__rtn_helper_class"
 
 
@@ -16392,7 +16380,6 @@ REXX_TYPED_ROUTINE_PROTOTYPE(oosqlValueText_rtn);
 REXX_TYPED_ROUTINE_PROTOTYPE(oosqlValueType_rtn);
 REXX_TYPED_ROUTINE_PROTOTYPE(oosqlVersion_rtn);
 
-REXX_TYPED_ROUTINE_PROTOTYPE(oosqlTest_rtn);
 
 RexxRoutineEntry ooSQLite_functions[] =
 {
@@ -16521,8 +16508,6 @@ RexxRoutineEntry ooSQLite_functions[] =
     REXX_TYPED_ROUTINE(oosqlValueText_rtn,            oosqlValueText_rtn),
     REXX_TYPED_ROUTINE(oosqlValueType_rtn,            oosqlValueType_rtn),
     REXX_TYPED_ROUTINE(oosqlVersion_rtn,              oosqlVersion_rtn),
-
-    REXX_TYPED_ROUTINE(oosqlTest_rtn,                 oosqlTest_rtn),
 
     REXX_LAST_ROUTINE()
 };

@@ -257,12 +257,12 @@
     not kept by the ooSQLExtensions class, as before.
   </para>
   </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Debugging methods of ooSQLiteConnection removed</emphasis></term>
+  <varlistentry><term><emphasis role="bold">Debugging methods and routine removed</emphasis></term>
   <listitem>
   <para>
     The <emphasis role="italic">test</emphasis>, <emphasis role="italic">pragmaGetTest</emphasis>, and <emphasis
-    role="italic">pragmaSetTest</emphasis> methods of the ooSQLiteConnection class were removed. They were aids for the
-    development of ooSQLite, public but never documented. <emphasis role="italic">test</emphasis> registered any Pointer
+    role="italic">pragmaSetTest</emphasis> methods of the ooSQLiteConnection class, and the oosqlTest routine of the
+    classic interface, were removed. They were aids for the development of ooSQLite, public but never documented. <emphasis role="italic">test</emphasis> registered any Pointer
     object as the comparison function of a collation named REVERSESORT, which crashed the interpreter when the pointer
     was not such a function.
   </para>

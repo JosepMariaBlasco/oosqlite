@@ -503,7 +503,6 @@
 ::routine oosqlValueType public external "LIBRARY oosqlite oosqlValueType_rtn"
 ::routine oosqlVersion public external "LIBRARY oosqlite oosqlVersion_rtn"
 
-::routine oosqlTest public external "LIBRARY oosqlite oosqlTest_rtn"            -- Internal use only
 
 
 /**
