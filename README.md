@@ -1,6 +1,7 @@
 # ooSQLite
 
 [![CI](https://github.com/JosepMariaBlasco/oosqlite/actions/workflows/ci.yml/badge.svg)](https://github.com/JosepMariaBlasco/oosqlite/actions/workflows/ci.yml)
+[![Platforms](https://github.com/JosepMariaBlasco/oosqlite/actions/workflows/platforms.yml/badge.svg)](https://github.com/JosepMariaBlasco/oosqlite/actions/workflows/platforms.yml)
 
 ooSQLite is the interface between [Open Object Rexx](https://www.oorexx.org/)
 (ooRexx) and [SQLite](https://sqlite.org/), the embedded SQL database
@@ -28,27 +29,42 @@ points to its SVN revision. The tag `svn-r13111` marks the import point.
 
 Work on the goals above starts from there.
 
-## Building on Linux
+## Building
 
-You need gcc and an installed ooRexx 5.x (its headers and `librexx`,
-`librexxapi`). From the top of the repository:
+ooSQLite builds on Linux, macOS and Windows. You need an installed ooRexx
+5.x (its headers and the `rexx` and `rexxapi` libraries) or its portable
+build. SQLite (3.52.0) and zlib are compiled into the library. From the top
+of the repository:
+
+| Platform | Command | Output folder |
+|---|---|---|
+| Linux (gcc) | `make -f Makefile.lin lib` | `bin/linux` |
+| macOS (clang) | `make -f Makefile.mac lib REXX_HOME=<ooRexx>` | `bin/macos` |
+| Windows (Visual C++) | `nmake /F Makefile.win lib` | `bin\windows` |
+
+`lib` builds the library and copies it, together with `ooSQLite.cls`, to
+the output folder. `REXX_HOME`, the folder of ooRexx, is optional when its
+headers and libraries are where the compiler looks; `Makefile.win` takes
+it from the environment. The target `all` also builds the shell
+(`oosqlite3`, `ooSQLite3.exe` on Windows) and the example extension
+libraries in `examples/user.extensions`, which the tests use
+(`example_dlls` builds just those).
+
+Then run the tests from `tests/` (see [`tests/README.md`](tests/README.md)).
+On Linux:
 
 ```sh
-make -f Makefile.lin lib
-```
-
-This builds `liboosqlite.so` and copies it, together with `ooSQLite.cls`,
-to `bin/linux`. SQLite (3.52.0) is compiled into the library. Then run
-the tests from `tests/` (see [`tests/README.md`](tests/README.md)):
-
-```sh
+make -f Makefile.lin example_dlls
 cd tests
 LD_LIBRARY_PATH=$PWD/../bin/linux REXX_PATH=$PWD/framework:$PWD/../bin/linux \
   rexx ooSQLite.testGroup
 ```
 
-`make -f Makefile.lin` (target `all`) also builds the `oosqlite3` shell,
-which needs readline, and the example extensions.
+Continuous integration builds and tests every change on Linux
+([`ci.yml`](.github/workflows/ci.yml)). The
+[`platforms.yml`](.github/workflows/platforms.yml) workflow, run on demand,
+does the same on Windows x64 and on macOS (arm64 and x86_64), with the
+portable builds of ooRexx at the same revision.
 
 ## License
 
