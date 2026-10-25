@@ -5445,13 +5445,32 @@ TestZipAutoCleanup:
   db~close
 
 ::Method testLoadExtensionBadFile
+  -- The error of the loader names the file on every platform: Windows's
+  -- does not, and ooSQLite puts the name in front of it
   db = self~openMemoryDB
   db~enableLoadExtension(.true)
-  rc = db~loadExtension(userExtLib("nosuchextension"))
+  lib = userExtLib("nosuchextension")
+  rc = db~loadExtension(lib)
   self~assertEquals(.ooSQLite~ERROR, rc, -
     "loadExtension of a missing file should fail")
-  self~assertTrue(db~lastErrMsg~pos("nosuchextension") > 0, -
+  self~assertTrue(db~lastErrMsg~pos(lib) > 0, -
     "lastErrMsg should name the file:" db~lastErrMsg)
+  self~assertEquals(db~lastErrMsg~strip("T", "0d0a20"x), db~lastErrMsg, -
+    "lastErrMsg should not end with a line end")
+  db~close
+
+::Method testLoadExtensionNoEntryPoint
+  -- A library without the entry point: the message names the file too
+  db = self~openMemoryDB
+  db~enableLoadExtension(.true)
+  lib = userExtLib("simpleextension")
+  rc = db~loadExtension(lib, "noSuchEntryPoint")
+  self~assertEquals(.ooSQLite~ERROR, rc, -
+    "loadExtension without the entry point should fail")
+  self~assertTrue(db~lastErrMsg~pos(lib) > 0, -
+    "lastErrMsg should name the file:" db~lastErrMsg)
+  self~assertEquals(db~lastErrMsg~strip("T", "0d0a20"x), db~lastErrMsg, -
+    "lastErrMsg should not end with a line end")
   db~close
 
 ::Method testEnableLoadExtensionOff
@@ -10070,6 +10089,31 @@ Syntax:
     "oosqlLoadExtension should return OK")
   rows = oosqlExec(db, "SELECT half(11) AS v;", .true, .ooSQLite~OO_ARRAY_OF_DIRECTORIES)
   self~assertEquals(5.5, rows[1]["V"], "half() from the extension should work")
+  Call oosqlClose db
+
+::Method testClassicLoadExtensionBadFile
+  -- As testLoadExtensionBadFile: .routineErrorMessage names the file
+  db = self~classicOpenMemory
+  Call oosqlEnableLoadExtension db, .true
+  lib = userExtLib("nosuchextension")
+  self~assertEquals(.ooSQLite~ERROR, oosqlLoadExtension(db, lib), -
+    "oosqlLoadExtension of a missing file should fail")
+  msg = .routineErrorMessage
+  self~assertTrue(msg~pos(lib) > 0, ".routineErrorMessage should name the file:" msg)
+  self~assertEquals(msg~strip("T", "0d0a20"x), msg, -
+    ".routineErrorMessage should not end with a line end")
+  Call oosqlClose db
+
+::Method testClassicLoadExtensionNoEntryPoint
+  db = self~classicOpenMemory
+  Call oosqlEnableLoadExtension db, .true
+  lib = userExtLib("simpleextension")
+  self~assertEquals(.ooSQLite~ERROR, oosqlLoadExtension(db, lib, "noSuchEntryPoint"), -
+    "oosqlLoadExtension without the entry point should fail")
+  msg = .routineErrorMessage
+  self~assertTrue(msg~pos(lib) > 0, ".routineErrorMessage should name the file:" msg)
+  self~assertEquals(msg~strip("T", "0d0a20"x), msg, -
+    ".routineErrorMessage should not end with a line end")
   Call oosqlClose db
 
 /******************************************************************************/
