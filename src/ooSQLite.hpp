@@ -123,6 +123,7 @@
 BEGIN_EXTERN_C()
 
 extern int sqlite3_base_init(sqlite3 *db, char **pzErrMsg, const sqlite3_api_routines *pApi);
+extern int sqlite3_compress_init(sqlite3 *db, char **pzErrMsg, const sqlite3_api_routines *pApi);
 extern int sqlite3_csv_init(sqlite3 *db, char **pzErrMsg, const sqlite3_api_routines *pApi);
 extern int sqlite3_ieee_init(sqlite3 *db, char **pzErrMsg, const sqlite3_api_routines *pApi);
 extern int sqlite3_nextchar_init(sqlite3 *db, char **pzErrMsg, const sqlite3_api_routines *pApi);
@@ -132,12 +133,14 @@ extern int sqlite3_rot_init(sqlite3 *db, char **pzErrMsg, const sqlite3_api_rout
 extern int sqlite3_spellfix_init(sqlite3 *db, char **pzErrMsg, const sqlite3_api_routines *pApi);
 extern int sqlite3_totype_init(sqlite3 *db, char **pzErrMsg, const sqlite3_api_routines *pApi);
 extern int sqlite3_wholenumber_init(sqlite3 *db, char **pzErrMsg, const sqlite3_api_routines *pApi);
+extern int sqlite3_zipfile_init(sqlite3 *db, char **pzErrMsg, const sqlite3_api_routines *pApi);
 
 END_EXTERN_C()
 
 const fnXExtensionInit builtins[] =
 {
     sqlite3_base_init,
+    sqlite3_compress_init,
     sqlite3_csv_init,
     sqlite3_ieee_init,
     sqlite3_nextchar_init,
@@ -146,12 +149,14 @@ const fnXExtensionInit builtins[] =
     sqlite3_rot_init,
     sqlite3_spellfix_init,
     sqlite3_totype_init,
-    sqlite3_wholenumber_init
+    sqlite3_wholenumber_init,
+    sqlite3_zipfile_init
 };
 
 const char *builtinNames[] =
 {
     "base64",
+    "compress",
     "csv",
     "ieee754",
     "nextChar",
@@ -160,12 +165,14 @@ const char *builtinNames[] =
     "rot13",
     "spellFix",
     "toType",
-    "wholeNumber"
+    "wholeNumber",
+    "zipFile"
 };
 
 const char *builtinDescription[] =
 {
     "Implements a base64() SQL function to convert between a blob and Base64 text.",
+    "Implements compress() and uncompress() SQL functions using zlib.",
     "Implements a virtual table for reading CSV files.",
     "Implements SQL functions for IEEE 754 binary64 floating-point numbers.",
     "Implements the next_char(A, T, F, W, C) SQL function.",
@@ -174,7 +181,8 @@ const char *builtinDescription[] =
     "Implements a rot13() SQL function and a rot13 collating sequence.",
     "Implements the spellfix1 virtual table that can search a vocabulary for close matches.",
     "Implements tointeger() and toreal() SQL functions.",
-    "Implements the wholenumber virtual table that returns whole numbers between 1 and 4294967295."
+    "Implements the wholenumber virtual table that returns whole numbers between 1 and 4294967295.",
+    "Implements the zipfile virtual table and functions to read and write ZIP archives."
 };
 
 #define BUILTIN_ROW_FMT  "%-11s %s" LINE_END
@@ -182,7 +190,7 @@ const char *builtinDescription[] =
     "---------------------------------------------------------------------------------------------------------"
 #define BUILTINS_COUNT sizeof(builtins) / sizeof(fnXExtensionInit)
 
-#define BUILTIN_NAMES                 "base64, csv, ieee754, nextChar, percentile, regExp, rot13, spellFix, toType, or wholeNumber"
+#define BUILTIN_NAMES                 "base64, compress, csv, ieee754, nextChar, percentile, regExp, rot13, spellFix, toType, wholeNumber, or zipFile"
 #define BUILTIN_LOAD_ERR_FMT          "Error loading builtin extension %s"
 #define BUILTIN_AUTO_ERR_FMT          "Failed to make builtin extension %s automatic"
 #define BUILTIN_CANCEL_AUTO_ERR_FMT   "Failed to cancel builtin extension %s as automatic"

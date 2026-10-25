@@ -164,6 +164,12 @@ WARNINGFLAGS = /W3 /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE
 VERDEFS = /DOOSQLITE_VER_MAJOR=$(OOSQLITE_MAJOR) /DOOSQLITE_VER_MINOR=$(OOSQLITE_MINOR) /DOOSQLITE_VER_LEVEL=$(OOSQLITE_MOD_LVL) /DOOSQLITE_VER_BUILD=$(OOSQLITE_BLD_LVL) /DOOSQLITE_VER_STRING=\"$(OOSQLITE_VER_STR)\" /DOOSQLITE_COPYRIGHT_YEAR=\"$(OOSQLITE_COPY_YEAR)\"
 EXTRAINCLUDE = /I src\sqlite /I $(PLATFORM_DIR) /I $(APICOMMON_DIR)
 
+# zlib (src\zlib, used by the compress and zipfile builtins) is compiled into
+# the DLL, so there is no zlib1.dll to ship.  Z_PREFIX gives its symbols a z_
+# prefix.  Its objects are named zlib_*.obj: zlib has a compress.c too.
+ZLIB_DIR = src\zlib
+ZLIBFLAGS = /DZ_PREFIX /I $(ZLIB_DIR)
+
 SQLITEFLAGS=/DSQLITE_ENABLE_COLUMN_METADATA /DSQLITE_ENABLE_MEMORY_MANAGEMENT /DSQLITE_ENABLE_FTS3 /DSQLITE_ENABLE_FTS3_PARENTHESIS /DSQLITE_ENABLE_FTS4 /DSQLITE_ENABLE_FTS5 /DSQLITE_ENABLE_GEOPOLY /DSQLITE_ENABLE_MATH_FUNCTIONS /DSQLITE_ENABLE_RTREE /DSQLITE_DEFAULT_FOREIGN_KEYS=1 /DSQLITE_CORE
 BASEFLAGS = $(WARNINGFLAGS) $(VERDEFS) $(EXTRAINCLUDE) $(SQLITEFLAGS)
 
@@ -203,11 +209,15 @@ LFLAGS_DLL = /nologo /SUBSYSTEM:Windows $(REXX_LIBS) $(WIN_LIBS) -def:$(PLATFORM
 OUTDIR = $(ROOTDIR)\$(BIN_DIR)
 
 OBJ_FILES = $(OUT_DIR)\sqlite3.obj $(OUT_DIR)\ooSQLite.obj $(APICOMMON_DIR)\APICommon.obj   $(OUT_DIR)\ooSqlSysLibrary.obj \
-            $(OUT_DIR)\base64.obj  $(OUT_DIR)\csv.obj \
+            $(OUT_DIR)\base64.obj  $(OUT_DIR)\compress.obj $(OUT_DIR)\csv.obj \
             $(OUT_DIR)\ieee754.obj $(OUT_DIR)\nextchar.obj \
             $(OUT_DIR)\percentile.obj $(OUT_DIR)\regexp.obj \
             $(OUT_DIR)\rot13.obj   $(OUT_DIR)\spellfix.obj \
-            $(OUT_DIR)\totype.obj  $(OUT_DIR)\wholenumber.obj
+            $(OUT_DIR)\totype.obj  $(OUT_DIR)\wholenumber.obj $(OUT_DIR)\zipfile.obj \
+            $(OUT_DIR)\zlib_adler32.obj $(OUT_DIR)\zlib_compress.obj $(OUT_DIR)\zlib_crc32.obj \
+            $(OUT_DIR)\zlib_deflate.obj $(OUT_DIR)\zlib_inffast.obj $(OUT_DIR)\zlib_inflate.obj \
+            $(OUT_DIR)\zlib_inftrees.obj $(OUT_DIR)\zlib_trees.obj $(OUT_DIR)\zlib_uncompr.obj \
+            $(OUT_DIR)\zlib_zutil.obj
 
 
 # What we want to build.  ooSQLite3.exe is the command line version of SQLite.
@@ -230,6 +240,9 @@ $(OUT_DIR)\ooSqlSysLibrary.obj: $(PLATFORM_DIR)\ooSqlSysLibrary.cpp $(PLATFORM_D
 
 $(OUT_DIR)\base64.obj: src\sqlite\extensions\base64.c Makefile.win
   cl $(CFLAGS) /Fo.\$(OUT_DIR)\ src\sqlite\extensions\base64.c
+
+$(OUT_DIR)\compress.obj: src\sqlite\extensions\compress.c Makefile.win
+  cl $(CFLAGS) $(ZLIBFLAGS) /Fo.\$(OUT_DIR)\ src\sqlite\extensions\compress.c
 
 $(OUT_DIR)\csv.obj: src\sqlite\extensions\csv.c Makefile.win
   cl $(CFLAGS) /Fo.\$(OUT_DIR)\ src\sqlite\extensions\csv.c
@@ -257,6 +270,39 @@ $(OUT_DIR)\totype.obj: src\sqlite\extensions\totype.c Makefile.win
 
 $(OUT_DIR)\wholenumber.obj: src\sqlite\extensions\wholenumber.c Makefile.win
   cl $(CFLAGS) /Fo.\$(OUT_DIR)\ src\sqlite\extensions\wholenumber.c
+
+$(OUT_DIR)\zipfile.obj: src\sqlite\extensions\zipfile.c Makefile.win
+  cl $(CFLAGS) $(ZLIBFLAGS) /Fo.\$(OUT_DIR)\ src\sqlite\extensions\zipfile.c
+
+$(OUT_DIR)\zlib_adler32.obj: $(ZLIB_DIR)\adler32.c Makefile.win
+  cl $(CFLAGS) $(ZLIBFLAGS) /Fo.\$(OUT_DIR)\zlib_adler32.obj $(ZLIB_DIR)\adler32.c
+
+$(OUT_DIR)\zlib_compress.obj: $(ZLIB_DIR)\compress.c Makefile.win
+  cl $(CFLAGS) $(ZLIBFLAGS) /Fo.\$(OUT_DIR)\zlib_compress.obj $(ZLIB_DIR)\compress.c
+
+$(OUT_DIR)\zlib_crc32.obj: $(ZLIB_DIR)\crc32.c Makefile.win
+  cl $(CFLAGS) $(ZLIBFLAGS) /Fo.\$(OUT_DIR)\zlib_crc32.obj $(ZLIB_DIR)\crc32.c
+
+$(OUT_DIR)\zlib_deflate.obj: $(ZLIB_DIR)\deflate.c Makefile.win
+  cl $(CFLAGS) $(ZLIBFLAGS) /Fo.\$(OUT_DIR)\zlib_deflate.obj $(ZLIB_DIR)\deflate.c
+
+$(OUT_DIR)\zlib_inffast.obj: $(ZLIB_DIR)\inffast.c Makefile.win
+  cl $(CFLAGS) $(ZLIBFLAGS) /Fo.\$(OUT_DIR)\zlib_inffast.obj $(ZLIB_DIR)\inffast.c
+
+$(OUT_DIR)\zlib_inflate.obj: $(ZLIB_DIR)\inflate.c Makefile.win
+  cl $(CFLAGS) $(ZLIBFLAGS) /Fo.\$(OUT_DIR)\zlib_inflate.obj $(ZLIB_DIR)\inflate.c
+
+$(OUT_DIR)\zlib_inftrees.obj: $(ZLIB_DIR)\inftrees.c Makefile.win
+  cl $(CFLAGS) $(ZLIBFLAGS) /Fo.\$(OUT_DIR)\zlib_inftrees.obj $(ZLIB_DIR)\inftrees.c
+
+$(OUT_DIR)\zlib_trees.obj: $(ZLIB_DIR)\trees.c Makefile.win
+  cl $(CFLAGS) $(ZLIBFLAGS) /Fo.\$(OUT_DIR)\zlib_trees.obj $(ZLIB_DIR)\trees.c
+
+$(OUT_DIR)\zlib_uncompr.obj: $(ZLIB_DIR)\uncompr.c Makefile.win
+  cl $(CFLAGS) $(ZLIBFLAGS) /Fo.\$(OUT_DIR)\zlib_uncompr.obj $(ZLIB_DIR)\uncompr.c
+
+$(OUT_DIR)\zlib_zutil.obj: $(ZLIB_DIR)\zutil.c Makefile.win
+  cl $(CFLAGS) $(ZLIBFLAGS) /Fo.\$(OUT_DIR)\zlib_zutil.obj $(ZLIB_DIR)\zutil.c
 
 $(OUT_DIR)\oosqlite.dll: $(OBJ_FILES)
     link $(LFLAGS_DLL) $(OBJ_FILES) -out:$(OUT_DIR)\oosqlite.dll

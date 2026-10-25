@@ -65,8 +65,9 @@
  *  The list of currently available builtin extensions is:
  *
  *    base64
- *    ieee754
+ *    compress
  *    csv
+ *    ieee754
  *    nextChar
  *    percentile
  *    regExp
@@ -74,6 +75,7 @@
  *    spellFix
  *    toType
  *    wholeNumber
+ *    zipFile
 
  *  This example demonstrate some methods related to using the builtin
  *  extensions.

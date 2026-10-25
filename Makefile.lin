@@ -110,13 +110,23 @@ EXE_LLIBS=-L$(OUT_DIR) -ldl -lpthread -lstdc++ -lreadline -lcurses -lm
 
 CFLAGS=-c -fPIC $(BASEFLAGS)
 
-# compress.c and zipfile.c are not in src/sqlite/extensions, so they are not
-# built.
+# zlib (src/zlib, used by the compress and zipfile builtins) is compiled into
+# the library, so there is no dependency on the system's zlib.  Z_PREFIX gives
+# its symbols a z_ prefix, so they cannot clash with another zlib loaded in the
+# same process.  Its objects are named zlib_*.o: zlib has a compress.c too.
+ZLIB_DIR=src/zlib
+ZLIBFLAGS=-DZ_PREFIX -I $(ZLIB_DIR)
+ZLIB_OBJS=$(OUT_DIR)/zlib_adler32.o $(OUT_DIR)/zlib_compress.o $(OUT_DIR)/zlib_crc32.o \
+          $(OUT_DIR)/zlib_deflate.o $(OUT_DIR)/zlib_inffast.o $(OUT_DIR)/zlib_inflate.o \
+          $(OUT_DIR)/zlib_inftrees.o $(OUT_DIR)/zlib_trees.o $(OUT_DIR)/zlib_uncompr.o \
+          $(OUT_DIR)/zlib_zutil.o
+
 OOSQLITE_OBJS=$(OUT_DIR)/sqlite3.o $(OUT_DIR)/ooSQLite.o $(OUT_DIR)/APICommon.o $(OUT_DIR)/ooSqlSysLibrary.o \
-              $(OUT_DIR)/base64.o  $(OUT_DIR)/csv.o \
+              $(OUT_DIR)/base64.o  $(OUT_DIR)/compress.o $(OUT_DIR)/csv.o \
               $(OUT_DIR)/ieee754.o $(OUT_DIR)/nextchar.o $(OUT_DIR)/percentile.o \
               $(OUT_DIR)/regexp.o  $(OUT_DIR)/rot13.o    $(OUT_DIR)/spellfix.o \
-              $(OUT_DIR)/totype.o  $(OUT_DIR)/wholenumber.o
+              $(OUT_DIR)/totype.o  $(OUT_DIR)/wholenumber.o $(OUT_DIR)/zipfile.o \
+              $(ZLIB_OBJS)
 
 
 # What we want to build.  "lib" is just the extension library and its class
@@ -150,6 +160,15 @@ $(OUT_DIR)/ooSqlSysLibrary.o: $(PLATFORM_DIR)/ooSqlSysLibrary.cpp $(PLATFORM_DIR
 
 $(OUT_DIR)/base64.o: src/sqlite/extensions/base64.c Makefile.lin | $(OUT_DIR)
 	gcc $(OPT) $(CFLAGS) -o $(OUT_DIR)/base64.o src/sqlite/extensions/base64.c
+
+$(OUT_DIR)/compress.o: src/sqlite/extensions/compress.c $(ZLIB_DIR)/zlib.h Makefile.lin | $(OUT_DIR)
+	gcc $(OPT) $(CFLAGS) $(ZLIBFLAGS) -o $(OUT_DIR)/compress.o src/sqlite/extensions/compress.c
+
+$(OUT_DIR)/zipfile.o: src/sqlite/extensions/zipfile.c $(ZLIB_DIR)/zlib.h Makefile.lin | $(OUT_DIR)
+	gcc $(OPT) $(CFLAGS) $(ZLIBFLAGS) -o $(OUT_DIR)/zipfile.o src/sqlite/extensions/zipfile.c
+
+$(OUT_DIR)/zlib_%.o: $(ZLIB_DIR)/%.c $(wildcard $(ZLIB_DIR)/*.h) Makefile.lin | $(OUT_DIR)
+	gcc $(OPT) -c -fPIC $(ZLIBFLAGS) -o $@ $<
 
 $(OUT_DIR)/csv.o: src/sqlite/extensions/csv.c Makefile.lin | $(OUT_DIR)
 	gcc $(OPT) $(CFLAGS) -o $(OUT_DIR)/csv.o src/sqlite/extensions/csv.c

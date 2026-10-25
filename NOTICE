@@ -18,3 +18,8 @@ Anyone is free to copy, modify, publish, use, compile, sell, or distribute
 the original SQLite code, either in source code form or as a compiled
 binary, for any purpose, commercial or non-commercial, and by any means.
 
+This product contains zlib (https://zlib.net), in src/zlib, used by the
+compress and zipfile extensions:
+
+  zlib, Copyright (C) 1995-2026 Jean-loup Gailly and Mark Adler.
+  The zlib license is in src/zlib/LICENSE.
