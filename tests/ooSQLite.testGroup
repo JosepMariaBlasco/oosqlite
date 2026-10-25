@@ -11195,7 +11195,8 @@ TrapSyntax:
 /*                                                                            */
 /* userExtLib — full path of a test library in examples/user.extensions      */
 /*                                                                            */
-/* The libraries are built by "make -f Makefile.lin example_dlls".            */
+/* The libraries are built by "make -f Makefile.lin example_dlls" (or the     */
+/* Makefile.mac / Makefile.win of the platform).                              */
 /*                                                                            */
 /******************************************************************************/
 
@@ -11204,8 +11205,11 @@ TrapSyntax:
   sep = .File~separator
   testDir = .File~new(.context~package~name)~parent
   dir = .File~new(testDir || sep || ".." || sep || "examples" || sep || "user.extensions")~absolutePath
-  If .RexxInfo~platform~upper~left(7) == "WINDOWS" Then
+  platform = .RexxInfo~platform~upper
+  If platform~left(7) == "WINDOWS" Then
     Return dir || sep || baseName || ".dll"
+  If platform == "DARWIN" Then
+    Return dir || sep || "lib" || baseName || ".dylib"
   Return dir || sep || "lib" || baseName || ".so"
 
 -- Subclasses whose init does not forward to the superclass's, for the tests

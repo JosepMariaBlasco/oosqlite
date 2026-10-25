@@ -36,57 +36,60 @@
 #/*----------------------------------------------------------------------------*/
 
 
-# Makefile for the user defined functions in native code on Linux.
+# Makefile for the user defined functions in native code on Linux.  On macOS,
+# Makefile.mac sets the variables marked ?= and includes this file.
+
+SOEXT ?= so
 
 EXTRAINCLUDE=-I ../../src -I ../../src/sqlite
 
-BASEFLAGS = $(EXTRAINCLUDE) -DNULL=1
+BASEFLAGS = $(EXTRAINCLUDE)
 
-SO_LFLAGS=-shared -nostartfiles
+SO_LFLAGS ?= -shared -nostartfiles
 
-SO_LLIBS=-ldl
+SO_LLIBS ?= -ldl
 
 CFLAGS=-c -fPIC $(BASEFLAGS)
 
 # What we want to build.
-all: libsimpleextension.so libexamplepackage.so libexamplelibrary.so libtestlibrary.so libtestpackage.so libtoonewpackage.so
+all: libsimpleextension.$(SOEXT) libexamplepackage.$(SOEXT) libexamplelibrary.$(SOEXT) libtestlibrary.$(SOEXT) libtestpackage.$(SOEXT) libtoonewpackage.$(SOEXT)
 
 simpleExtension.o: simpleExtension.c Makefile.lin
 	gcc $(CFLAGS) $(EXTRA_INCLUDE) -o simpleExtension.o simpleExtension.c
 
-libsimpleextension.so: simpleExtension.o
-	gcc $(SO_LFLAGS) -o libsimpleextension.so simpleExtension.o $(SO_LLIBS)
+libsimpleextension.$(SOEXT): simpleExtension.o
+	gcc $(SO_LFLAGS) -o libsimpleextension.$(SOEXT) simpleExtension.o $(SO_LLIBS)
 
 examplePackage.o: examplePackage.cpp Makefile.lin
 	gcc $(CFLAGS) $(EXTRA_INCLUDE) -o examplePackage.o examplePackage.cpp
 
-libexamplepackage.so: examplePackage.o
-	gcc $(SO_LFLAGS) -o libexamplepackage.so examplePackage.o $(SO_LLIBS)
+libexamplepackage.$(SOEXT): examplePackage.o
+	gcc $(SO_LFLAGS) -o libexamplepackage.$(SOEXT) examplePackage.o $(SO_LLIBS)
 
 exampleLibrary.o: exampleLibrary.cpp Makefile.lin
 	gcc $(CFLAGS) $(EXTRA_INCLUDE) -o exampleLibrary.o exampleLibrary.cpp
 
-libexamplelibrary.so: exampleLibrary.o
-	gcc $(SO_LFLAGS) -o libexamplelibrary.so exampleLibrary.o $(SO_LLIBS)
+libexamplelibrary.$(SOEXT): exampleLibrary.o
+	gcc $(SO_LFLAGS) -o libexamplelibrary.$(SOEXT) exampleLibrary.o $(SO_LLIBS)
 
 testLibrary.o: testLibrary.cpp Makefile.lin
 	gcc $(CFLAGS) $(EXTRA_INCLUDE) -o testLibrary.o testLibrary.cpp
 
-libtestlibrary.so: testLibrary.o
-	gcc $(SO_LFLAGS) -o libtestlibrary.so testLibrary.o $(SO_LLIBS)
+libtestlibrary.$(SOEXT): testLibrary.o
+	gcc $(SO_LFLAGS) -o libtestlibrary.$(SOEXT) testLibrary.o $(SO_LLIBS)
 
 testPackage.o: testPackage.cpp Makefile.lin
 	gcc $(CFLAGS) $(EXTRA_INCLUDE) -o testPackage.o testPackage.cpp
 
-libtestpackage.so: testPackage.o
-	gcc $(SO_LFLAGS) -o libtestpackage.so testPackage.o $(SO_LLIBS)
+libtestpackage.$(SOEXT): testPackage.o
+	gcc $(SO_LFLAGS) -o libtestpackage.$(SOEXT) testPackage.o $(SO_LLIBS)
 
 tooNewPackage.o: tooNewPackage.cpp Makefile.lin
 	gcc $(CFLAGS) $(EXTRA_INCLUDE) -o tooNewPackage.o tooNewPackage.cpp
 
-libtoonewpackage.so: tooNewPackage.o
-	gcc $(SO_LFLAGS) -o libtoonewpackage.so tooNewPackage.o $(SO_LLIBS)
+libtoonewpackage.$(SOEXT): tooNewPackage.o
+	gcc $(SO_LFLAGS) -o libtoonewpackage.$(SOEXT) tooNewPackage.o $(SO_LLIBS)
 
 clean:
-	rm -f *.so *.o
+	rm -f *.$(SOEXT) *.o
 

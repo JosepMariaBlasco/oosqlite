@@ -7352,7 +7352,7 @@ RexxMethod1(RexxObjectPtr, oosqlconn_dbMutex, CSELF, pCSelf)
 
     // mtx could be null, but we just let the ooSQLiteMutex class take care of it.
     RexxArrayObject args = context->ArrayOfThree(context->WholeNumber(SQLITE_MUTEX_RECURSIVE_DB),
-                                                 context->NewPointer((POINTER)MutexMagic),
+                                                 context->NewPointer((POINTER)(uintptr_t)MutexMagic),
                                                  context->NewPointer((POINTER)mtx));
 
     RexxObjectPtr mtxObj = context->SendMessage(TheOOSQLiteMutexClass, "NEW", args);
@@ -10965,7 +10965,7 @@ RexxMethod4(RexxObjectPtr, oosqlmtx_init, OPTIONAL_int, type, OPTIONAL_POINTER, 
 
     if ( argumentExists(2) || argumentExists(3) )
     {
-        if ( argumentOmitted(3) || magic != (POINTER)MutexMagic )
+        if ( argumentOmitted(3) || magic != (POINTER)(uintptr_t)MutexMagic )
         {
             return tooManyArgsException(context->threadContext, 1);
         }

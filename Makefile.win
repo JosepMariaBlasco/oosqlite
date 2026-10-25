@@ -39,9 +39,10 @@
 # This is a Visual C++, nMake compatible make file for ooSQLite.
 #
 # The compiler needs to be able to find the ooRexx native API headers and
-# libraries. If REXX_HOME is set on the system, the correct directory will be
+# libraries. If REXX_HOME is set on the system, the correct directories will be
 # automatically added to the LIB and INCLUDE environment variables by this make
-# file.
+# file: REXX_HOME\api for an installed ooRexx, REXX_HOME\include and
+# REXX_HOME\lib for a portable build.
 #
 # Otherwise, either uncomment the REXX_HOME line and define the correct
 # REXX_HOME, or be sure the LIB and INCLUDE environment variables allow the
@@ -51,19 +52,12 @@
 # Win32Rel, as appropriate, in your build directory.  For this to work, you
 # will have to have built the interpreter.
 #
-# A command line svn is needed to automatically get the correct svn revision
-# into the compiled binary.  If a command line svn is not available, the build
-# will work, but the svn revision will be 0.  If you are building yourself, you
-# can build one time, will which generate a file: src\ooSQLite.ver.incl.  You
-# can then edit this file manually to set the svn revision number.  Edit:
+# The version comes from src\ooSQLite.ver.  Since 1.1 its build level is fixed
+# there; until 1.0.2.13107 it was the SVN revision, which a batch file wrote
+# into a generated src\ooSQLite.ver.incl.
 #
-#   OOSQLITE_VER_STR="1.0.0.0"
-#   SVN_REVSION=0
-#
-# to, for example:
-#
-#   OOSQLITE_VER_STR="1.0.0.8524"
-#   SVN_REVSION=8524
+# "nmake /F Makefile.win lib" builds just the extension library and its class
+# file, which is all the test suite needs (with example_dlls).
 #
 # A working Rexx and zip.exe is needed on the system to build the distribution
 # file.  (The target is 'dist')
@@ -79,19 +73,15 @@
 
 
 !IF DEFINED(REXX_HOME)
-INCLUDE = $(INCLUDE);$(REXX_HOME)\api
-LIB = $(LIB);$(REXX_HOME)\api
+INCLUDE = $(INCLUDE);$(REXX_HOME)\api;$(REXX_HOME)\include
+LIB = $(LIB);$(REXX_HOME)\api;$(REXX_HOME)\lib
 !ENDIF
 
 REXX_LIBS = rexx.lib rexxapi.lib
 WIN_LIBS  = user32.lib
 
-# Generate and include the version information.  Quit if there is an error.
-!IF [src\platform\windows\generateVersionFile.bat] != 0
-!  ERROR Build error: could not gerate version file, ooSQLite.ver.incl
-!ENDIF
-
-!include "src\ooSQLite.ver.incl"
+# Include the version information.
+!include "src\ooSQLite.ver"
 
 # Generate the compiler information.  Quit if there is an  error.
 !IF [install\platform\windows\determineCompiler.bat] != 0
@@ -118,19 +108,13 @@ SHORTVER = $(OOSQLITE_MAJOR).$(OOSQLITE_MINOR).$(OOSQLITE_MOD_LVL)
 
 !if "$(CPU)" == "X64"
 NSISCPU = x86_64
-!IF DEFINED(DEBUG)
-APICOMMON_DIR = ..\APICommon\bin.debug64\windows
-!else
-APICOMMON_DIR = ..\APICommon\bin.release64\windows
-!endif
 !else
 NSISCPU = x86_32
-!IF DEFINED(DEBUG)
-APICOMMON_DIR = ..\APICommon\bin.debug32\windows
-!else
-APICOMMON_DIR = ..\APICommon\bin.release32\windows
 !endif
-!endif
+
+# APICommon (from the ooRexx SVN, incubator/APICommon) is kept in the tree and
+# built with the rest of the objects.
+APICOMMON_DIR = src\APICommon
 
 
 # This section is for reference only:
@@ -208,7 +192,16 @@ LFLAGS_DLL = /nologo /SUBSYSTEM:Windows $(REXX_LIBS) $(WIN_LIBS) -def:$(PLATFORM
 # For NSIS
 OUTDIR = $(ROOTDIR)\$(BIN_DIR)
 
-OBJ_FILES = $(OUT_DIR)\sqlite3.obj $(OUT_DIR)\ooSQLite.obj $(APICOMMON_DIR)\APICommon.obj   $(OUT_DIR)\ooSqlSysLibrary.obj \
+# git does not keep empty directories, so the output directories are created
+# here.
+!IF [if not exist $(OUT_DIR) mkdir $(OUT_DIR)] != 0
+!  ERROR Build error: could not create $(OUT_DIR)
+!ENDIF
+!IF [if not exist $(BIN_DIR) mkdir $(BIN_DIR)] != 0
+!  ERROR Build error: could not create $(BIN_DIR)
+!ENDIF
+
+OBJ_FILES = $(OUT_DIR)\sqlite3.obj $(OUT_DIR)\ooSQLite.obj $(OUT_DIR)\APICommon.obj $(OUT_DIR)\ooSqlSysLibrary.obj \
             $(OUT_DIR)\base64.obj  $(OUT_DIR)\compress.obj $(OUT_DIR)\csv.obj \
             $(OUT_DIR)\ieee754.obj $(OUT_DIR)\nextchar.obj \
             $(OUT_DIR)\percentile.obj $(OUT_DIR)\regexp.obj \
@@ -223,7 +216,9 @@ OBJ_FILES = $(OUT_DIR)\sqlite3.obj $(OUT_DIR)\ooSQLite.obj $(APICOMMON_DIR)\APIC
 # What we want to build.  ooSQLite3.exe is the command line version of SQLite.
 # ooSQLite3.exe should be no different than what you can download from the
 # SQLite website as sqlite3.exe, except that it has a few defaults changed.
-all: $(BIN_DIR)\oosqlite.dll $(BIN_DIR)\ooSQLite3.exe $(BIN_DIR)\ooSQLite.cls example_dlls
+all: lib $(BIN_DIR)\ooSQLite3.exe example_dlls
+
+lib: $(BIN_DIR)\oosqlite.dll $(BIN_DIR)\ooSQLite.cls
 
 
 $(OUT_DIR)\sqlite3.obj: src\sqlite\sqlite3.c src\sqlite\sqlite3.h Makefile.win
@@ -232,8 +227,11 @@ $(OUT_DIR)\sqlite3.obj: src\sqlite\sqlite3.c src\sqlite\sqlite3.h Makefile.win
 $(OUT_DIR)\shell.obj: src\sqlite\shell.c src\sqlite\sqlite3.h Makefile.win
   cl $(CFLAGS) /Fo.\$(OUT_DIR)\ src\sqlite\shell.c
 
-$(OUT_DIR)\ooSQLite.obj: src\ooSQLite.cpp src\ooSQLite.hpp  src\sqlite\sqlite3.h Makefile.win
+$(OUT_DIR)\ooSQLite.obj: src\ooSQLite.cpp src\ooSQLite.hpp $(APICOMMON_DIR)\APICommon.hpp src\sqlite\sqlite3.h Makefile.win
   cl $(CFLAGS) /DOOSQLITE_BUILD /Fo.\$(OUT_DIR)\ src\ooSQLite.cpp
+
+$(OUT_DIR)\APICommon.obj: $(APICOMMON_DIR)\APICommon.cpp $(APICOMMON_DIR)\APICommon.hpp Makefile.win
+  cl $(CFLAGS) /Fo.\$(OUT_DIR)\ $(APICOMMON_DIR)\APICommon.cpp
 
 $(OUT_DIR)\ooSqlSysLibrary.obj: $(PLATFORM_DIR)\ooSqlSysLibrary.cpp $(PLATFORM_DIR)\ooSqlSysLibrary.hpp Makefile.win
   cl $(CFLAGS) $(SYSLIB_FLAGS) /Fo.\$(OUT_DIR)\ $(PLATFORM_DIR)\ooSqlSysLibrary.cpp

@@ -37,51 +37,54 @@
 
 
 # Makefile for the the autopackage shared libraries on Linux.  Usefule for the
-# packageAutoRegistration.rex example only
+# packageAutoRegistration.rex example only.  On macOS, Makefile.mac sets the
+# variables marked ?= and includes this file.
+
+SOEXT ?= so
 
 EXTRAINCLUDE=-I ../../../src/sqlite -I ../../../src
 
-BASEFLAGS = $(EXTRAINCLUDE) -DNULL=1
+BASEFLAGS = $(EXTRAINCLUDE)
 
-SO_LFLAGS=-shared -nostartfiles
+SO_LFLAGS ?= -shared -nostartfiles
 
-SO_LLIBS=-ldl
+SO_LLIBS ?= -ldl
 
 CFLAGS=-c -fPIC $(BASEFLAGS)
 
 # What we want to build.
-all: libautopackage1.so libautopackage2.so libautopackage3.so libautopackage4.so libautopackage5.so
+all: libautopackage1.$(SOEXT) libautopackage2.$(SOEXT) libautopackage3.$(SOEXT) libautopackage4.$(SOEXT) libautopackage5.$(SOEXT)
 
 autoPackage1.o: autoPackage1.cpp Makefile.lin
 	gcc $(CFLAGS) $(EXTRA_INCLUDE) -o autoPackage1.o autoPackage1.cpp
 
-libautopackage1.so: autoPackage1.o
-	gcc $(SO_LFLAGS) -o libautopackage1.so autoPackage1.o $(SO_LLIBS)
+libautopackage1.$(SOEXT): autoPackage1.o
+	gcc $(SO_LFLAGS) -o libautopackage1.$(SOEXT) autoPackage1.o $(SO_LLIBS)
 
 autoPackage2.o: autoPackage2.cpp Makefile.lin
 	gcc $(CFLAGS) $(EXTRA_INCLUDE) -o autoPackage2.o autoPackage2.cpp
 
-libautopackage2.so: autoPackage2.o
-	gcc $(SO_LFLAGS) -o libautopackage2.so autoPackage2.o $(SO_LLIBS)
+libautopackage2.$(SOEXT): autoPackage2.o
+	gcc $(SO_LFLAGS) -o libautopackage2.$(SOEXT) autoPackage2.o $(SO_LLIBS)
 
 autoPackage3.o: autoPackage3.cpp Makefile.lin
 	gcc $(CFLAGS) $(EXTRA_INCLUDE) -o autoPackage3.o autoPackage3.cpp
 
-libautopackage3.so: autoPackage3.o
-	gcc $(SO_LFLAGS) -o libautopackage3.so autoPackage3.o $(SO_LLIBS)
+libautopackage3.$(SOEXT): autoPackage3.o
+	gcc $(SO_LFLAGS) -o libautopackage3.$(SOEXT) autoPackage3.o $(SO_LLIBS)
 
 autoPackage4.o: autoPackage4.cpp Makefile.lin
 	gcc $(CFLAGS) $(EXTRA_INCLUDE) -o autoPackage4.o autoPackage4.cpp
 
-libautopackage4.so: autoPackage4.o
-	gcc $(SO_LFLAGS) -o libautopackage4.so autoPackage4.o $(SO_LLIBS)
+libautopackage4.$(SOEXT): autoPackage4.o
+	gcc $(SO_LFLAGS) -o libautopackage4.$(SOEXT) autoPackage4.o $(SO_LLIBS)
 
 autoPackage5.o: autoPackage5.cpp Makefile.lin
 	gcc $(CFLAGS) $(EXTRA_INCLUDE) -o autoPackage5.o autoPackage5.cpp
 
-libautopackage5.so: autoPackage5.o
-	gcc $(SO_LFLAGS) -o libautopackage5.so autoPackage5.o $(SO_LLIBS)
+libautopackage5.$(SOEXT): autoPackage5.o
+	gcc $(SO_LFLAGS) -o libautopackage5.$(SOEXT) autoPackage5.o $(SO_LLIBS)
 
 clean:
-	rm -f *.so *.o
+	rm -f *.$(SOEXT) *.o
 

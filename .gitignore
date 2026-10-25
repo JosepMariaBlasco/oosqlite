@@ -6,3 +6,13 @@
 # Example and test extension libraries (make -f Makefile.lin example_dlls)
 /examples/user.extensions/**/*.o
 /examples/user.extensions/**/*.so
+/examples/user.extensions/**/*.dylib
+
+# Windows build by-products (nmake /F Makefile.win)
+/install/platform/windows/compiler.info.incl
+/examples/user.extensions/**/*.obj
+/examples/user.extensions/**/*.dll
+/examples/user.extensions/**/*.exp
+/examples/user.extensions/**/*.lib
+/examples/user.extensions/**/*.asm
+/examples/user.extensions/**/*.pdb
