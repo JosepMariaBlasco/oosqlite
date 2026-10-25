@@ -2646,7 +2646,7 @@ Bytes of page memory used by all caches on this database connection:
   </listitem></varlistentry>
 </variablelist>
 
-<section id="mthExecCallBack"><title>execCallBack</title>
+<section id="mthExecCallBack" revisionflag="changed"><title>&changed11;execCallBack</title>
 <indexterm><primary>execCallBack</primary></indexterm>
 <indexterm><primary>Callback Methods</primary><secondary>execCallBack</secondary></indexterm>
 <mediaobject>
@@ -2736,7 +2736,17 @@ Bytes of page memory used by all caches on this database connection:
       the indexes of the stem are the column names and the value of the index is the value of the column.
     </para>
     </listitem></varlistentry>
+    <varlistentry revisionflag="added"><term>OO_CLASSIC_STEM:</term>
+    <listitem>
+    <para>
+      The same as OO_STEM_OF_STEMS: a <computeroutput>Stem</computeroutput> object whose indexes are the column names.
+    </para>
+    </listitem></varlistentry>
   </variablelist>
+  <para revisionflag="changed">
+    In every format, a column that is SQL NULL has the value of the <link
+    linkend="atrNullClsOOSQLiteConnection">null</link> attribute of the connection.
+  </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>

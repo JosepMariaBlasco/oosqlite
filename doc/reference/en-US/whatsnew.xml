@@ -345,6 +345,31 @@
     the method or routine runs, so nothing is left half done; that is the behaviour of ooRexx, and it is unchanged.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">The rows exec and oosqlExec give to a callback</emphasis></term>
+  <listitem>
+  <para>
+    With the OO_ARRAY_OF_ARRAYS format, the row given to an <link linkend="mthExecCallBack">execCallBack</link> method,
+    or to the callback routine of <link linkend="rtn-oosqlExec">oosqlExec</link>, did not have what the documentation
+    says. Item 1, the array of the column names, was empty, and item 2 had the values twice:
+    <computeroutput>a b a b</computeroutput> for two columns. Item 1 now has the names, and item 2 each value once. A
+    program that read the values by their index is not affected; one that counted them, or worked around the empty
+    names, is.
+  </para>
+  <para>
+    In the rows of oosqlExec, SQL NULL is now what the documentation says, in every format. With OO_CLASSIC_STEM, the
+    rows given to the callback routine had .nil in the tail of a NULL column; now the tail is not assigned, as in the
+    result set and with OO_STEM_OF_STEMS. A routine that compared the value with .nil must test it with
+    <computeroutput>hasIndex</computeroutput>. With the array formats, reading a NULL column gave .nil before too, but
+    the row did not count it right: in a row of two columns, <computeroutput>hasIndex(1)</computeroutput> was 0 and
+    <computeroutput>items</computeroutput> 2, so that <computeroutput>sort</computeroutput> failed with "Missing array
+    element". It is now an ordinary .nil item.
+  </para>
+  <para>
+    With the OO interface and the OO_CLASSIC_STEM format, the rows given to execCallBack had .nil for SQL NULL whatever
+    the <link linkend="atrNullClsOOSQLiteConnection">null</link> attribute of the connection; they now have its value,
+    as in the other formats.
+  </para>
+  </listitem></varlistentry>
 </variablelist>
 </section>
 
@@ -702,6 +727,13 @@
     base is not open", pointed into the argument of <link linkend="mthNewClsOOSQLiteConnection">new</link>, which is a
     temporary string when the file is given as a File object. Both now use their own copy. The null value also keeps all
     its characters now: a value with a <computeroutput>"00"x</computeroutput> character was cut there before.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">oosqlExec did not free the column names</emphasis></term>
+  <listitem>
+  <para>
+    <link linkend="rtn-oosqlExec">oosqlExec</link> with the OO_ARRAY_OF_DIRECTORIES format or a stem format kept the
+    names of the columns in memory it never freed, a small leak at each call.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">enquote and ooSQLiteEnquote: no length limit, and a stem with one value</emphasis></term>

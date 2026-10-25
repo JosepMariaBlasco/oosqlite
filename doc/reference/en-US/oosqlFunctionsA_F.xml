@@ -4664,7 +4664,7 @@ call oosqlCreateFunction db, "double"
 </variablelist>
 </section>  <!-- End oosqlErrStr() -->
 
-<section id="rtn-oosqlExec"><title>oosqlExec</title>
+<section id="rtn-oosqlExec" revisionflag="changed"><title>&changed11;oosqlExec</title>
 <indexterm><primary>oosqlExec</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlExec</secondary></indexterm>
 <mediaobject>
@@ -4772,10 +4772,16 @@ call oosqlCreateFunction db, "double"
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
-  <para>
-    A NULL value is not set in the row: with the stem formats, the tail of that column is not assigned, and has its
-    default value, its own name, which can be tested with <computeroutput>hasIndex</computeroutput>; with the other
-    formats, the item is .nil.
+  <para revisionflag="changed">
+    The row given to the callback routine has the format of a row of the result set: with OO_ARRAY_OF_ARRAYS, an
+    array whose item 1 is an array with the names of the columns and item 2 an array with the values; with
+    OO_ARRAY_OF_DIRECTORIES, a Directory; with the stem formats, a stem whose tails are the names of the columns, in
+    upper case.
+  </para>
+  <para revisionflag="changed">
+    A NULL value is not set in the row, in the result set and in the rows given to the callback routine alike: with
+    the stem formats, the tail of that column is not assigned, and has its default value, its own name, which can be
+    tested with <computeroutput>hasIndex</computeroutput>; with the other formats, the item is .nil.
   </para>
   <para>
     For SQL that returns rows, and needs values from the program, it is better to prepare a statement with <link
