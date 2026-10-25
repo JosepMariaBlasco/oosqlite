@@ -5211,6 +5211,8 @@ TestCancelAllCleanup:
     self~assertEquals("88.900", err~word(1), "putStmt should reject" bad":" err)
   End
   self~assertSame(stmt, db~nextStmt, "nextStmt should still find the statement")
+  stmt~finalize
+  otherStmt~finalize
   self~assertEquals(0, db~close, "close should work")
   self~assertEquals(0, other~close, "close of the other connection should work")
 

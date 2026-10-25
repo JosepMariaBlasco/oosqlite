@@ -5906,6 +5906,10 @@ RexxMethod4(RexxObjectPtr, oosqlconn_collationNeeded, RexxObjectPtr, callbackObj
     else if ( context->IsOfType(callbackObj, "OOSQLPACKAGE") )
     {
         pCooSQLPackage pcp  = (pCooSQLPackage)context->ObjectToCSelf(callbackObj);
+        if ( ! extensionObjectOk(context, pcp, pcp != NULL && pcp->valid, "ooSQLPackage") )
+        {
+            return NULLOBJECT;
+        }
         pSQLiteCollationNeededEntry e = pcp->packageEntry->collationNeeded;
         if ( e == NULL )
         {
@@ -7025,6 +7029,11 @@ RexxMethod2(RexxObjectPtr, oosqlconn_nextStmt, OPTIONAL_RexxObjectPtr, _stmt, CS
             // If the statement is finalized, that's okay, stmt will be null and
             // that is an acceptable argument to sqlite3_next_stmt.
             pCooSQLiteStmt pCstmt = stmtToCSelf(context, _stmt);
+            if ( pCstmt == NULL )
+            {
+                baseClassInitializationException(context, "ooSQLiteStmt");
+                return NULLOBJECT;
+            }
             stmt = pCstmt->stmt;
         }
     }
@@ -7604,12 +7613,27 @@ RexxMethod4(RexxObjectPtr, oosqlconn_updateHook, RexxObjectPtr, callbackObj, OPT
 /**
  * Internal use only method.
  *
+ * Keeps a statement of this connection in its statement bag.  The method is
+ * public, because the native code of ooSQLiteStmt::init() can not invoke a
+ * private method, so the argument is checked: anything other than an
+ * initialized ooSQLiteStmt object of this connection would make nextStmt(),
+ * close() and the garbage collection of the connection crash.
  */
 RexxMethod2(RexxObjectPtr, oosqlconn_putStmt, RexxObjectPtr, stmt, CSELF, pCSelf)
 {
     pCooSQLiteConn pConn = requiredDBCSelf(context, pCSelf);
     if ( pConn != NULL )
     {
+        pCooSQLiteStmt pCstmt = NULL;
+        if ( context->IsOfType(stmt, "OOSQLITESTMT") )
+        {
+            pCstmt = stmtToCSelf(context, stmt);
+        }
+        if ( pCstmt == NULL || pCstmt->pConn != pConn )
+        {
+            userDefinedMsgException(context->threadContext, 1, "must be an initialized ooSQLiteStmt object of this connection");
+            return NULLOBJECT;
+        }
         context->SendMessage1(pConn->stmtBag, "PUT", stmt);
     }
 
@@ -7630,265 +7654,6 @@ RexxMethod2(RexxObjectPtr, oosqlconn_delStmt, RexxObjectPtr, stmt, CSELF, pCSelf
 
     return TheNilObj;
 }
-
-/** Internal use only
- *
- * Processes a pragma statement that has no value to set.  This is used
- * internally for testing how pragmas work.  It is expected to be feed the name
- * of every pragma and return a value indicating how the pragma worked.
- *
- * Pragmas that return a single row with a single column will return that value,
- * otherwise an "unexpected value ..." will be returned with the "..." explaing
- * what was unexpected, more than 1 row, more than 1 column, no rows, etc..
- *
- * @param c
- * @param pConn
- * @param name
- * @param pragma
- *
- * @return RexxObjectPtr
- */
-RexxObjectPtr pragmaGetTest(RexxMethodContext *c, pCooSQLiteConn pConn, CSTRING name, PragmaType pragma)
-{
-    char buf[256];
-    snprintf(buf, sizeof(buf), "PRAGMA %s;", name);
-
-    sqlite3_stmt *stmt;
-    sqlite3      *db = pConn->db;
-
-    int rc = sqlite3_prepare_v2(db, buf, (int)strlen(buf) + 1, &stmt, NULL);
-
-    if ( rc != SQLITE_OK )
-    {
-        return ooSQLiteErr(c, pConn, rc, sqlite3_errmsg(db), true);
-    }
-
-    RexxObjectPtr result;
-
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_ROW )
-    {
-        int colCount = sqlite3_column_count(stmt);
-
-        if ( colCount == 1  )
-        {
-            result = safeColumnText(c->threadContext,stmt , 0, pConn->nullObj);
-        }
-        else
-        {
-            snprintf(buf, sizeof(buf), "Unexpected result, column count (%d) > 1 for pragma %s", colCount, name);
-            result = ooSQLiteErr(c, pConn, OO_UNEXPECTED_RESULT, buf, false);
-            goto done_out;
-        }
-
-        // See if there are more rows
-        rc = sqlite3_step(stmt);
-        if ( rc == SQLITE_DONE )
-        {
-            ; // This is expected.
-        }
-        else if ( rc == SQLITE_ROW )
-        {
-            snprintf(buf, sizeof(buf), "row 1 result=%s Unexpected result, more than 1 row for pragma %s",
-                     c->ObjectToStringValue(result), name);
-            result = ooSQLiteErr(c, pConn, OO_UNEXPECTED_RESULT, buf, false);
-        }
-        else
-        {
-            snprintf(buf, sizeof(buf), "row 1 result=%s Unexpected result, second test step() produced err=%d for pragma %s",
-                     c->ObjectToStringValue(result), rc, name);
-            result = ooSQLiteErr(c, pConn, OO_UNEXPECTED_RESULT, buf, false);
-        }
-    }
-    else if ( rc == SQLITE_DONE )
-    {
-        snprintf(buf, sizeof(buf), "Unexpected result, no data returned for pragma %s", name);
-        result = ooSQLiteErr(c, pConn, OO_UNEXPECTED_RESULT, buf, false);
-    }
-    else
-    {
-        snprintf(buf, sizeof(buf), "Unexpected result, err=%d returned for pragma %s", rc, name);
-        result = ooSQLiteErr(c, pConn, OO_UNEXPECTED_RESULT, buf, false);
-    }
-
-done_out:
-    sqlite3_finalize(stmt);
-
-    return result;
-}
-
-/** Internal use only
- *
- * Processes a pragma statement that has a value to set.  This is used
- * internally for testing how pragmas work.  It is expected to be feed the name
- * of every pragma and return a value indicating how the pragma worked.  In
- * practice some pragmas that do not take a value, or are known to return result
- * sets may not be used.
- *
- * Pragmas that return a single row with a single column will return that value,
- * otherwise an "unexpected value ..." will be returned with the "..." explaing
- * what was unexpected, more than 1 row, more than 1 column, no rows, etc..
- *
- * @param c
- * @param pConn
- * @param name
- * @param value
- * @param pragma
- *
- * @return RexxObjectPtr
- */
-RexxObjectPtr pragmaSetTest(RexxMethodContext *c, pCooSQLiteConn pConn, CSTRING name, RexxObjectPtr value, PragmaType pragma)
-{
-    char buf[256];
-    snprintf(buf, sizeof(buf), "PRAGMA %s(%s);", name, c->ObjectToStringValue(value));
-
-    sqlite3_stmt *stmt;
-    sqlite3      *db = pConn->db;
-
-    int rc = sqlite3_prepare_v2(db, buf, (int)strlen(buf) + 1, &stmt, NULL);
-
-    if ( rc != SQLITE_OK )
-    {
-        return ooSQLiteErr(c, pConn, rc, sqlite3_errmsg(db), true);
-    }
-
-    RexxObjectPtr result;
-
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_DONE )
-    {
-        snprintf(buf, sizeof(buf), "pragma %s: first step produces SQLITE_DONE", name);
-        result = ooSQLiteErr(c, pConn, OO_UNEXPECTED_RESULT, buf, false);
-    }
-    else if ( rc == SQLITE_ROW )
-    {
-        int colCount = sqlite3_column_count(stmt);
-
-        if ( colCount == 1  )
-        {
-            result = safeColumnText(c->threadContext,stmt , 0, pConn->nullObj);
-        }
-        else
-        {
-            snprintf(buf, sizeof(buf), "pragma %s: first row, column count (%d) > 1 for ", name, colCount);
-            result = ooSQLiteErr(c, pConn, OO_UNEXPECTED_RESULT, buf, false);
-            goto done_out;
-        }
-
-        // See if there are more rows
-        rc = sqlite3_step(stmt);
-        if ( rc == SQLITE_DONE )
-        {
-            ; // This is expected.
-        }
-        else if ( rc == SQLITE_ROW )
-        {
-            snprintf(buf, sizeof(buf), "pragma %s: row 1 result=%s\nMore than 1 row.",
-                     name, c->ObjectToStringValue(result));
-            result = ooSQLiteErr(c, pConn, OO_UNEXPECTED_RESULT, buf, false);
-        }
-        else
-        {
-            snprintf(buf, sizeof(buf), "pragma %s: row 1 result=%s\nUnexpected result, second test step() produced err=%d",
-                     name, c->ObjectToStringValue(result), rc);
-            result = ooSQLiteErr(c, pConn, OO_UNEXPECTED_RESULT, buf, false);
-        }
-    }
-    else
-    {
-        snprintf(buf, sizeof(buf), "pragma %s: Unexpected result, err=%d returned for first step", name, rc);
-        result = ooSQLiteErr(c, pConn, rc, buf, false);
-    }
-
-done_out:
-    sqlite3_finalize(stmt);
-
-    return result;
-}
-
-/** ooSQLiteConnection::pragmaGetTest()
- *
- *  Used to Execute and test a pragma statement with no value to set.
- *
- *  @param  name  The name of the pragma.
- *
- *  @remarks  This is a private method used for internal testing.
- */
-RexxMethod2(RexxObjectPtr, oosqlconn_pragmaGetTest, RexxStringObject, _name, CSELF, pCSelf)
-{
-    RexxObjectPtr result = ooSQLiteErr(context->threadContext, SQLITE_MISUSE, true);
-    wholenumber_t rc     = SQLITE_ERROR;
-
-    pCooSQLiteConn pConn = requiredDB(context, pCSelf);
-    if ( pConn == NULL )
-    {
-        return result;
-    }
-
-    CSTRING name = context->StringData(context->StringLower(_name));
-
-    PragmaType pragma = getPragmaType(context->threadContext, name);
-    if ( pragma == unknownPragma )
-    {
-        return result;
-    }
-
-    return pragmaGetTest(context, pConn, name, pragma);
-}
-
-
-/** ooSQLiteConnection::pragmaSetTest()
- *
- *  Used to Execute and test a pragma statement with a value to set.
- *
- *  @param  name  The name of the pragma.
- *  @param  value The value to set.
- *
- *  @remarks  This is a private method used for internal testing.
- */
-RexxMethod3(RexxObjectPtr, oosqlconn_pragmaSetTest, RexxStringObject, _name, RexxObjectPtr, value, CSELF, pCSelf)
-{
-    RexxObjectPtr result = ooSQLiteErr(context->threadContext, SQLITE_MISUSE, true);
-    wholenumber_t rc     = SQLITE_ERROR;
-
-    pCooSQLiteConn pConn = requiredDB(context, pCSelf);
-    if ( pConn == NULL )
-    {
-        return result;
-    }
-
-    CSTRING name = context->StringData(context->StringLower(_name));
-
-    PragmaType pragma = getPragmaType(context->threadContext, name);
-    if ( pragma == unknownPragma )
-    {
-        return result;
-    }
-
-    return pragmaSetTest(context, pConn, name, value, pragma);
-}
-
-/**
- * Internal use only, transient testing function.
- *
- */
-RexxMethod2(int, oosqlconn_test, POINTER, functPointer, CSELF, pCSelf)
-{
-    int rc = SQLITE_MISUSE;
-
-    fnXCompare f = (fnXCompare)functPointer;
-
-    pCooSQLiteConn pConn = requiredDBCSelf(context, pCSelf);
-    if ( pConn != NULLOBJECT )
-    {
-        rc = sqlite3_create_collation_v2(pConn->db, "REVERSESORT", SQLITE_UTF8, NULL,
-                                         f, NULL);
-    }
-
-    return rc;
-}
-
-
 
 /**
  * Converts a double to a Rexx number that keeps all its precision.
@@ -16848,9 +16613,6 @@ REXX_METHOD_PROTOTYPE(oosqlconn_updateHook);
 
 REXX_METHOD_PROTOTYPE(oosqlconn_putStmt);
 REXX_METHOD_PROTOTYPE(oosqlconn_delStmt);
-REXX_METHOD_PROTOTYPE(oosqlconn_test);
-REXX_METHOD_PROTOTYPE(oosqlconn_pragmaGetTest);
-REXX_METHOD_PROTOTYPE(oosqlconn_pragmaSetTest);
 
 // .ooSQLResult
 REXX_METHOD_PROTOTYPE(oosqlrslt_blob);
@@ -17103,9 +16865,6 @@ RexxMethodEntry ooSQLite_methods[] = {
 
     REXX_METHOD(oosqlconn_putStmt,                    oosqlconn_putStmt),
     REXX_METHOD(oosqlconn_delStmt,                    oosqlconn_delStmt),
-    REXX_METHOD(oosqlconn_test,                       oosqlconn_test),
-    REXX_METHOD(oosqlconn_pragmaGetTest,          oosqlconn_pragmaGetTest),
-    REXX_METHOD(oosqlconn_pragmaSetTest,          oosqlconn_pragmaSetTest),
 
     // .ooSQLResult
     REXX_METHOD(oosqlrslt_blob,                       oosqlrslt_blob),

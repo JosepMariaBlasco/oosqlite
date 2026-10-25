@@ -257,6 +257,16 @@
     not kept by the ooSQLExtensions class, as before.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Debugging methods of ooSQLiteConnection removed</emphasis></term>
+  <listitem>
+  <para>
+    The <emphasis role="italic">test</emphasis>, <emphasis role="italic">pragmaGetTest</emphasis>, and <emphasis
+    role="italic">pragmaSetTest</emphasis> methods of the ooSQLiteConnection class were removed. They were aids for the
+    development of ooSQLite, public but never documented. <emphasis role="italic">test</emphasis> registered any Pointer
+    object as the comparison function of a collation named REVERSESORT, which crashed the interpreter when the pointer
+    was not such a function.
+  </para>
+  </listitem></varlistentry>
 </variablelist>
 </section>
 
@@ -418,6 +428,17 @@
     linkend="mthCreateCollation">createCollation</link>, <link linkend="mthCollationNeeded">collationNeeded</link>, or
     <link linkend="mthCreateFunction">createFunction</link>. These methods now raise an execution error, 98.900, saying
     that the object was not initialized.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Statements and packages of subclasses, and the list of statements</emphasis></term>
+  <listitem>
+  <para>
+    <link linkend="mthNextStmt">nextStmt</link> crashed the interpreter when it was given an ooSQLiteStmt object of a
+    subclass whose init method does not forward to the superclass's, and so did <link
+    linkend="mthCollationNeeded">collationNeeded</link> with such an ooSQLPackage object. They now raise an execution
+    error, 98.900. The ooSQLiteConnection object keeps its statements with a method that must be public, because native
+    code calls it; it accepted any object, and anything other than a statement of the connection made nextStmt, close,
+    or the garbage collection of the connection crash. It now raises a syntax error, 88.900.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Automatic packages after loading them again</emphasis></term>
