@@ -7106,6 +7106,130 @@ WrongClass:
   self~assertEquals(0, rows[1]["V"], "compare (reversed) ran")
   db~close
 
+/******************************************************************************/
+/*                                                                            */
+/* Section 42: Strings and objects kept past the call that gave them          */
+/*                                                                            */
+/* Like the callback names of section 41, other values were kept by the      */
+/* native code without anything keeping them alive: the string value of the  */
+/* null attribute (a pointer into the String given), the file name of a      */
+/* connection opened with a File object (a pointer into a temporary), and    */
+/* the lastErrMsg and lastErrCode of ooSQLExtensions, ooSQLPackage and       */
+/* ooSQLLibrary (objects held only by an object variable that was set to     */
+/* something else, or on another object).  After a garbage collection they   */
+/* showed garbage, or the program died with SIGSEGV.  See technical note     */
+/* #64.                                                                       */
+/*                                                                            */
+/******************************************************************************/
+
+::Method testKeptNullComputedConnection
+  db = self~openMemoryDB
+  db~null = "NU" || "LL"
+  Call churnMemory
+  self~assertEquals("NULL", db~null, "the connection keeps its null")
+  stmt = .ooSQLiteStmt~new(db, "SELECT NULL;")
+  self~assertEquals("NULL", stmt~null, "a new statement takes the connection's null")
+  stmt~step
+  self~assertEquals("NULL", stmt~columnText(1), "SQL NULL is shown as the null attribute")
+  stmt~finalize
+  db~close
+
+::Method testKeptNullComputedClass
+  old = .ooSQLite~null
+  .ooSQLite~null = "CL" || "ASS"
+  Call churnMemory
+  db = self~openMemoryDB
+  .ooSQLite~null = old
+  self~assertEquals("CLASS", db~null, "a new connection takes the class's null")
+  stmt = .ooSQLiteStmt~new(db, "SELECT NULL;")
+  self~assertEquals("CLASS", stmt~null, "and its statements too")
+  stmt~finalize
+  db~close
+
+::Method testKeptNullWithNulCharacter
+  -- The null value was copied up to its first "00"x
+  db = self~openMemoryDB
+  nul = "a" || "00"x || "b"
+  db~null = nul
+  self~assertEquals(nul, db~null, "the connection's null keeps every character")
+  stmt = .ooSQLiteStmt~new(db, "SELECT NULL;")
+  self~assertEquals(nul, stmt~null, "the statement's null keeps every character")
+  stmt~finalize
+  rows = db~exec("SELECT NULL AS v;", .true)
+  self~assertEquals(nul, rows[1]["V"], "exec shows SQL NULL with every character")
+  db~close
+
+::Method testKeptNullChangedDuringExec
+  -- The callback of exec changes the null attribute: the rows still to come
+  -- keep the null the exec started with.  The old null is no longer kept by
+  -- the connection then; the exec keeps it now.  (The window for the garbage
+  -- collector is too narrow to show the bug: this test did not fail before.)
+  db = self~openMemoryDB
+  db~null = "OLD"
+  h = .NullChanger~new(db)
+  rc = db~exec("SELECT NULL UNION ALL SELECT NULL UNION ALL SELECT NULL;", .true, -
+    .ooSQLite~OO_ARRAY_OF_ARRAYS, h, "row")
+  self~assertEquals(0, rc, db~errMsg)
+  self~assertEquals("OLD OLD OLD", h~seen~makeString("L", " "), "every row shows the null exec started with")
+  self~assertEquals("NEW", db~null, "the connection has the new null")
+  db~close
+
+::Method testKeptFileNameFromFile
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_kept.db")
+  dbFile = tempFile~fullName
+  db = .ooSQLiteConnection~new(.File~new(dbFile))
+  self~assertEquals(db~OK, db~initCode, db~lastErrMsg)
+  db~close
+  Call churnMemory
+  Signal On Syntax Name NotOpen
+  db~exec("SELECT 1;")
+  self~fail("exec on a closed connection should raise an error")
+NotOpen:
+  self~assertEquals("The" .File~new(dbFile)~absolutePath "data base is not open.", -
+    Condition("O")~message, "the message names the file")
+  Call SysFileDelete dbFile
+
+::Method testKeptExtensionsLastErrAfterReset
+  rc = .ooSQLExtensions~resetAutoBuiltin
+  Call churnMemory
+  self~assertEquals("no error", .ooSQLExtensions~lastErrMsg)
+  self~assertEquals(0, .ooSQLExtensions~lastErrCode)
+
+::Method testKeptExtensionsLastErrAfterError
+  self~assertFalse(.ooSQLExtensions~loadPackage(userExtLib("nosuchpackage")))
+  Call churnMemory
+  self~assertTrue(.ooSQLExtensions~lastErrMsg~pos("nosuchpackage") > 0, -
+    "lastErrMsg names the file:" .ooSQLExtensions~lastErrMsg)
+  self~assertTrue(.ooSQLExtensions~lastErrCode \= 0, "lastErrCode is set")
+
+::Method testKeptPackageLastErrAfterReset
+  package = self~loadTestPackage
+  collation = package~getCollation("reverse")
+  Call churnMemory
+  self~assertEquals("no error", package~lastErrMsg)
+  self~assertEquals(0, package~lastErrCode)
+
+::Method testKeptLibraryLastErrAfterReset
+  self~assertTrue(.ooSQLExtensions~loadLibrary(userExtLib("testlibrary"), .Array~of("reverse")), -
+    .ooSQLExtensions~lastErrMsg)
+  lib = .ooSQLExtensions~getLibrary("testlibrary")
+  h = lib~getHandle("reverse")
+  Call churnMemory
+  self~assertEquals("no error", lib~lastErrMsg)
+  self~assertEquals(0, lib~lastErrCode)
+
+::Method testKeptLibraryLastErrAfterExtensionsCall
+  -- The library's error was set from a method of ooSQLExtensions: only that
+  -- class kept it, until its next call replaced it
+  self~assertFalse(.ooSQLExtensions~loadLibrary(userExtLib("testlibrary"), -
+    .Array~of("reverse", "noSuchFunc")))
+  lib = .ooSQLExtensions~getLibrary("testlibrary")
+  rc = .ooSQLExtensions~resetAutoBuiltin
+  Call churnMemory
+  self~assertTrue(lib~lastErrMsg~pos("noSuchFunc") > 0, -
+    "the library's lastErrMsg names the function:" lib~lastErrMsg)
+  self~assertTrue(lib~lastErrCode \= 0, "the library's lastErrCode is set")
+
 ::Class "ooSQLiteClassic.testGroup" Subclass ooTestCase Public
 
 --------------------------------------------------------------------------------
@@ -10973,6 +11097,24 @@ TrapSyntax:
 ::Class StmtWithoutSuperInit Subclass ooSQLiteStmt
 ::Method init
   Nop
+
+-- Section 42: an exec callback that changes the connection's null on the
+-- first row, and keeps the null value of every row it sees
+::Class NullChanger
+::Attribute seen
+::Method init
+  Expose db seen
+  Use Strict Arg db
+  seen = .Array~new
+::Method row
+  Expose db seen
+  Use Arg rows, count
+  If count == 1 Then Do
+    db~null = "NE" || "W"
+    Call churnMemory
+  End
+  seen~append(rows[2][1] || "")   -- a copy: the row's own object is not kept
+  Return 0
 
 -- Section 41: a handler whose methods are named at run time
 ::Class NamedHandler
