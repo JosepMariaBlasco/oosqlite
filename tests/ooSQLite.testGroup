@@ -5151,6 +5151,25 @@ TestCancelAllCleanup:
   self~assertTrue(err~pos("not initialized") > 0, -
     "GETHANDLE should say the object was not initialized:" err)
 
+::Method testExtensionObjectSubclassesWithoutSuperInit
+  -- ooSQLCollation, ooSQLCollationNeeded and ooSQLFunction objects of a
+  -- subclass whose init does not forward to the superclass's have no C
+  -- data: createCollation, collationNeeded and createFunction crashed
+  -- (SIGSEGV) when they were given one
+  db = self~openMemoryDB
+  cases = .array~of( -
+    .array~of(.CollationWithoutSuperInit~new, "CREATECOLLATION", "c", "ooSQLCollation"), -
+    .array~of(.CollationNeededWithoutSuperInit~new, "COLLATIONNEEDED", .nil, "ooSQLCollationNeeded"), -
+    .array~of(.FunctionWithoutSuperInit~new, "CREATEFUNCTION", "f", "ooSQLFunction"))
+  Do case Over cases
+    If case[3] == .nil Then err = self~syntaxErrorOf(db, case[2], case[1])
+    Else err = self~syntaxErrorOf(db, case[2], case[3], case[1])
+    self~assertEquals("98.900", err~word(1), case[2] "should raise error 98.900:" err)
+    self~assertTrue(err~pos("this" case[4] "object was not initialized") > 0, -
+      case[2] "should say the" case[4] "object was not initialized:" err)
+  End
+  db~close
+
 ::Method testLoadPackageTwiceKeepsThePackage
   -- loading a package that was already loaded made a second package object
   -- and dropped the first, which could still be automatic (SIGSEGV)
@@ -8760,5 +8779,17 @@ Syntax:
   Nop
 
 ::Class LibraryWithoutSuperInit Subclass ooSQLLibrary
+::Method init
+  Nop
+
+::Class CollationWithoutSuperInit Subclass ooSQLCollation
+::Method init
+  Nop
+
+::Class CollationNeededWithoutSuperInit Subclass ooSQLCollationNeeded
+::Method init
+  Nop
+
+::Class FunctionWithoutSuperInit Subclass ooSQLFunction
 ::Method init
   Nop
