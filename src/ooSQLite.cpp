@@ -5100,6 +5100,41 @@ static RexxObjectPtr installCallback(RexxMethodContext *c, sqlite3 *db, pCGeneri
  *         buffers somewhat.  That is, if (when) the buffer is removed from the
  *         context variable, the global references need to be released.
  */
+/**
+ * The room a copy of a name takes at the end of a callback buffer: its length
+ * and the terminating null, or 0 for no name.
+ */
+static inline size_t nameRoom(CSTRING name)
+{
+    return name == NULL ? 0 : strlen(name) + 1;
+}
+
+/**
+ * Copies a name into the free space at the end of a callback buffer, *tail,
+ * and moves *tail past it.
+ *
+ * The callback structs keep names (the method to send, the routine for the
+ * messages, the SQL name) for as long as the callback is registered, and the
+ * buffer lives as long as the struct.  Before ooSQLite 1.1 they kept pointers
+ * into the Strings given as arguments: a name built at run time was garbage
+ * collected, and the callback sent whatever the memory held (technical note
+ * #63).
+ *
+ * @return The copy, or NULL for no name.
+ */
+static CSTRING keepName(char **tail, CSTRING name)
+{
+    if ( name == NULL )
+    {
+        return NULL;
+    }
+    size_t len = strlen(name) + 1;
+    memcpy(*tail, name, len);
+    CSTRING copy = *tail;
+    *tail += len;
+    return copy;
+}
+
 static RexxObjectPtr doCallbackSetup(RexxMethodContext *c, pCooSQLiteConn pConn, RexxObjectPtr callbackObj, CSTRING mthName,
                                      RexxObjectPtr userData, CallbackType cbt, int instructions, CSTRING zName)
 {
@@ -5111,7 +5146,7 @@ static RexxObjectPtr doCallbackSetup(RexxMethodContext *c, pCooSQLiteConn pConn,
     }
 
     RexxBufferObject oldCallback = getCallbackVar(c, cbt, zName);
-    RexxBufferObject cbcBuffer   = c->NewBuffer(sizeof(CGenericCallback));
+    RexxBufferObject cbcBuffer   = c->NewBuffer(sizeof(CGenericCallback) + nameRoom(mthName));
     if ( cbcBuffer == NULLOBJECT )
     {
         outOfMemoryException(c->threadContext);
@@ -5122,6 +5157,7 @@ static RexxObjectPtr doCallbackSetup(RexxMethodContext *c, pCooSQLiteConn pConn,
 
     pCGenericCallback cbc = (pCGenericCallback)c->BufferData(cbcBuffer);
     memset(cbc, 0, sizeof(CGenericCallback));
+    char *tail = (char *)cbc + sizeof(CGenericCallback);
 
     cbc->callbackObj     = c->RequestGlobalReference(callbackObj);
     cbc->callbackContext = c->threadContext;
@@ -5131,7 +5167,7 @@ static RexxObjectPtr doCallbackSetup(RexxMethodContext *c, pCooSQLiteConn pConn,
 
     if ( mthName != NULL )
     {
-        cbc->callbackMethod = mthName;
+        cbc->callbackMethod = keepName(&tail, mthName);
     }
     else
     {
@@ -5210,7 +5246,11 @@ static RexxObjectPtr rexxFunctionCallbacks(RexxMethodContext *c, pCooSQLiteConn 
     sqlite3          *db          = pConn->db;
     int               rc          = SQLITE_MISUSE;
     char             *key         = functionKey(zName, countArgs);
-    RexxBufferObject fncBuffer    = c->NewBuffer(sizeof(CFunctionCallback));
+    CSTRING           funcMethod  = rxFunc != NULLOBJECT ? stringValue(c->threadContext, rxFunc) : NULL;
+    CSTRING           stepMethod  = rxFunc == NULLOBJECT ? stringValue(c->threadContext, rxStep) : NULL;
+    CSTRING           finalMethod = rxFunc == NULLOBJECT ? stringValue(c->threadContext, rxFinal) : NULL;
+    RexxBufferObject fncBuffer    = c->NewBuffer(sizeof(CFunctionCallback) + nameRoom(funcMethod)
+                                                 + nameRoom(stepMethod) + nameRoom(finalMethod));
 
     if ( fncBuffer == NULLOBJECT || key == NULL )
     {
@@ -5227,6 +5267,7 @@ static RexxObjectPtr rexxFunctionCallbacks(RexxMethodContext *c, pCooSQLiteConn 
 
     pCFunctionCallback cfcb = (pCFunctionCallback)c->BufferData(fncBuffer);
     memset(cfcb, 0, sizeof(CFunctionCallback));
+    char *tail = (char *)cfcb + sizeof(CFunctionCallback);
 
     cfcb->callbackObj     = c->RequestGlobalReference(callbackObj);
     cfcb->callbackContext = c->threadContext;
@@ -5242,15 +5283,15 @@ static RexxObjectPtr rexxFunctionCallbacks(RexxMethodContext *c, pCooSQLiteConn 
 
     if ( rxFunc != NULLOBJECT )
     {
-        cfcb->funcMethod = stringValue(c->threadContext, rxFunc);
+        cfcb->funcMethod = keepName(&tail, funcMethod);
 
         rc = sqlite3_create_function_v2(db, zName, countArgs, SQLITE_UTF8, (void *)cfcb, functionCallback, NULL, NULL, NULL);
         result = c->WholeNumber(rc);
     }
     else
     {
-        cfcb->stepMethod  = stringValue(c->threadContext, rxStep);
-        cfcb->finalMethod = stringValue(c->threadContext, rxFinal);
+        cfcb->stepMethod  = keepName(&tail, stepMethod);
+        cfcb->finalMethod = keepName(&tail, finalMethod);
 
         rc = sqlite3_create_function_v2(db, zName, countArgs, SQLITE_UTF8, (void *)cfcb, NULL, stepCallback, finalCallback, NULL);
         result = c->WholeNumber(rc);
@@ -13954,7 +13995,7 @@ static RexxObjectPtr doCallbackSetupRtn(RexxCallContext *c, sqlite3 *db, CSTRING
         return removeCallbackRtn(c, db, cbt, zName);
     }
 
-    RexxBufferObject cbcBuffer = c->NewBuffer(sizeof(CGenericCallback));
+    RexxBufferObject cbcBuffer = c->NewBuffer(sizeof(CGenericCallback) + nameRoom(zName) + nameRoom(rtnName));
 
     if ( cbcBuffer == NULLOBJECT )
     {
@@ -13964,10 +14005,11 @@ static RexxObjectPtr doCallbackSetupRtn(RexxCallContext *c, sqlite3 *db, CSTRING
 
     pCGenericCallback cbc = (pCGenericCallback)c->BufferData(cbcBuffer);
     memset(cbc, 0, sizeof(CGenericCallback));
+    char *tail = (char *)cbc + sizeof(CGenericCallback);
 
     cbc->callbackContext = c->threadContext;
-    cbc->sqlFuncName     = zName;
-    cbc->routineName     = rtnName;
+    cbc->sqlFuncName     = keepName(&tail, zName);
+    cbc->routineName     = keepName(&tail, rtnName);
     cbc->callbackRtn     = getCallerRoutine(c, rtnName);
     cbc->rtnDB           = db;
     cbc->interpreter     = c->threadContext->instance;
@@ -15483,7 +15525,10 @@ RexxRoutine7(RexxObjectPtr, oosqlCreateFunction_rtn, POINTER, _db, CSTRING, func
         }
     }
 
-    RexxBufferObject fncBuffer = context->NewBuffer(sizeof(CFunctionCallback));
+    RexxBufferObject fncBuffer = context->NewBuffer(sizeof(CFunctionCallback) + nameRoom(funcSqlName)
+                                                    + nameRoom(isFunction ? funcRtnName : NULL)
+                                                    + nameRoom(isFunction ? NULL : stepRtnName)
+                                                    + nameRoom(isFunction ? NULL : finalRtnName));
     if ( fncBuffer == NULLOBJECT )
     {
         outOfMemoryException(context->threadContext);
@@ -15508,11 +15553,12 @@ RexxRoutine7(RexxObjectPtr, oosqlCreateFunction_rtn, POINTER, _db, CSTRING, func
 
     pCFunctionCallback cfcb = (pCFunctionCallback)context->BufferData(fncBuffer);
     memset(cfcb, 0, sizeof(CFunctionCallback));
+    char *tail = (char *)cfcb + sizeof(CFunctionCallback);
 
     cfcb->callbackContext = context->threadContext;
     cfcb->countArgs       = countArgs;
     cfcb->rtnDB           = db;
-    cfcb->sqlFuncName     = funcSqlName;
+    cfcb->sqlFuncName     = keepName(&tail, funcSqlName);
     cfcb->interpreter     = context->threadContext->instance;
     cfcb->initialThreadID = oosqlGetCurrentThreadId();
 
@@ -15523,7 +15569,7 @@ RexxRoutine7(RexxObjectPtr, oosqlCreateFunction_rtn, POINTER, _db, CSTRING, func
 
     if ( isFunction )
     {
-        cfcb->funcName = funcRtnName;
+        cfcb->funcName = keepName(&tail, funcRtnName);
         cfcb->funcRtn  = getCallerRoutine(context, funcRtnName);
 
         if ( cfcb->funcRtn == NULLOBJECT )
@@ -15537,7 +15583,7 @@ RexxRoutine7(RexxObjectPtr, oosqlCreateFunction_rtn, POINTER, _db, CSTRING, func
     }
     else
     {
-        cfcb->stepName = stepRtnName;
+        cfcb->stepName = keepName(&tail, stepRtnName);
         cfcb->stepRtn  = getCallerRoutine(context, stepRtnName);
 
         if ( cfcb->stepRtn == NULLOBJECT )
@@ -15546,7 +15592,7 @@ RexxRoutine7(RexxObjectPtr, oosqlCreateFunction_rtn, POINTER, _db, CSTRING, func
             return result;
         }
 
-        cfcb->finalName = finalRtnName;
+        cfcb->finalName = keepName(&tail, finalRtnName);
         cfcb->finalRtn  = getCallerRoutine(context, finalRtnName);
 
         if ( cfcb->finalRtn == NULLOBJECT )
