@@ -1630,8 +1630,8 @@
       <para>
         The format, one of these keywords. Only the first letter is checked, and case is not significant:
         <computeroutput>OneLine</computeroutput>, the version of ooSQLite on one line, such as <computeroutput>ooSQLite
-        Version 1.0.2.13107 (64 bit)</computeroutput>, the default; <computeroutput>Compact</computeroutput>, the
-        version number of ooSQLite, such as <computeroutput>1.0.2.13107</computeroutput>;
+        Version 1.1.0.0 (64 bit)</computeroutput>, the default; <computeroutput>Compact</computeroutput>, the
+        version number of ooSQLite, such as <computeroutput>1.1.0.0</computeroutput>;
         <computeroutput>Full</computeroutput>, several lines, with the versions of ooSQLite, ooRexx, and SQLite, the
         date ooSQLite was built, and its copyright; <computeroutput>LibVersion</computeroutput>, the version of SQLite,
         as <link linkend="mthLibVersion">libVersion</link> returns it; <computeroutput>Number</computeroutput>, the
@@ -1679,10 +1679,10 @@
   say .ooSQLite~version('LibVersion')
   say .ooSQLite~version('F')
   /* Output might be:
-  ooSQLite Version 1.0.2.13107 (64 bit)
-  1.0.2.13107
+  ooSQLite Version 1.1.0.0 (64 bit)
+  1.1.0.0
   3.52.0
-  ooSQLite: ooSQLite Version 1.0.2.13107 (64 bit)
+  ooSQLite: ooSQLite Version 1.1.0.0 (64 bit)
             Built Oct 18 2026 13:47:21
             Copyright (c) 2012-2026 Rexx Language Association. All rights reserved.
 

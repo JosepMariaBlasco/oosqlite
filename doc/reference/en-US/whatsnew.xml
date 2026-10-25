@@ -60,6 +60,14 @@
   In the rest of the book, the sections that are new in this release are marked &added11; and the sections that changed
   are marked &changed11;, as the ooRexx reference does. The embedded SQLite is version 3.52.0, as in ooSQLite 1.0.2.13107.
 </para>
+<para>
+  The version of this release is 1.1.0.0, as returned by <link linkend="mthVersion">version</link> and <link
+  linkend="rtn-ooSQLiteVersion">ooSQLiteVersion</link>. The fourth number, the build level, was the Subversion revision
+  until 1.0.2.13107; it is now part of the version, like the other three, and is not taken from the repository. The
+  version that ooSQLite packages are checked against is 1.1.0: a package written in C or C++ can require it with
+  <computeroutput>OOSQLITE_1_1_0</computeroutput>, defined in <computeroutput>oosqlPackage.hpp</computeroutput>
+  together with <computeroutput>OOSQLITE_1_0_0</computeroutput>.
+</para>
 
 <section id="sctWhatsChangedCompat"><title>Changes That Can Affect Existing Programs</title>
 <para>
@@ -533,7 +541,7 @@
   <listitem>
   <para>
     The message for a package that requires a newer ooSQLite or SQLite showed the versions as internal numbers,
-    "requires ooSQLite version: 6488064 current version: 65536". It now shows them as "99.0.0" and "1.0.0".
+    "requires ooSQLite version: 6488064 current version: 65536". It now shows them as "99.0.0" and "1.1.0".
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">loadExtension resets the last error</emphasis></term>

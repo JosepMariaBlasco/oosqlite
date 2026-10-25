@@ -217,7 +217,7 @@ syntax:
   /* Output:
   98.900
   Could not create an ooSQLPackage object
-  Package: tooNewPackage requires ooSQLite version: 99.0.0 current version: 1.0.0.
+  Package: tooNewPackage requires ooSQLite version: 99.0.0 current version: 1.1.0.
   */
 </programlisting>
   </para>
