@@ -56,6 +56,14 @@ extern RexxDirectoryObject TheDotLocalObj;
 
 extern bool RexxEntry packageLoadHelper(RexxThreadContext *c);
 
+extern RexxObjectPtr stringObject(RexxThreadContext *c, RexxObjectPtr o);
+extern CSTRING       stringValue(RexxThreadContext *c, RexxObjectPtr o);
+extern CSTRING       requiredStringValue(RexxThreadContext *c, RexxObjectPtr o, size_t pos);
+extern CSTRING       requiredStringItem(RexxThreadContext *c, RexxObjectPtr o, size_t pos, size_t index);
+extern CSTRING       objectText(RexxThreadContext *c, RexxObjectPtr o);
+inline CSTRING       objectText(RexxMethodContext *c, RexxObjectPtr o) { return objectText(c->threadContext, o); }
+inline CSTRING       objectText(RexxCallContext *c, RexxObjectPtr o) { return objectText(c->threadContext, o); }
+
 extern void  severeErrorException(RexxThreadContext *c, const char *msg);
 extern void  systemServiceException(RexxThreadContext *context, const char *msg);
 extern void  systemServiceException(RexxThreadContext *context, const char *msg, const char *sub);
@@ -318,7 +326,7 @@ inline RexxObjectPtr notPositiveArgException(RexxThreadContext *c, size_t argPos
  */
 inline void wrongObjInArrayException(RexxThreadContext *c, size_t argPos, size_t index, CSTRING msg, RexxObjectPtr actual)
 {
-    wrongObjInArrayException(c, argPos, index, msg, c->ObjectToStringValue(actual));
+    wrongObjInArrayException(c, argPos, index, msg, objectText(c, actual));
 }
 
 /**
@@ -339,7 +347,7 @@ inline void wrongObjInArrayException(RexxThreadContext *c, size_t argPos, size_t
  */
 inline RexxObjectPtr wrongArgKeywordException(RexxMethodContext *c, size_t pos, CSTRING list, RexxObjectPtr actual)
 {
-    return wrongArgKeywordException(c, pos, list, c->ObjectToStringValue(actual));
+    return wrongArgKeywordException(c, pos, list, objectText(c, actual));
 }
 
 /**
@@ -358,7 +366,7 @@ inline RexxObjectPtr wrongArgKeywordException(RexxMethodContext *c, size_t pos, 
  */
 inline void directoryIndexExceptionList(RexxThreadContext *c, size_t pos, CSTRING index, CSTRING list, RexxObjectPtr actual)
 {
-    directoryIndexExceptionList(c, pos, index, list, c->ObjectToStringValue(actual));
+    directoryIndexExceptionList(c, pos, index, list, objectText(c, actual));
 }
 
 /**
@@ -377,7 +385,7 @@ inline void directoryIndexExceptionList(RexxThreadContext *c, size_t pos, CSTRIN
  */
 inline void directoryIndexExceptionMsg(RexxThreadContext *c, size_t pos, CSTRING index, CSTRING msg, RexxObjectPtr actual)
 {
-    directoryIndexExceptionMsg(c, pos, index, msg, c->ObjectToStringValue(actual));
+    directoryIndexExceptionMsg(c, pos, index, msg, objectText(c, actual));
 }
 
 /**

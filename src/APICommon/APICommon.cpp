@@ -263,6 +263,115 @@ void *baseClassInitializationException(RexxMethodContext *c, CSTRING clsName, CS
  * @param c    Thread context we are executing in.
  * @param msg  "Some message"
  */
+/**
+ * The string value of an object, as a String object, got the way the
+ * interpreter gets the value of a CSTRING argument: the object itself if it is
+ * a String, or what its MAKESTRING method returns (REQUEST('STRING')).
+ *
+ * Unlike ObjectToStringValue(), it never raises NOSTRING.  An object with no
+ * string value, like .Object~new, gives NULLOBJECT.  ObjectToStringValue()
+ * would use what its STRING method returns ("an Object"), and raise NOSTRING:
+ * if the Rexx caller traps it with SIGNAL ON NOSTRING, ooRexx unwinds through
+ * the native code, which is left half done, and through SQLite's frames when
+ * it runs in a callback.
+ *
+ * @param c  The thread context we are operating under.
+ * @param o  Any Rexx object, or NULLOBJECT.
+ *
+ * @return The String, or NULLOBJECT.  If the MAKESTRING method raised a
+ *         condition, it is left pending.
+ */
+RexxObjectPtr stringObject(RexxThreadContext *c, RexxObjectPtr o)
+{
+    if ( o == NULLOBJECT )
+    {
+        return NULLOBJECT;
+    }
+    if ( c->IsString(o) )
+    {
+        return o;
+    }
+
+    RexxObjectPtr s = c->SendMessage1(o, "REQUEST", c->String("STRING"));
+    if ( s == NULLOBJECT || ! c->IsString(s) )
+    {
+        return NULLOBJECT;
+    }
+    return s;
+}
+
+/**
+ * The string value of an object as stringObject() gets it, or NULL if it has
+ * none.  Never raises NOSTRING.
+ */
+CSTRING stringValue(RexxThreadContext *c, RexxObjectPtr o)
+{
+    RexxObjectPtr s = stringObject(c, o);
+    return s == NULLOBJECT ? NULL : c->ObjectToStringValue(s);
+}
+
+/**
+ * The string value of an argument, as stringValue() gets it.  If it has none,
+ * raises 88.909, as the interpreter does for a CSTRING argument:
+ *
+ *   Argument <pos> must have a string value
+ *
+ * @return The string, or NULL with the condition raised.
+ */
+CSTRING requiredStringValue(RexxThreadContext *c, RexxObjectPtr o, size_t pos)
+{
+    CSTRING s = stringValue(c, o);
+    if ( s == NULL && ! c->CheckCondition() )
+    {
+        c->RaiseException1(Rexx_Error_Invalid_argument_string, c->StringSize(pos));
+    }
+    return s;
+}
+
+/**
+ * The string value of an item of an Array (or of a stem) argument, as
+ * stringValue() gets it.  If it has none, raises 88.900:
+ *
+ *   Index <index> of the array, argument <pos>, must be a string value; found "an Object"
+ *
+ * @return The string, or NULL with the condition raised.
+ */
+CSTRING requiredStringItem(RexxThreadContext *c, RexxObjectPtr o, size_t pos, size_t index)
+{
+    CSTRING s = stringValue(c, o);
+    if ( s == NULL && ! c->CheckCondition() )
+    {
+        wrongObjInArrayException(c, pos, index, "a string value", objectText(c, o));
+    }
+    return s;
+}
+
+/**
+ * The text of an object for an error message: its string value, if it has one,
+ * otherwise what its STRING method returns ("an Object").  Never raises
+ * NOSTRING (see stringObject()); a condition raised by the object's own MAKESTRING
+ * or STRING method is cleared, unless one was already pending.
+ */
+CSTRING objectText(RexxThreadContext *c, RexxObjectPtr o)
+{
+    if ( o == NULLOBJECT )
+    {
+        return "";
+    }
+
+    bool          pending = c->CheckCondition();
+    RexxObjectPtr s       = stringObject(c, o);
+    if ( s == NULLOBJECT )
+    {
+        s = c->SendMessage0(o, "STRING");
+    }
+    if ( ! pending && c->CheckCondition() )
+    {
+        c->ClearCondition();
+    }
+    return ( s != NULLOBJECT && c->IsString(s) ) ? c->ObjectToStringValue(s) : "an object";
+}
+
 void userDefinedMsgException(RexxThreadContext *c, CSTRING msg)
 {
     c->RaiseException1(Rexx_Error_Invalid_argument_user_defined, c->String(msg));
@@ -384,7 +493,7 @@ RexxObjectPtr wrongClassException(RexxThreadContext *c, size_t pos, const char *
 {
     char    buffer[256];
 
-    CSTRING actual = c->ObjectToStringValue(_actual);
+    CSTRING actual = objectText(c, _actual);
     if ( strlen(actual) == 0 )
     {
         actual = strPrintClassID(c, _actual);
@@ -425,7 +534,7 @@ RexxObjectPtr wrongClassListException(RexxThreadContext *c, size_t pos, const ch
 {
     char    buffer[256];
 
-    CSTRING actual = c->ObjectToStringValue(_actual);
+    CSTRING actual = objectText(c, _actual);
     if ( strlen(actual) == 0 )
     {
         actual = strPrintClassID(c, _actual);
@@ -472,7 +581,7 @@ RexxObjectPtr invalidTypeException(RexxThreadContext *c, size_t pos, const char 
 RexxObjectPtr invalidTypeException(RexxThreadContext *c, size_t pos, const char *type, RexxObjectPtr actual)
 {
     char buffer[256];
-    snprintf(buffer, sizeof(buffer), "Argument %zd is not a valid %s; found %s", pos, type, c->ObjectToStringValue(actual));
+    snprintf(buffer, sizeof(buffer), "Argument %zd is not a valid %s; found %s", pos, type, objectText(c, actual));
     userDefinedMsgException(c, buffer);
     return NULLOBJECT;
 }
@@ -541,7 +650,7 @@ void numberTooSmallException(RexxThreadContext *c, int pos, int min, RexxObjectP
 {
     char buffer[256];
     snprintf(buffer, sizeof(buffer), "Argument %d must be a whole number greater than %d; actual %s",
-              pos, min, c->ObjectToStringValue(actual));
+              pos, min, objectText(c, actual));
     userDefinedMsgException(c, buffer);
 }
 
@@ -565,7 +674,7 @@ RexxObjectPtr notBooleanException(RexxThreadContext *c, size_t pos, RexxObjectPt
 {
     char buffer[256];
     snprintf(buffer, sizeof(buffer), "Argument %zd must be true or false; found \"%s\"",
-              pos, c->ObjectToStringValue(actual));
+              pos, objectText(c, actual));
     userDefinedMsgException(c, buffer);
     return NULLOBJECT;
 }
@@ -620,7 +729,7 @@ void wrongObjInDirectoryException(RexxThreadContext *c, int argPos, CSTRING inde
     char buffer[256];
     snprintf(buffer, sizeof(buffer),
               "Index, %s, of argument %d, must be %s; found \"%s\"",
-              index, argPos, needed, c->ObjectToStringValue(actual));
+              index, argPos, needed, objectText(c, actual));
     userDefinedMsgException(c, buffer);
 }
 
@@ -800,7 +909,7 @@ void failedToRetrieveException(RexxThreadContext *c, CSTRING item, RexxObjectPtr
 
     RexxObjectPtr name = c->SendMessage0(source, "OBJECTNAME");
     snprintf(buf, sizeof(buf), "Could not retrieve the %s information for %s",
-              item, c->ObjectToStringValue(name));
+              item, objectText(c, name));
 
     c->RaiseException1(Rexx_Error_Execution_user_defined, c->String(buf));
 }
@@ -915,7 +1024,7 @@ RexxObjectPtr wrongArgKeywordsException(RexxThreadContext *c, size_t pos, CSTRIN
 
 RexxObjectPtr wrongArgKeywordsException(RexxThreadContext *c, size_t pos, CSTRING list, RexxObjectPtr actual)
 {
-    return wrongArgKeywordsException(c, pos, list, c->ObjectToStringValue(actual));
+    return wrongArgKeywordsException(c, pos, list, objectText(c, actual));
 }
 
 /**
@@ -993,7 +1102,7 @@ RexxObjectPtr wrongArgOptionException(RexxThreadContext *c, size_t pos, CSTRING 
 
 RexxObjectPtr wrongArgOptionException(RexxThreadContext *c, size_t pos, CSTRING list, RexxObjectPtr actual)
 {
-    return wrongArgOptionException(c, pos, list, c->ObjectToStringValue(actual));
+    return wrongArgOptionException(c, pos, list, objectText(c, actual));
 }
 
 /**
@@ -1080,7 +1189,7 @@ RexxObjectPtr invalidReturnWholeNumberException(RexxThreadContext *c, CSTRING na
 {
     char buf[256];
     snprintf(buf, sizeof(buf), "The return from %s %s() must be a whole number; found %s",
-             isMethod ? "method" : "routine", name, c->ObjectToStringValue(actual));
+             isMethod ? "method" : "routine", name, objectText(c, actual));
 
     c->RaiseException1(Rexx_Error_Execution_user_defined, c->String(buf));
     return NULLOBJECT;
@@ -1099,7 +1208,7 @@ void notBooleanReplyException(RexxThreadContext *c, CSTRING method, RexxObjectPt
 {
     char buf[256];
     snprintf(buf, sizeof(buf), "The return from method %s() must be a logical; found %s",
-             method, c->ObjectToStringValue(actual));
+             method, objectText(c, actual));
 
     c->RaiseException1(Rexx_Error_Execution_user_defined, c->String(buf));
 }
@@ -1119,7 +1228,7 @@ void notUnsignedInt32Exception(RexxMethodContext *c, size_t pos, RexxObjectPtr a
 {
     char buf[256];
     snprintf(buf, sizeof(buf), "Argument %zd must be in the range 0 to 4294967295; found \"%s\"",
-             pos, c->ObjectToStringValue(actual));
+             pos, objectText(c, actual));
 
     c->RaiseException1(Rexx_Error_Incorrect_method_user_defined, c->String(buf));
 }
@@ -1724,7 +1833,7 @@ static char *getConditionMsg(RexxThreadContext *c, wholenumber_t *major, wholenu
                 RexxObjectPtr o = c->ArrayAt(a, i);
                 if ( o != NULLOBJECT )
                 {
-                    cBytes = snprintf(buf, MED_BUF, "%s\n", c->ObjectToStringValue(o));
+                    cBytes = snprintf(buf, MED_BUF, "%s\n", objectText(c, o));
 
                     while ( cBytes + usedBytes >= bytes )
                     {

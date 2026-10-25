@@ -1160,17 +1160,22 @@ static void  strupper(char *location, size_t length)
 }
 
 /**
- * Convert any Rexx object to its string value. If the specified object is the
- * NULLOBJECT or the .nil object then a null pointer is returned.
- *
- * @param c
- * @param o
- *
- * @return CSTRING
+ * The string value of a value to enquote: NULL for the NULLOBJECT or .nil (the
+ * SQL NULL), otherwise its string value.  A value with no string value raises
+ * 88.909 for a single value, or 88.900 for an item (index > 0) of the Array or
+ * stem, argument 1; *ok is then false.
  */
-static inline CSTRING obj2str(RexxThreadContext *c, RexxObjectPtr o)
+static CSTRING obj2str(RexxThreadContext *c, RexxObjectPtr o, size_t index, bool *ok)
 {
-    return ( o == NULLOBJECT || o == TheNilObj ) ? NULL : c->ObjectToStringValue(o);
+    *ok = true;
+    if ( o == NULLOBJECT || o == TheNilObj )
+    {
+        return NULL;
+    }
+
+    CSTRING s = index == 0 ? requiredStringValue(c, o, 1) : requiredStringItem(c, o, 1, index);
+    *ok = s != NULL;
+    return s;
 }
 
 /**
@@ -1226,7 +1231,14 @@ static RexxObjectPtr enquoteList(RexxThreadContext *c, RexxObjectPtr src, size_t
     {
         RexxObjectPtr o = isStem ? c->GetStemArrayElement((RexxStemObject)src, i)
                                  : c->ArrayAt((RexxArrayObject)src, i);
-        sqlite3_str_appendf(str, i == 1 ? "%Q" : ", %Q", obj2str(c, o));
+        bool    ok;
+        CSTRING v = obj2str(c, o, i, &ok);
+        if ( ! ok )
+        {
+            sqlite3_free(sqlite3_str_finish(str));
+            return NULLOBJECT;
+        }
+        sqlite3_str_appendf(str, i == 1 ? "%Q" : ", %Q", v);
     }
 
     if ( sqlite3_str_errcode(str) != SQLITE_OK )
@@ -2005,11 +2017,24 @@ static bool replyIsGood(RexxThreadContext *c, RexxObjectPtr reply, wholenumber_t
             noRoutineReturnException(c, rtnName == NULL ? "" : rtnName);
         }
     }
-    else if ( ! c->WholeNumber(reply, rc) )
+    else
     {
-        result = false;
+        // An object with no string value (no MAKESTRING method) is an invalid
+        // reply.  WholeNumber() would take the value of its STRING method and
+        // raise NOSTRING, which, trapped by the caller of SQLite, made ooRexx
+        // unwind through the C frames of SQLite: the statement was left
+        // unfinalized (technical note #62).
+        RexxObjectPtr str = stringObject(c, reply);
+        if ( c->CheckCondition() )
+        {
+            result = false;
+        }
+        else if ( str == NULLOBJECT || ! c->WholeNumber(str, rc) )
+        {
+            result = false;
 
-        invalidReturnWholeNumberException(c, isMethod ? mthName : rtnName, reply, isMethod);
+            invalidReturnWholeNumberException(c, isMethod ? mthName : rtnName, reply, isMethod);
+        }
     }
 
     return result;
@@ -4361,7 +4386,12 @@ RexxMethod2(RexxObjectPtr, oosql_setNull_atr_cls, RexxObjectPtr, nullObj, CSELF,
     }
     else
     {
-        pCoosql->nullStr = context->ObjectToStringValue(nullObj);
+        CSTRING nullStr = requiredStringValue(context->threadContext, nullObj, 1);
+        if ( nullStr == NULL )
+        {
+            return NULLOBJECT;
+        }
+        pCoosql->nullStr = nullStr;
         pCoosql->nullObj = context->String(pCoosql->nullStr);
 
         context->RequestGlobalReference(pCoosql->nullObj);
@@ -4464,8 +4494,13 @@ RexxMethod1(RexxObjectPtr, oosql_enquote_cls, OPTIONAL_RexxObjectPtr, values)
     }
     else if ( ! context->IsArray(values) )
     {
-        char *s = sqlite3_mprintf("%Q", obj2str(context->threadContext, values));
-        return enquoteResult(context->threadContext, s);
+        bool    ok;
+        CSTRING v = obj2str(context->threadContext, values, 0, &ok);
+        if ( ! ok )
+        {
+            return NULLOBJECT;
+        }
+        return enquoteResult(context->threadContext, sqlite3_mprintf("%Q", v));
     }
     else
     {
@@ -5207,15 +5242,15 @@ static RexxObjectPtr rexxFunctionCallbacks(RexxMethodContext *c, pCooSQLiteConn 
 
     if ( rxFunc != NULLOBJECT )
     {
-        cfcb->funcMethod = c->ObjectToStringValue(rxFunc);
+        cfcb->funcMethod = stringValue(c->threadContext, rxFunc);
 
         rc = sqlite3_create_function_v2(db, zName, countArgs, SQLITE_UTF8, (void *)cfcb, functionCallback, NULL, NULL, NULL);
         result = c->WholeNumber(rc);
     }
     else
     {
-        cfcb->stepMethod  = c->ObjectToStringValue(rxStep);
-        cfcb->finalMethod = c->ObjectToStringValue(rxFinal);
+        cfcb->stepMethod  = stringValue(c->threadContext, rxStep);
+        cfcb->finalMethod = stringValue(c->threadContext, rxFinal);
 
         rc = sqlite3_create_function_v2(db, zName, countArgs, SQLITE_UTF8, (void *)cfcb, NULL, stepCallback, finalCallback, NULL);
         result = c->WholeNumber(rc);
@@ -6099,7 +6134,12 @@ RexxMethod2(RexxObjectPtr, oosqlconn_setNull_atr, RexxObjectPtr, nullObj, CSELF,
     }
     else
     {
-        pConn->nullStr = context->ObjectToStringValue(nullObj);
+        CSTRING nullStr = requiredStringValue(context->threadContext, nullObj, 1);
+        if ( nullStr == NULL )
+        {
+            return NULLOBJECT;
+        }
+        pConn->nullStr = nullStr;
         pConn->nullObj = context->String(pConn->nullStr);
 
         context->RequestGlobalReference(pConn->nullObj);
@@ -6173,7 +6213,11 @@ RexxMethod5(RexxObjectPtr, oosqlconn_init, RexxObjectPtr, rxFile, OPTIONAL_int32
             return NULLOBJECT;
         }
     }
-    CSTRING file = context->ObjectToStringValue(rxFile);
+    CSTRING file = requiredStringValue(context->threadContext, rxFile, 1);
+    if ( file == NULL )
+    {
+        return NULLOBJECT;
+    }
 
     int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
     if ( argumentExists(2) )
@@ -6841,7 +6885,11 @@ RexxMethod5(RexxObjectPtr, oosqlconn_createCollation, CSTRING, collationName, Re
     CSTRING mthName = NULL;
     if ( argumentExists(3) )
     {
-        mthName = context->ObjectToStringValue(callbackOpt2);
+        mthName = requiredStringValue(context->threadContext, callbackOpt2, 3);
+        if ( mthName == NULL )
+        {
+            return result;
+        }
     }
 
     return doCallbackSetup(context, pConn, callbackObj, mthName, userData, collation, 0, collationName);
@@ -7191,6 +7239,17 @@ RexxMethod8(RexxObjectPtr, oosqlconn_createFunction, CSTRING, functionName, Rexx
         if ( argumentOmitted(6) )
         {
             missingArgException(context->threadContext, 6);
+            return result;
+        }
+    }
+
+    // The method names must have a string value, checked before anything is
+    // registered (88.909, as for a CSTRING argument)
+    RexxObjectPtr names[] = { callbackOpt2, callbackOpt3, callbackOpt4 };
+    for ( size_t i = 0; i < 3; i++ )
+    {
+        if ( argumentExists(i + 4) && requiredStringValue(context->threadContext, names[i], i + 4) == NULL )
+        {
             return result;
         }
     }
@@ -7804,6 +7863,20 @@ RexxMethod3(RexxObjectPtr, oosqlconn_pragma, RexxStringObject, _name, OPTIONAL_R
     if ( pragma == unknownPragma )
     {
         return result;
+    }
+
+    // The value goes into the text of the PRAGMA statement: it must have a
+    // string value (88.909, as for a CSTRING argument).  From here on it is a
+    // String.
+    if ( argumentExists(2) )
+    {
+        RexxObjectPtr str = stringObject(context->threadContext, value);
+        if ( str == NULLOBJECT )
+        {
+            requiredStringValue(context->threadContext, value, 2);
+            return NULLOBJECT;
+        }
+        value = str;
     }
 
     switch ( pragma )
@@ -8987,7 +9060,12 @@ RexxMethod2(RexxObjectPtr, oosqlstmt_setNull_atr, RexxObjectPtr, nullObj, CSELF,
     }
     else
     {
-        pCstmt->nullObj = context->String(context->ObjectToStringValue(nullObj));
+        CSTRING nullStr = requiredStringValue(context->threadContext, nullObj, 1);
+        if ( nullStr == NULL )
+        {
+            return NULLOBJECT;
+        }
+        pCstmt->nullObj = context->String(nullStr);
         context->RequestGlobalReference(pCstmt->nullObj);
     }
 
@@ -10541,7 +10619,11 @@ RexxMethod6(RexxObjectPtr, oosqlbu_init, RexxObjectPtr, srcDB, RexxObjectPtr, ds
         }
         else
         {
-            dstFileName = context->ObjectToStringValue(dstDB);
+            dstFileName = requiredStringValue(context->threadContext, dstDB, 2);
+            if ( dstFileName == NULL )
+            {
+                return NULLOBJECT;
+            }
         }
 
         pCbu->dstDbWasName  = true;
@@ -11177,7 +11259,7 @@ static void extensionsFormatLastErr(RexxMethodContext *c, pCooSQLExtensions pcex
 static void extensionsFormatLastErr(RexxMethodContext *c, pCooSQLExtensions pcext, uint32_t code, CSTRING fmt,
                                     RexxObjectPtr insert)
 {
-    extensionsFormatLastErr(c, pcext, code, fmt, c->ObjectToStringValue(insert));
+    extensionsFormatLastErr(c, pcext, code, fmt, objectText(c, insert));
 }
 
 /**
@@ -11203,7 +11285,7 @@ static void packageFormatLastErr(RexxMethodContext *c, pCooSQLPackage pcp, uint3
 }
 static void packageFormatLastErr(RexxMethodContext *c, pCooSQLPackage pcp, uint32_t code, CSTRING fmt, RexxObjectPtr insert)
 {
-    packageFormatLastErr(c, pcp, code, fmt, c->ObjectToStringValue(insert));
+    packageFormatLastErr(c, pcp, code, fmt, objectText(c, insert));
 }
 
 static void extensionsFormatBuiltinErr(RexxMethodContext *c, pCooSQLExtensions pcext, int rc, size_t argPos,
@@ -11797,7 +11879,11 @@ bool resolveFunction(RexxMethodContext *c, pCooSQLLibrary pcl, RexxObjectPtr rxN
 {
     resetLibraryLastErr(c, pcl);
 
-    CSTRING procName = c->ObjectToStringValue(rxName);
+    CSTRING procName = requiredStringValue(c->threadContext, rxName, 1);
+    if ( procName == NULL )
+    {
+        return false;
+    }
 
     ooSqlSysLibrary *lib  = pcl->lib;
     void       *func = lib->getProcedure(procName);
@@ -12046,7 +12132,12 @@ RexxMethod2(int, oosqlext_autoBuiltin, OPTIONAL_RexxObjectPtr, entryPoints, CSEL
                 return SQLITE_MISUSE;
             }
 
-            int rc = autoBuiltin(context, context->ObjectToStringValue(rxName), pcext);
+            CSTRING name = requiredStringItem(context->threadContext, rxName, 1, i);
+            if ( name == NULL )
+            {
+                return SQLITE_MISUSE;
+            }
+            int rc = autoBuiltin(context, name, pcext);
             if ( rc != SQLITE_OK )
             {
                 return rc;
@@ -12055,7 +12146,11 @@ RexxMethod2(int, oosqlext_autoBuiltin, OPTIONAL_RexxObjectPtr, entryPoints, CSEL
     }
     else
     {
-        CSTRING name = context->ObjectToStringValue(entryPoints);
+        CSTRING name = requiredStringValue(context->threadContext, entryPoints, 1);
+        if ( name == NULL )
+        {
+            return SQLITE_MISUSE;
+        }
 
         if ( strcasecmp(name, "ALL") == 0 )
         {
@@ -12459,7 +12554,12 @@ RexxMethod2(int, oosqlext_cancelAutoBuiltin, OPTIONAL_RexxObjectPtr, entryPoints
                 return SQLITE_MISUSE;
             }
 
-            int rc = cancelAutoBuiltin(context, context->ObjectToStringValue(rxName), pcext);
+            CSTRING name = requiredStringItem(context->threadContext, rxName, 1, i);
+            if ( name == NULL )
+            {
+                return SQLITE_MISUSE;
+            }
+            int rc = cancelAutoBuiltin(context, name, pcext);
             if ( rc != SQLITE_OK )
             {
                 return rc;
@@ -12468,7 +12568,11 @@ RexxMethod2(int, oosqlext_cancelAutoBuiltin, OPTIONAL_RexxObjectPtr, entryPoints
     }
     else
     {
-        CSTRING name = context->ObjectToStringValue(entryPoints);
+        CSTRING name = requiredStringValue(context->threadContext, entryPoints, 1);
+        if ( name == NULL )
+        {
+            return SQLITE_MISUSE;
+        }
 
         if ( strcasecmp(name, "ALL") == 0 )
         {
@@ -12492,6 +12596,15 @@ RexxMethod2(RexxObjectPtr, oosqlext_getLibrary_cls, RexxObjectPtr, libraryName, 
 
     resetExtensionsLastErr(context, pcext);
 
+    // The name must have a string value (88.909, as for a CSTRING argument)
+    RexxObjectPtr key = stringObject(context->threadContext, libraryName);
+    if ( key == NULLOBJECT )
+    {
+        requiredStringValue(context->threadContext, libraryName, 1);
+        return NULLOBJECT;
+    }
+    libraryName = key;
+
     RexxObjectPtr result = context->SendMessage1(pcext->libraryTable, "AT", libraryName);
     if ( result == TheNilObj )
     {
@@ -12510,6 +12623,15 @@ RexxMethod2(RexxObjectPtr, oosqlext_getPackage_cls, RexxObjectPtr, packageName, 
     pCooSQLExtensions pcext = (pCooSQLExtensions)pCSelf;
 
     resetExtensionsLastErr(context, pcext);
+
+    // The name must have a string value (88.909, as for a CSTRING argument)
+    RexxObjectPtr key = stringObject(context->threadContext, packageName);
+    if ( key == NULLOBJECT )
+    {
+        requiredStringValue(context->threadContext, packageName, 1);
+        return NULLOBJECT;
+    }
+    packageName = key;
 
     RexxObjectPtr result  = context->SendMessage1(pcext->packageTable, "AT", packageName);
     if ( result == TheNilObj )
@@ -12912,7 +13034,12 @@ RexxMethod3(int, oosqlext_registerBuiltin, RexxObjectPtr, dbConn, OPTIONAL_RexxO
                 return SQLITE_MISUSE;
             }
 
-            int rc = registerBuiltin(context, pcext, pConn, context->ObjectToStringValue(rxName));
+            CSTRING name = requiredStringItem(context->threadContext, rxName, 2, i);
+            if ( name == NULL )
+            {
+                return SQLITE_MISUSE;
+            }
+            int rc = registerBuiltin(context, pcext, pConn, name);
             if ( rc != SQLITE_OK )
             {
                 return rc;
@@ -12922,7 +13049,11 @@ RexxMethod3(int, oosqlext_registerBuiltin, RexxObjectPtr, dbConn, OPTIONAL_RexxO
     }
     else
     {
-        CSTRING name = context->ObjectToStringValue(entryPoints);
+        CSTRING name = requiredStringValue(context->threadContext, entryPoints, 2);
+        if ( name == NULL )
+        {
+            return SQLITE_MISUSE;
+        }
 
         if ( sqlite3_stricmp(name, "ALL") == 0 )
         {
@@ -13111,7 +13242,11 @@ RexxMethod2(RexxObjectPtr, oosqlpack_getCollation, RexxObjectPtr, rxName, CSELF,
         return TheNilObj;
     }
 
-    CSTRING cName = context->ObjectToStringValue(rxName);
+    CSTRING cName = requiredStringValue(context->threadContext, rxName, 1);
+    if ( cName == NULL )
+    {
+        return NULLOBJECT;
+    }
     result = TheNilObj;
 
     bool found = false;
@@ -13207,7 +13342,11 @@ RexxMethod2(RexxObjectPtr, oosqlpack_getFunction, RexxObjectPtr, rxName, CSELF, 
         return TheNilObj;
     }
 
-    CSTRING cName = context->ObjectToStringValue(rxName);
+    CSTRING cName = requiredStringValue(context->threadContext, rxName, 1);
+    if ( cName == NULL )
+    {
+        return NULLOBJECT;
+    }
     result = TheNilObj;
 
     bool found = false;
@@ -13902,8 +14041,13 @@ RexxRoutine1(RexxObjectPtr, ooSQLiteEnquote_rtn, OPTIONAL_RexxObjectPtr, values)
     }
     else if ( ! c->IsStem(values) )
     {
-        char *s = sqlite3_mprintf("%Q", obj2str(c, values));
-        return enquoteResult(c, s);
+        bool    ok;
+        CSTRING v = obj2str(c, values, 0, &ok);
+        if ( ! ok )
+        {
+            return NULLOBJECT;
+        }
+        return enquoteResult(c, sqlite3_mprintf("%Q", v));
     }
     else
     {
