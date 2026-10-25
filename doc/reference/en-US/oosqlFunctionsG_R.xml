@@ -554,7 +554,7 @@
 </variablelist>
 </section>  <!-- End oosqlLimit() -->
 
-<section id="rtn-oosqlLoadExtension"><title>oosqlLoadExtension</title>
+<section id="rtn-oosqlLoadExtension" revisionflag="changed"><title>&changed11;oosqlLoadExtension</title>
 <indexterm><primary>oosqlLoadExtension</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlLoadExtension</secondary></indexterm>
 <mediaobject>
@@ -626,6 +626,10 @@
     role="italic">oosqlLoadExtension</emphasis> sets it to the empty string first. <link
     linkend="rtn-ooSQLiteRegisterBuiltin">ooSQLiteRegisterBuiltin</link> uses the same entry. Being in <computeroutput>.local</computeroutput>,
     it is shared by all the threads of the interpreter instance.
+  </para>
+  <para revisionflag="changed">
+    &changed11;When the library can not be opened, or has no entry point, the message of the operating system loader
+    names the file on every platform, as described for the <link linkend="mthLoadExtension">loadExtension</link> method.
   </para>
   <para>
     The functionality of the <emphasis role="italic">oosqlLoadExtension</emphasis> routine is similar to that of the

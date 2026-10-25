@@ -789,6 +789,19 @@
     linkend="mthExec">exec</link> does. Only programs that read the attributes after a successful call see a difference.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">The error of loadExtension names the file</emphasis></term>
+  <listitem>
+  <para>
+    When <link linkend="mthLoadExtension">loadExtension</link> or the classic <link
+    linkend="rtn-oosqlLoadExtension">oosqlLoadExtension</link> can not open the library, or the library has no entry
+    point, the error message is the one of the operating system loader. On Windows it never said which file
+    (<computeroutput>The specified module could not be found.</computeroutput>) and ended with a line end, and on macOS
+    a missing entry point did not name the file either. ooSQLite now removes the line end and puts the file name in
+    front of such a message, as the Linux loader does: <computeroutput>mylib.dll: The specified module could not be
+    found.</computeroutput> Messages that already name the file, and those of SQLite itself, such as <computeroutput>not
+    authorized</computeroutput>, are not changed.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Conditions raised in callbacks on another thread</emphasis></term>
   <listitem>
   <para>
@@ -985,6 +998,18 @@
     Subversion repository (<computeroutput>incubator/APICommon</computeroutput>), now included in the source tree.
   </para></listitem>
   <listitem><para>
+    ooSQLite builds on macOS and on Windows too. <computeroutput>Makefile.mac</computeroutput>, which had not followed
+    the changes of the Linux make file for years, was rewritten from it: it builds
+    <computeroutput>liboosqlite.dylib</computeroutput> in <computeroutput>bin/macos</computeroutput>, with the builtin
+    extensions and zlib, the <computeroutput>oosqlite3</computeroutput> shell, and the example libraries.
+    <computeroutput>Makefile.win</computeroutput> compiles APICommon from the source tree instead of looking for it
+    outside, creates its output folders, takes the version from <computeroutput>src\ooSQLite.ver</computeroutput>
+    without Subversion, and also finds the headers and libraries of a portable build of ooRexx in
+    <computeroutput>REXX_HOME</computeroutput>. Both have a <computeroutput>lib</computeroutput> target, as on Linux.
+    The make files of the example libraries defined <computeroutput>NULL</computeroutput> as 1 on Linux, which the C
+    headers happened to undo there; the definition was removed.
+  </para></listitem>
+  <listitem><para>
     zlib 1.3.2, used by the new <computeroutput>compress</computeroutput> and <computeroutput>zipFile</computeroutput>
     builtin extensions, is included in the source tree (<computeroutput>src/zlib</computeroutput>, unchanged) and
     compiled into the ooSQLite library, on Linux and on Windows: ooSQLite does not depend on a zlib installed on the
@@ -993,14 +1018,16 @@
     is in <computeroutput>src/zlib/LICENSE</computeroutput>, and <computeroutput>NOTICE</computeroutput> mentions it.
   </para></listitem>
   <listitem><para>
-    The repository contains a test suite of more than 580 tests, written with ooRexxUnit, the framework of the ooRexx test
+    The repository contains a test suite of more than 620 tests, written with ooRexxUnit, the framework of the ooRexx test
     suite. It covers the object orientated and the classic interfaces, the callbacks, the builtin extensions (compress and zipFile among them), the SQLite
     features compiled into the library (the math functions, the csv virtual table, R-Tree and Geopoly), and the
     loading of extension libraries and packages, with the test libraries in
     <computeroutput>examples/user.extensions</computeroutput>.
   </para></listitem>
   <listitem><para>
-    Every change is built and tested by continuous integration on Linux.
+    Every change is built and tested by continuous integration on Linux. A second workflow, run on demand, builds
+    ooSQLite, its shell and the example libraries on Windows x64 and on macOS (arm64 and x86_64), with the portable
+    builds of ooRexx at the same revision as on Linux, and runs the whole test suite there.
   </para></listitem>
 </itemizedlist>
 </section>

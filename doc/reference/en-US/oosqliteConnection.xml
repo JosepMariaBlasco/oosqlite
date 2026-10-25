@@ -3186,6 +3186,13 @@ Bytes of page memory used by all caches on this database connection:
     earlier call in them. The error is not recorded in the connection, so <link linkend="mthErrCode">errCode</link> and
     <link linkend="mthErrMsg">errMsg</link> do not report it.
   </para>
+  <para revisionflag="changed">
+    &changed11;When the library can not be opened, or has no entry point, the message is the error of the operating
+    system loader, and it names the file on every platform: on Linux the loader's own message does, and on Windows, and
+    on macOS for a missing entry point, ooSQLite puts the file name, as given, in front of it, as in
+    <computeroutput>mylib.dll: The specified module could not be found.</computeroutput> Before ooSQLite 1.1 the Windows
+    message did not say which file, and ended with a line end.
+  </para>
   <para>
     The equivalent routine of the classic interface is <link linkend="rtn-oosqlLoadExtension">oosqlLoadExtension</link>.
     The extension libraries written for ooSQLite, with collations and functions in C, are loaded with the <link
