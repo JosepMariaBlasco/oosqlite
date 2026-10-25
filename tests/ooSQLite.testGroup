@@ -5226,6 +5226,14 @@ TestCancelAllCleanup:
   End
   db~close
 
+::Method testInternalTestRoutineRemoved
+  -- oosqlTest, a public routine of the classic interface marked "internal
+  -- use only", set a variable to a null Pointer
+  pkg = .context~package~findRoutine("OOSQLVERSION")~package
+  self~assertNotNull(pkg~findPublicRoutine("OOSQLVERSION"), -
+    "the check needs the package of ooSQLite.cls")
+  self~assertNull(pkg~findPublicRoutine("OOSQLTEST"), "oosqlTest should not exist")
+
 ::Method testLoadPackageTwiceKeepsThePackage
   -- loading a package that was already loaded made a second package object
   -- and dropped the first, which could still be automatic (SIGSEGV)
