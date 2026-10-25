@@ -162,10 +162,10 @@
     the value has. They are class methods: they are sent to the class, as in
     <computeroutput>.ooSQLValue~text(value)</computeroutput>.
   </para>
-  <para>
+  <para revisionflag="changed">
     A <emphasis role="italic">sqlValue</emphasis> is only valid during the invocation of the method that received it.
-    Passing any other object, or a Pointer that is no longer valid, has unpredictable results, and can crash the
-    interpreter.
+    &changed11;A Pointer that is not a value, or a value that is no longer valid, raises a syntax error, 88.900: see
+    <link linkend="sctClassicHandles">Handles</link>. Before ooSQLite 1.1 it could crash the interpreter.
   </para>
   <para>
     <link linkend="mthIntClsOOSQLValue">int</link>, <link linkend="mthInt64ClsOOSQLValue">int64</link>, <link

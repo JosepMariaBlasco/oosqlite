@@ -791,7 +791,7 @@
 </section>  <!-- End oosqlMemoryUsed() -->
 
 
-<section id="rtn-oosqlMutexAlloc"><title>oosqlMutexAlloc</title>
+<section id="rtn-oosqlMutexAlloc" revisionflag="changed"><title>&changed11;oosqlMutexAlloc</title>
 <indexterm><primary>oosqlMutexAlloc</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlMutexAlloc</secondary></indexterm>
 <mediaobject>
@@ -840,10 +840,12 @@
     it, once for each time it entered it. While a thread waits for a mutex, the other threads of the program keep
     running.
   </para>
-  <para>
+  <para revisionflag="changed">
     Breaking these rules has undefined results: entering a fast mutex again from the thread that holds it blocks the
-    thread for ever, and leaving a mutex that the thread does not hold, using a mutex after it has been freed, or
-    freeing it while it is held, can crash the interpreter. ooSQLite can not detect any of these.
+    thread for ever, and leaving a mutex that the thread does not hold, or freeing it while it is held, can crash the
+    interpreter. ooSQLite can not detect these. &changed11;A mutex that has been freed, and the mutex of a connection
+    that has been closed, raise a syntax error, 88.900, in every mutex routine (see <link linkend="sctClassicHandles">Handles</link>); before ooSQLite 1.1 they could
+    crash the interpreter too.
   </para>
   <para>
     Every mutex allocated with <emphasis role="italic">oosqlMutexAlloc</emphasis> must be freed with <link
@@ -976,7 +978,7 @@
 </section>  <!-- End oosqlMutexEnter() -->
 
 
-<section id="rtn-oosqlMutexFree"><title>oosqlMutexFree</title>
+<section id="rtn-oosqlMutexFree" revisionflag="changed"><title>&changed11;oosqlMutexFree</title>
 <indexterm><primary>oosqlMutexFree</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlMutexFree</secondary></indexterm>
 <mediaobject>
@@ -1013,11 +1015,13 @@
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
-  <para>
+  <para revisionflag="changed">
     After <emphasis role="italic">oosqlMutexFree</emphasis>, the handle is not valid any more: it must not be used in
     any routine, and it must not be freed again. The mutex of a connection, returned by <link
-    linkend="rtn-oosqlDbMutex">oosqlDbMutex</link>, belongs to SQLite and must never be freed. See the remarks of <link
-    linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link> for the rules that all the mutex routines follow.
+    linkend="rtn-oosqlDbMutex">oosqlDbMutex</link>, belongs to SQLite and must never be freed. &changed11;In both cases
+    <emphasis role="italic">oosqlMutexFree</emphasis> raises a syntax error, 88.900 (see <link linkend="sctClassicHandles">Handles</link>); before ooSQLite 1.1 it
+    freed the memory again, or freed the mutex of the connection, and the process could abort or crash. See the remarks
+    of <link linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link> for the rules that all the mutex routines follow.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
@@ -1209,7 +1213,7 @@
 </section>  <!-- End oosqlMutexTry() -->
 
 
-<section id="rtn-oosqlNextStmt"><title>oosqlNextStmt</title>
+<section id="rtn-oosqlNextStmt" revisionflag="changed"><title>&changed11;oosqlNextStmt</title>
 <indexterm><primary>oosqlNextStmt</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlNextStmt</secondary></indexterm>
 <mediaobject>
@@ -1254,10 +1258,13 @@
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
-  <para>
+  <para revisionflag="changed">
     The statements are found in no particular order: the most recently prepared one usually comes first. <emphasis
     role="italic">stmt</emphasis> must not have been finalized: to finalize all the statements of a connection, find the
-    next statement before finalizing the current one, as the example does.
+    next statement before finalizing the current one, as the example does. &changed11;A statement that has been
+    finalized, or that belongs to another connection, raises a syntax error, 88.900 (see <link
+    linkend="sctClassicHandles">Handles</link>); before ooSQLite 1.1 the first could crash the interpreter, and the
+    second went on with the statements of the other connection.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
@@ -1303,7 +1310,7 @@
 </section>  <!-- End oosqlNextStmt() -->
 
 
-<section id="rtn-oosqlOpen"><title>oosqlOpen</title>
+<section id="rtn-oosqlOpen" revisionflag="changed"><title>&changed11;oosqlOpen</title>
 <indexterm><primary>oosqlOpen</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlOpen</secondary></indexterm>
 <mediaobject>
@@ -1372,12 +1379,13 @@
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
-  <para>
+  <para revisionflag="changed">
     On success, the database connection handle can be used as an argument in any other function that requires a
     database connection handle. To prevent resource leaks, <link linkend="rtn-oosqlClose">oosqlClose</link> must be
     called on each database connection returned by <emphasis role="italic">oosqlOpen</emphasis>. This is true even if
-    <emphasis role="italic">oosqlOpen</emphasis> returns an error. Never use the database connection after <emphasis
-    role="italic">oosqlClose</emphasis> has been called. This many crash the SQLite database engine.
+    <emphasis role="italic">oosqlOpen</emphasis> returns an error. &changed11;Once <emphasis
+    role="italic">oosqlClose</emphasis> has returned OK, the handle is not valid any more, and the routines raise a
+    syntax error, 88.900, when they are given it: see <link linkend="sctClassicHandles">Handles</link>.
   </para>
   <para>
     On error, the handle can be used in the <link linkend="rtn-oosqlErrMsg">oosqlErrMsg</link> function to obtain a
@@ -2829,7 +2837,7 @@ call oosqlClose db
 </section>  <!-- End oosqlResultText() -->
 
 
-<section id="rtn-oosqlResultValue"><title>oosqlResultValue</title>
+<section id="rtn-oosqlResultValue" revisionflag="changed"><title>&changed11;oosqlResultValue</title>
 <indexterm><primary>oosqlResultValue</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlResultValue</secondary></indexterm>
 <mediaobject>
@@ -2874,10 +2882,13 @@ call oosqlClose db
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
-  <para>
-    The value must be one of the values passed to the current invocation of the routine. Passing any other Pointer has
-    unpredictable results, and can crash the interpreter. See the remarks of <link
-    linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> for when and how the result is set.
+  <para revisionflag="changed">
+    The value must be one of the values passed to the current invocation of the routine, or a value returned by <link
+    linkend="rtn-oosqlColumnValue">oosqlColumnValue</link> while its statement stays on the same result row.
+    &changed11;Any other Pointer raises a syntax error, 88.900, and so does a value passed to an invocation that has
+    ended, or a value whose statement has been finalized (see <link linkend="sctClassicHandles">Handles</link>). Before ooSQLite 1.1 they could crash the
+    interpreter. See the remarks of <link linkend="rtn-oosqlResultBlob">oosqlResultBlob</link> for when and how the
+    result is set.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>

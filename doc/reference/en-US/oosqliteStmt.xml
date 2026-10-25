@@ -1395,7 +1395,7 @@
 </section>  <!-- End ooSQLiteStmt::bindText() -->
 
 
-<section id="mthBindValue"><title>bindValue</title>
+<section id="mthBindValue" revisionflag="changed"><title>&changed11;bindValue</title>
 <indexterm><primary>bindValue</primary></indexterm>
 <indexterm><primary>ooSQLiteStmt class</primary><secondary>bindValue</secondary></indexterm>
 <mediaobject>
@@ -1438,11 +1438,12 @@
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
-  <para>
+  <para revisionflag="changed">
     The value returned by <emphasis role="italic">columnValue</emphasis> is only valid while the statement it comes from
     stays on the same result row: it must be bound before that statement is stepped again, reset, or finalized. Once it is
-    bound, SQLite has its own copy. Passing any other Pointer, or a value that is no longer valid, has unpredictable
-    results, and can crash the interpreter.
+    bound, SQLite has its own copy. &changed11;A Pointer that is not a value, a value whose statement has been finalized,
+    and a value passed to a user defined function whose invocation has ended raise a syntax error, 88.900. A value whose
+    statement has been stepped again or reset is not detected, and has unpredictable results: see <link linkend="sctClassicHandles">Handles</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>

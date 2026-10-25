@@ -965,7 +965,7 @@
 </variablelist>
 </section>  <!-- End ooSQLResult::text() -->
 
-<section id="mthValueClsOOSQLResult"><title>value (Class method)</title>
+<section id="mthValueClsOOSQLResult" revisionflag="changed"><title>&changed11;value (Class method)</title>
 <indexterm><primary>value</primary><secondary>ooSQLResult class</secondary></indexterm>
 <indexterm><primary>ooSQLResult class</primary><secondary>value</secondary></indexterm>
 <mediaobject>
@@ -1010,10 +1010,12 @@
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
-  <para>
-    The value must be one of the values passed to the current invocation of the method. Passing any other Pointer has
-    unpredictable results, and can crash the interpreter. See the remarks of <link
-    linkend="mthBlobClsOOSQLResult">blob</link> for when and how the result is set.
+  <para revisionflag="changed">
+    The value must be one of the values passed to the current invocation of the method, or a value returned by <link
+    linkend="mthColumnValue">columnValue</link> while its statement stays on the same result row. &changed11;Any other
+    Pointer raises a syntax error, 88.900, and so does a value passed to an invocation that has ended, or a value whose
+    statement has been finalized (see <link linkend="sctClassicHandles">Handles</link>). Before ooSQLite 1.1 they could crash the interpreter. See the remarks of
+    <link linkend="mthBlobClsOOSQLResult">blob</link> for when and how the result is set.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>

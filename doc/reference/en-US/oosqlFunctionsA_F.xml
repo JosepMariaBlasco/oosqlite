@@ -1281,7 +1281,7 @@
 </section>  <!-- End oosqlBindText() -->
 
 
-<section id="rtn-oosqlBindValue"><title>oosqlBindValue</title>
+<section id="rtn-oosqlBindValue" revisionflag="changed"><title>&changed11;oosqlBindValue</title>
 <indexterm><primary>oosqlBindValue</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlBindValue</secondary></indexterm>
 <mediaobject>
@@ -1332,11 +1332,12 @@
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
-  <para>
+  <para revisionflag="changed">
     The value returned by <emphasis role="italic">oosqlColumnValue</emphasis> is only valid while the statement it comes
     from stays on the same result row: it must be bound before that statement is stepped again, reset, or finalized.
-    Once it is bound, SQLite has its own copy. Passing any other Pointer, or a value that is no longer valid, has
-    unpredictable results, and can crash the interpreter.
+    Once it is bound, SQLite has its own copy. &changed11;A Pointer that is not a value, a value whose statement has been
+    finalized, and a value passed to a user defined function whose invocation has ended raise a syntax error, 88.900. A
+    value whose statement has been stepped again or reset is not detected, and has unpredictable results: see <link linkend="sctClassicHandles">Handles</link>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
@@ -1865,7 +1866,7 @@
 </section>  <!-- End oosqlClearBindings() -->
 
 
-<section id="rtn-oosqlClose"><title>oosqlClose</title>
+<section id="rtn-oosqlClose" revisionflag="changed"><title>&changed11;oosqlClose</title>
 <indexterm><primary>oosqlClose</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlClose</secondary></indexterm>
 <mediaobject>
@@ -1910,11 +1911,12 @@
     linkend="rtn-oosqlFinalize">oosqlFinalize</link> (<link linkend="rtn-oosqlNextStmt">oosqlNextStmt</link> finds
     them), and finish its backups with <link linkend="rtn-oosqlBackupFinish">oosqlBackupFinish</link>.
   </para>
-  <para>
-    Once a connection has been closed, its handle is not valid any more, but it is not null: ooSQLite can not detect
-    that it has been closed, and using it in any routine, also in <emphasis role="italic">oosqlClose</emphasis>, has
-    unpredictable results, and can crash the interpreter. The object orientated interface does not have this problem:
-    closing an ooSQLiteConnection object that is already closed does nothing.
+  <para revisionflag="changed">
+    &changed11;Once a connection has been closed, its handle is not valid any more: every routine, also <emphasis
+    role="italic">oosqlClose</emphasis>, raises a syntax error, 88.900, when it is given it (see <link linkend="sctClassicHandles">Handles</link>). A close that
+    returns BUSY leaves the connection open, and its handle valid. Before ooSQLite 1.1 a closed connection was not
+    detected, and could crash the interpreter. In the object orientated interface, closing an ooSQLiteConnection object
+    that is already closed does nothing.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
@@ -4046,7 +4048,7 @@ call oosqlCreateFunction db, "double"
 </section>  <!-- End oosqlDbHandle() -->
 
 
-<section id="rtn-oosqlDbMutex"><title>oosqlDbMutex</title>
+<section id="rtn-oosqlDbMutex" revisionflag="changed"><title>&changed11;oosqlDbMutex</title>
 <indexterm><primary>oosqlDbMutex</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlDbMutex</secondary></indexterm>
 <mediaobject>
@@ -4086,11 +4088,13 @@ call oosqlCreateFunction db, "double"
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
-  <para>
+  <para revisionflag="changed">
     The mutex belongs to SQLite, which uses it to protect the connection: never free it with <link
     linkend="rtn-oosqlMutexFree">oosqlMutexFree</link>. Holding the mutex keeps other threads from using the connection,
     so it must be left as soon as possible, once for each time it was entered. When the connection is closed, SQLite
-    frees its mutex, and the handle must not be used any more.
+    frees its mutex, and the handle must not be used any more. &changed11;The mutex routines raise a syntax error,
+    88.900, when they are given the mutex of a closed connection, and <emphasis role="italic">oosqlMutexFree</emphasis>
+    when it is given the mutex of any connection.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
@@ -4946,7 +4950,7 @@ call oosqlCreateFunction db, "double"
 </section>  <!-- End oosqlExtendedResultCodes() -->
 
 
-<section id="rtn-oosqlFinalize"><title>oosqlFinalize</title>
+<section id="rtn-oosqlFinalize" revisionflag="changed"><title>&changed11;oosqlFinalize</title>
 <indexterm><primary>oosqlFinalize</primary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>oosqlFinalize</secondary></indexterm>
 <mediaobject>
@@ -4984,11 +4988,13 @@ call oosqlCreateFunction db, "double"
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
-  <para>
+  <para revisionflag="changed">
     Every statement prepared without error must be finalized once, and only once. After <emphasis
     role="italic">oosqlFinalize</emphasis>, the handle is not valid any more: it must not be used in any routine, and it
-    must not be finalized again. ooSQLite can not detect this, and the result is unpredictable; the interpreter can
-    crash. Dropping the variable that holds the handle, as the example does, prevents using it by mistake.
+    must not be finalized again. &changed11;Every routine, also <emphasis role="italic">oosqlFinalize</emphasis>, raises a
+    syntax error, 88.900, when it is given it; before ooSQLite 1.1 this was not detected, and could crash the
+    interpreter. See <link linkend="sctClassicHandles">Handles</link> for the limits of the check. Dropping the variable that holds the handle, as the example does,
+    prevents using it by mistake.
   </para>
   <para>
     All the statements of a connection should be finalized before the connection is closed: while there is any statement

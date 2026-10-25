@@ -577,6 +577,78 @@
 </tbody></tgroup>
 </table>
 
+<section id="sctClassicHandles" revisionflag="added"><title>&added11;Handles</title>
+<indexterm><primary>handle</primary><secondary>Classic Rexx Interface</secondary></indexterm>
+<indexterm><primary>Classic Rexx Interface</primary><secondary>handles</secondary></indexterm>
+<para>
+  In the classic Rexx interface, database connections, prepared statements, online backups, and mutexes are
+  <link linkend="defHandle">handles</link>: Pointer objects. ooSQLite keeps a record of every handle it returns, and of its kind, from
+  the moment it returns it until SQLite frees what the handle refers to. These are the handles, and how long each one is
+  valid:
+  <itemizedlist>
+  <listitem>
+  <para>
+    A database connection, from <link linkend="rtn-oosqlOpen">oosqlOpen</link> (also when it returns an error code, as long as the
+    handle is not null) until <link linkend="rtn-oosqlClose">oosqlClose</link> returns OK. A close that returns BUSY leaves the
+    connection open, and its handle valid.
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+    A prepared statement, from <link linkend="rtn-oosqlPrepare">oosqlPrepare</link> until <link linkend="rtn-oosqlFinalize">oosqlFinalize</link>,
+    whatever <emphasis role="italic">oosqlFinalize</emphasis> returns.
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+    An online backup, from <link linkend="rtn-oosqlBackupInit">oosqlBackupInit</link> until <link linkend="rtn-oosqlBackupFinish">oosqlBackupFinish</link>,
+    whatever <emphasis role="italic">oosqlBackupFinish</emphasis> returns.
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+    A mutex, from <link linkend="rtn-oosqlMutexAlloc">oosqlMutexAlloc</link> until <link linkend="rtn-oosqlMutexFree">oosqlMutexFree</link>. The
+    mutex of a connection, returned by <link linkend="rtn-oosqlDbMutex">oosqlDbMutex</link>, is valid while its connection is open: it
+    can be entered, tried, and left, but not freed.
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+    A value returned by <link linkend="rtn-oosqlColumnValue">oosqlColumnValue</link>, or by the <link linkend="mthColumnValue">columnValue</link>
+    method of an ooSQLiteStmt object, until its statement is finalized.
+  </para>
+  </listitem>
+  <listitem>
+  <para>
+    The SQLite context and the values passed to a user defined function (see <link linkend="rtn-oosqlCreateFunction">oosqlCreateFunction</link>
+    and <link linkend="mthCreateFunction">createFunction</link>), only during that invocation of the routine or method.
+  </para>
+  </listitem>
+  </itemizedlist>
+</para>
+<para>
+  Every routine that takes a handle checks it, and so do the class methods of <link linkend="clsOOSQLResult">ooSQLResult</link> and
+  <link linkend="clsOOSQLValue">ooSQLValue</link>, which take a context or a value. They raise a syntax error, 88.914, if the
+  argument is not a Pointer object; 88.900 if it is a null handle, for example "Argument 1, the prepared statement handle,
+  must not be null"; and 88.900 if the handle is not valid any more, or is of another kind, for example a statement
+  handle where a connection is needed: "Argument 1, the database connection handle, is not a live database connection
+  handle". The exceptions for null handles are <emphasis role="italic">oosqlFinalize</emphasis>, which does nothing, <link linkend="rtn-oosqlStmtBusy">oosqlStmtBusy</link>,
+  which returns false, and <link linkend="rtn-oosqlNextStmt">oosqlNextStmt</link>, which starts from the first statement, as for .nil.
+</para>
+<para>
+  The check has limits, and programs must still not use a handle once the routine that frees it has been called.
+  ooSQLite recognizes a handle by its address. When SQLite frees an object and then creates another one of the same
+  kind, it may place it at the same address: an old handle then refers to the new object, passes the check, and acts
+  on that object. A value of <emphasis role="italic">oosqlColumnValue</emphasis> passes the check until its statement is finalized, but it is only
+  valid while the statement stays on the same result row. Dropping the variable that holds a handle, as the examples
+  do, prevents using it by mistake.
+</para>
+<para>
+  Before ooSQLite 1.1, only null handles were detected. A handle that was not valid any more, or was of another kind,
+  had unpredictable results, and often crashed the interpreter.
+</para>
+</section>  <!-- End Handles -->
+
 <section id="sctClassicStmt"><title>Prepared Statements</title>
 <indexterm><primary>prepared statement</primary><secondary>Classic Rexx Interface</secondary></indexterm>
 <indexterm><primary>Classic Rexx Interface</primary><secondary>prepared statements</secondary></indexterm>
@@ -622,16 +694,17 @@
   In SQLite, host parameters and result columns are numbered from 0. In ooSQLite, as is normal in Rexx, they are
   numbered from 1: the first parameter of a statement and the first column of a result row are number 1.
 </para>
-<para>
+<para revisionflag="changed">
   These are the rules for statement handles. The routines that take a statement as their first argument raise a syntax
   error, 88.914, if the argument is not a Pointer object, and 88.900 if it is a null handle, which is what <emphasis
   role="italic">oosqlPrepare</emphasis> returns on error, or for SQL text that has no statement. The exceptions are
   <link linkend="rtn-oosqlFinalize">oosqlFinalize</link>, which does nothing for a null handle, and <link
-  linkend="rtn-oosqlStmtBusy">oosqlStmtBusy</link>, which returns false. Once a statement has been finalized, its handle
-  is not valid any more, but it is not null: ooSQLite can not detect that it has been finalized, and using it in any
-  routine, also in <emphasis role="italic">oosqlFinalize</emphasis>, has unpredictable results, and can crash the
-  interpreter. The object orientated interface does not have this problem: invoking most methods of an <link
-  linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> object that has been finalized raises a syntax error.
+  linkend="rtn-oosqlStmtBusy">oosqlStmtBusy</link>, which returns false. &changed11;Once a statement has been finalized,
+  its handle is not valid any more, and every routine, also <emphasis role="italic">oosqlFinalize</emphasis>, raises 88.900 when it is given it; so
+  does a routine given a handle of another kind, such as a connection. See <link linkend="sctClassicHandles">Handles</link> for the
+  limits of this check. Before ooSQLite 1.1 these handles were not detected, and could crash the interpreter. In the
+  object orientated interface, invoking most methods of an <link linkend="clsOOSQLiteStmt">ooSQLiteStmt</link> object
+  that has been finalized raises a syntax error.
 </para>
 <para>
   Most of the statement routines work like an SQLite API with a similar name, and return what that API returns: a

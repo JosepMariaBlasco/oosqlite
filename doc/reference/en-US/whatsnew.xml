@@ -267,6 +267,29 @@
     was not such a function.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Classic handles are checked</emphasis></term>
+  <listitem>
+  <para>
+    The routines of the classic interface checked only that a handle was not null. ooSQLite now keeps a record of the
+    handles it returns (connections, statements, backups, mutexes, the mutex of each connection, the values of <link
+    linkend="rtn-oosqlColumnValue">oosqlColumnValue</link> and <link linkend="mthColumnValue">columnValue</link>, and
+    the context and values passed to a user defined function while it runs), and every routine, and every class method
+    of <link linkend="clsOOSQLResult">ooSQLResult</link> and <link linkend="clsOOSQLValue">ooSQLValue</link>, raises a
+    syntax error, 88.900, for a handle that is not valid any more, or is of another kind: "Argument 1, the prepared
+    statement handle, is not a live prepared statement handle". See <link linkend="sctClassicHandles">Handles</link>.
+  </para>
+  <para>
+    Most of the cases this catches crashed the interpreter before (see below), but a few did not, and a program could
+    notice the change: <link linkend="rtn-oosqlExec">oosqlExec</link> and other routines given a closed connection, or a
+    statement handle where a connection was needed, usually returned MISUSE, because SQLite found a bad magic number in
+    freed or foreign memory; <link linkend="rtn-oosqlNextStmt">oosqlNextStmt</link> given a statement of another
+    connection went on with the statements of that connection; <link linkend="rtn-oosqlMutexFree">oosqlMutexFree</link>
+    freed the mutex of a connection, which belongs to SQLite; and a null context or value given to the <emphasis
+    role="italic">oosqlResult</emphasis> and <emphasis role="italic">oosqlValue</emphasis> routines, and to the class
+    methods of ooSQLResult and ooSQLValue, is now 88.900 "must not be null". None of these was a correct use, and none
+    gave a correct result.
+  </para>
+  </listitem></varlistentry>
 </variablelist>
 </section>
 
@@ -446,6 +469,19 @@
   <para>
     See above: loading again a package that was automatic, or whose functions or collations were, could crash the
     interpreter when a connection was opened.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Classic handles that are not valid any more</emphasis></term>
+  <listitem>
+  <para>
+    Using a handle of the classic interface after it had been freed, or a handle of the wrong kind, crashed the
+    interpreter in many routines: <link linkend="rtn-oosqlStep">oosqlStep</link> or <link
+    linkend="rtn-oosqlFinalize">oosqlFinalize</link> on a statement that had been finalized, <emphasis
+    role="italic">oosqlStep</emphasis> given a connection handle, <link linkend="rtn-oosqlBackupStep">oosqlBackupStep</link>
+    on a backup that had been finished, a context or a value used after the user defined function that received it had
+    returned, or any other Pointer, such as a connection handle, given to <link linkend="clsOOSQLResult">ooSQLResult</link>.
+    <link linkend="rtn-oosqlMutexFree">oosqlMutexFree</link> called twice aborted the process (a double free). These are
+    now syntax errors, 88.900, as described above and in <link linkend="sctClassicHandles">Handles</link>.
   </para>
   </listitem></varlistentry>
 </variablelist>
