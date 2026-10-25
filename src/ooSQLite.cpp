@@ -7817,6 +7817,53 @@ RexxMethod3(int, oosqlconn_limit, int, id, int, value, CSELF, pCSelf)
 }
 
 
+/**
+ * The error message of a sqlite3_load_extension() that failed, ready for
+ * lastErrMsg or .routineErrorMessage.
+ *
+ * When the library can not be opened, or has no entry point, SQLite gives the
+ * error of the operating system's loader.  dlerror() names the file on Linux,
+ * and when opening fails on macOS; the message of Windows ("The specified
+ * module could not be found.") never does, and ends with a line end.  The line
+ * end is removed, and a message that does not name the file gets the name in
+ * front, as dlerror() does: "library: message".  The messages SQLite writes
+ * itself ("not authorized", "error during initialization: ...") are kept.
+ *
+ * @param rc       The return code of sqlite3_load_extension().
+ * @param library  The file name it was given.
+ * @param errMsg   The message it gave, or NULL.  It is freed here.
+ *
+ * @return  The message, to be freed with sqlite3_free(), or NULL.
+ */
+static char *loadExtensionErrMsg(int rc, CSTRING library, char *errMsg)
+{
+    if ( errMsg == NULL )
+    {
+        return NULL;
+    }
+
+    size_t len = strlen(errMsg);
+    while ( len > 0 && (errMsg[len - 1] == '\r' || errMsg[len - 1] == '\n' || errMsg[len - 1] == ' ') )
+    {
+        errMsg[--len] = '\0';
+    }
+
+    if ( rc != SQLITE_ERROR || *library == '\0' || strstr(errMsg, library) != NULL ||
+         strcmp(errMsg, "not authorized") == 0 || strncmp(errMsg, "error during initialization: ", 29) == 0 )
+    {
+        return errMsg;
+    }
+
+    char *msg = sqlite3_mprintf("%s: %s", library, errMsg);
+    if ( msg == NULL )
+    {
+        return errMsg;
+    }
+    sqlite3_free(errMsg);
+    return msg;
+}
+
+
 /** ooSQLiteConnection::loadExtension()
  *
  *
@@ -7838,6 +7885,7 @@ RexxMethod3(int, oosqlconn_loadExtension, CSTRING, library, OPTIONAL_CSTRING, en
     int rc = sqlite3_load_extension(pConn->db, library, entryPoint, &errMsg);
     if ( rc != SQLITE_OK )
     {
+        errMsg = loadExtensionErrMsg(rc, library, errMsg);
         if ( errMsg != NULL )
         {
             ooSQLiteErr(context, pConn, rc, errMsg, true);
@@ -16218,6 +16266,10 @@ RexxRoutine3(int, oosqlLoadExtension_rtn, POINTER, _db, CSTRING, library, OPTION
     char *errMsg = NULL;
 
     int rc = sqlite3_load_extension(db, library, entryPoint, &errMsg);
+    if ( rc != SQLITE_OK )
+    {
+        errMsg = loadExtensionErrMsg(rc, library, errMsg);
+    }
     if ( rc != SQLITE_OK && errMsg != NULL )
     {
         setRoutineErrMsg(context->threadContext, errMsg);
