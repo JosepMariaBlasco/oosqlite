@@ -53,6 +53,7 @@
 
 #include <memory>
 #include <new>
+#include <unordered_map>
 using namespace std;
 
 
@@ -66,6 +67,253 @@ RexxClassObject     TheOOSQLiteMutexClass       = NULLOBJECT;
 // hidden helper object is only initialized when / if needed.
 RexxClassObject     TheRoutineHelperClass = NULLOBJECT;
 RexxObjectPtr       TheHiddenHelper       = NULLOBJECT;
+
+
+/**
+ * The registry of live handles.
+ *
+ * The classic interface hands out raw pointers: connections, statements,
+ * backups and mutexes, and, during a call of a user defined function, its
+ * SQLite context and the values of its arguments.  Both interfaces hand out the
+ * values of columnValue.  A pointer that is no longer valid, or that is of
+ * another kind, crashed the interpreter when it came back.  So every pointer
+ * ooSQLite hands out is recorded here, with its kind, and removed when SQLite
+ * frees what it points to; the routines and methods that take one check it.
+ *
+ * What it cannot catch: memory freed by SQLite and given again to an object of
+ * the same kind, at the same address, makes an old handle look live.
+ *
+ * The registry has its own mutex: the critical section of ooSQLite is held
+ * while ensureFinalized() finalizes statements, which must update the
+ * registry, and that mutex is not recursive.
+ */
+typedef enum
+{
+    hkDB = 1,      // sqlite3 *         oosqlOpen()
+    hkStmt,        // sqlite3_stmt *    oosqlPrepare(), owner the connection
+    hkBackup,      // sqlite3_backup *  oosqlBackupInit()
+    hkMutex,       // sqlite3_mutex *   oosqlMutexAlloc()
+    hkDbMutex,     // sqlite3_mutex *   the mutex of a connection, owner it
+    hkContext,     // sqlite3_context * during a call of a user function
+    hkValue,       // sqlite3_value *   an argument, during the call
+    hkColValue     // sqlite3_value *   columnValue, owner the statement
+} HandleKind;
+
+typedef struct _LiveHandle
+{
+    HandleKind  kind;
+    void       *owner;
+    size_t      count;    // Nested calls of user functions share a context
+} LiveHandle;
+
+static std::unordered_map<void *, LiveHandle> *liveHandles   = NULL;
+static sqlite3_mutex                          *liveHandleMtx = NULL;
+
+/**
+ * Records a handle.  Recording a handle that is already there counts it once
+ * more (for nested calls of user functions); a handle of another kind there
+ * belonged to memory SQLite has freed and reused, and is replaced.
+ */
+static void registerHandle(void *h, HandleKind kind, void *owner)
+{
+    if ( h == NULL || liveHandles == NULL )
+    {
+        return;
+    }
+
+    sqlite3_mutex_enter(liveHandleMtx);
+
+    std::unordered_map<void *, LiveHandle>::iterator it = liveHandles->find(h);
+    if ( it != liveHandles->end() && it->second.kind == kind && it->second.owner == owner )
+    {
+        if ( kind == hkContext || kind == hkValue )
+        {
+            it->second.count++;
+        }
+    }
+    else
+    {
+        LiveHandle lh = { kind, owner, 1 };
+        (*liveHandles)[h] = lh;
+    }
+
+    sqlite3_mutex_leave(liveHandleMtx);
+}
+
+/**
+ * Removes a handle, or counts it once less.
+ */
+static void unregisterHandle(void *h)
+{
+    if ( h == NULL || liveHandles == NULL )
+    {
+        return;
+    }
+
+    sqlite3_mutex_enter(liveHandleMtx);
+
+    std::unordered_map<void *, LiveHandle>::iterator it = liveHandles->find(h);
+    if ( it != liveHandles->end() )
+    {
+        if ( it->second.count > 1 )
+        {
+            it->second.count--;
+        }
+        else
+        {
+            liveHandles->erase(it);
+        }
+    }
+
+    sqlite3_mutex_leave(liveHandleMtx);
+}
+
+/**
+ * Removes the handles owned by owner: the values of a statement that is
+ * finalized, the mutex of a connection that is closed.
+ */
+static void forgetOwnedHandles(void *owner)
+{
+    if ( owner == NULL || liveHandles == NULL )
+    {
+        return;
+    }
+
+    sqlite3_mutex_enter(liveHandleMtx);
+
+    std::unordered_map<void *, LiveHandle>::iterator it = liveHandles->begin();
+    while ( it != liveHandles->end() )
+    {
+        if ( it->second.owner == owner )
+        {
+            it = liveHandles->erase(it);
+        }
+        else
+        {
+            it++;
+        }
+    }
+
+    sqlite3_mutex_leave(liveHandleMtx);
+}
+
+/**
+ * Tells whether h is live and of one of the two kinds given (pass the same
+ * kind twice for one).  If owner is not null, it gets the owner.
+ */
+static bool isLiveHandle(void *h, HandleKind kind1, HandleKind kind2, void **owner)
+{
+    bool live = false;
+
+    if ( h == NULL || liveHandles == NULL )
+    {
+        return false;
+    }
+
+    sqlite3_mutex_enter(liveHandleMtx);
+
+    std::unordered_map<void *, LiveHandle>::iterator it = liveHandles->find(h);
+    if ( it != liveHandles->end() && (it->second.kind == kind1 || it->second.kind == kind2) )
+    {
+        live = true;
+        if ( owner != NULL )
+        {
+            *owner = it->second.owner;
+        }
+    }
+
+    sqlite3_mutex_leave(liveHandleMtx);
+
+    return live;
+}
+
+/**
+ * Raises 88.900 for a handle that is not live, or not of the kind needed:
+ * "Argument 1, the mutex handle, is not a live mutex handle."
+ */
+static void notLiveHandleException(RexxThreadContext *c, CSTRING name, size_t pos)
+{
+    char buffer[256];
+    snprintf(buffer, sizeof(buffer), "Argument %zd, the %s handle, is not a live %s handle", pos, name, name);
+    userDefinedMsgException(c, buffer);
+}
+
+/**
+ * Registers the SQLite context and the values of the arguments of a user
+ * function for the duration of its call, and unregisters them after.
+ */
+static void registerCallHandles(sqlite3_context *sqlContext, int argc, sqlite3_value **argv)
+{
+    registerHandle(sqlContext, hkContext, NULL);
+    for ( int i = 0; i < argc; i++ )
+    {
+        registerHandle(argv[i], hkValue, NULL);
+    }
+}
+
+static void unregisterCallHandles(sqlite3_context *sqlContext, int argc, sqlite3_value **argv)
+{
+    unregisterHandle(sqlContext);
+    for ( int i = 0; i < argc; i++ )
+    {
+        unregisterHandle(argv[i]);
+    }
+}
+
+/**
+ * Raises 88.900 for a null handle passed to a classic routine.  The classic
+ * interface has handles, not objects, so nullObjectException() of APICommon,
+ * which says "the ... object", is not used.
+ *
+ * @param name  What the handle is for, e.g. "mutex": the message is
+ *              "Argument 1, the mutex handle, must not be null."
+ */
+static void nullHandleException(RexxThreadContext *c, CSTRING name, size_t pos)
+{
+    char buffer[256];
+    snprintf(buffer, sizeof(buffer), "Argument %zd, the %s handle, must not be null", pos, name);
+    userDefinedMsgException(c, buffer);
+}
+
+/**
+ * Checks a handle passed to a classic routine, or to a class method of
+ * ooSQLResult or ooSQLValue: 88.900 if it is null, or if it is not live and of
+ * one of the kinds given (see the registry of live handles).
+ *
+ * @return  The handle, or null if a condition has been raised.
+ */
+static void *checkedHandle(RexxThreadContext *c, void *h, HandleKind kind1, HandleKind kind2,
+                           CSTRING name, size_t pos, void **owner)
+{
+    if ( h == NULL )
+    {
+        nullHandleException(c, name, pos);
+        return NULL;
+    }
+    if ( ! isLiveHandle(h, kind1, kind2, owner) )
+    {
+        notLiveHandleException(c, name, pos);
+        return NULL;
+    }
+    return h;
+}
+
+/**
+ * The SQLite context of a user function, while it runs.
+ */
+static inline sqlite3_context *checkedCntxt(RexxThreadContext *c, void *_cntxt, size_t pos)
+{
+    return (sqlite3_context *)checkedHandle(c, _cntxt, hkContext, hkContext, "SQLite context", pos, NULL);
+}
+
+/**
+ * A value: an argument of a user function, while it runs, or a value of
+ * columnValue, while its statement is not finalized.
+ */
+static inline sqlite3_value *checkedValue(RexxThreadContext *c, void *_value, size_t pos)
+{
+    return (sqlite3_value *)checkedHandle(c, _value, hkValue, hkColValue, "value", pos, NULL);
+}
 
 
 /**
@@ -107,6 +355,12 @@ void RexxEntry ooSQLiteLoad(RexxThreadContext *c)
     }
 #endif
 
+    liveHandleMtx = sqlite3_mutex_alloc(SQLITE_MUTEX_FAST);
+    liveHandles   = new (std::nothrow) std::unordered_map<void *, LiveHandle>;
+    if ( liveHandleMtx == NULL || liveHandles == NULL )
+    {
+        executionErrorException(c, "Could not allocate the registry of handles, abort on package load");
+    }
 }
 
 /**
@@ -134,6 +388,11 @@ void RexxEntry ooSQLiteUnload(RexxThreadContext *c)
 #ifndef _WIN32
     sqlite3_mutex_free(crit_sec);
 #endif
+
+    delete liveHandles;
+    liveHandles = NULL;
+    sqlite3_mutex_free(liveHandleMtx);
+    liveHandleMtx = NULL;
 
     sqlite3_shutdown();
 }
@@ -2081,6 +2340,8 @@ static void functionCallback(sqlite3_context *sqlContext, int argc, sqlite3_valu
         c->ReleaseLocalReference(v);
     }
 
+    registerCallHandles(sqlContext, argc, argv);
+
     if ( isMethod )
     {
         reply = c->SendMessage(pcf->callbackObj, pcf->funcMethod, args);
@@ -2089,6 +2350,8 @@ static void functionCallback(sqlite3_context *sqlContext, int argc, sqlite3_valu
     {
         reply = c->CallRoutine(pcf->funcRtn, args);
     }
+
+    unregisterCallHandles(sqlContext, argc, argv);
 
     // We just check for errors, we do not actually use rc.
     replyIsGood(c, reply, &rc, pcf->funcMethod, pcf->funcName, isMethod);
@@ -2203,6 +2466,8 @@ static void stepCallback(sqlite3_context *sqlContext, int argc, sqlite3_value **
         c->ReleaseLocalReference(v);
     }
 
+    registerCallHandles(sqlContext, argc, argv);
+
     if ( isMethod )
     {
         reply = c->SendMessage(pcf->callbackObj, pcf->stepMethod, args);
@@ -2211,6 +2476,8 @@ static void stepCallback(sqlite3_context *sqlContext, int argc, sqlite3_value **
     {
         reply = c->CallRoutine(pcf->stepRtn, args);
     }
+
+    unregisterCallHandles(sqlContext, argc, argv);
 
     if ( checkForCondition(c, false) )
     {
@@ -2312,6 +2579,8 @@ static void finalCallback(sqlite3_context *sqlContext)
 
     RexxArrayObject args = c->ArrayOfFour(db, sqlCntx, pcacb->aggregateObj, userData);
 
+    registerCallHandles(sqlContext, 0, NULL);
+
     if ( isMethod )
     {
         reply = c->SendMessage(pcf->callbackObj, pcf->finalMethod, args);
@@ -2320,6 +2589,8 @@ static void finalCallback(sqlite3_context *sqlContext)
     {
         reply = c->CallRoutine(pcf->finalRtn, args);
     }
+
+    unregisterCallHandles(sqlContext, 0, NULL);
 
     // We just check for errors, we do not actually use rc.
     replyIsGood(c, reply, &rc, pcf->finalMethod, pcf->finalName, isMethod);
@@ -4072,6 +4343,7 @@ static void ensureFinalized(RexxMethodContext *c, pCooSQLiteConn pConn)
         RexxObjectPtr  stmt   = c->ArrayAt(stmts, i);
         pCooSQLiteStmt pCstmt = stmtToCSelf(c, stmt);
 
+        forgetOwnedHandles(pCstmt->stmt);
         sqlite3_finalize(pCstmt->stmt);
 
         pCstmt->stmt      = NULL;
@@ -7748,6 +8020,11 @@ static RexxObjectPtr valueBlob(RexxThreadContext *c, sqlite3_value *value)
  */
 RexxMethod1(RexxObjectPtr, oosqlval_blob, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return NULLOBJECT;
+    }
+
     return valueBlob(context->threadContext, (sqlite3_value *)sqlValue);
 }
 
@@ -7757,6 +8034,11 @@ RexxMethod1(RexxObjectPtr, oosqlval_blob, POINTER, sqlValue)
  */
 RexxMethod1(int, oosqlval_bytes, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     return sqlite3_value_bytes((sqlite3_value *)sqlValue);
 }
 
@@ -7766,6 +8048,11 @@ RexxMethod1(int, oosqlval_bytes, POINTER, sqlValue)
  */
 RexxMethod1(RexxObjectPtr, oosqlval_double, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return NULLOBJECT;
+    }
+
     RexxObjectPtr result = TheNilObj;
 
     if ( sqlite3_value_type((sqlite3_value *)sqlValue) !=  SQLITE_NULL )
@@ -7781,6 +8068,11 @@ RexxMethod1(RexxObjectPtr, oosqlval_double, POINTER, sqlValue)
  */
 RexxMethod1(RexxObjectPtr, oosqlval_int, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return NULLOBJECT;
+    }
+
     RexxObjectPtr result = TheNilObj;
 
     if ( sqlite3_value_type((sqlite3_value *)sqlValue) !=  SQLITE_NULL )
@@ -7796,6 +8088,11 @@ RexxMethod1(RexxObjectPtr, oosqlval_int, POINTER, sqlValue)
  */
 RexxMethod1(RexxObjectPtr, oosqlval_int64, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return NULLOBJECT;
+    }
+
     RexxObjectPtr result = TheNilObj;
 
     if ( sqlite3_value_type((sqlite3_value *)sqlValue) !=  SQLITE_NULL )
@@ -7811,6 +8108,11 @@ RexxMethod1(RexxObjectPtr, oosqlval_int64, POINTER, sqlValue)
  */
 RexxMethod1(int, oosqlval_numericType, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     return sqlite3_value_numeric_type((sqlite3_value *)sqlValue);
 }
 
@@ -7820,6 +8122,11 @@ RexxMethod1(int, oosqlval_numericType, POINTER, sqlValue)
  */
 RexxMethod1(RexxObjectPtr, oosqlval_text, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return NULLOBJECT;
+    }
+
     const char *t = (const char *)sqlite3_value_text((sqlite3_value *)sqlValue);
 
     if ( t == NULL )
@@ -7835,6 +8142,11 @@ RexxMethod1(RexxObjectPtr, oosqlval_text, POINTER, sqlValue)
  */
 RexxMethod1(int, oosqlval_type, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     return sqlite3_value_type((sqlite3_value *)sqlValue);
 }
 
@@ -7915,6 +8227,11 @@ static bool getResultBlobArg(RexxThreadContext *c, RexxObjectPtr blob, bool size
  */
 RexxMethod3(int, oosqlrslt_blob, POINTER, sqlCntxt, RexxObjectPtr, blob, OPTIONAL_int, size)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     POINTER data;
     int     length;
     if ( ! getResultBlobArg(context->threadContext, blob, argumentExists(3), size, 3, &data, &length) )
@@ -7932,6 +8249,11 @@ RexxMethod3(int, oosqlrslt_blob, POINTER, sqlCntxt, RexxObjectPtr, blob, OPTIONA
  */
 RexxMethod2(int, oosqlrslt_double, POINTER, sqlCntxt, double, value)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_double((sqlite3_context*)sqlCntxt, value);
     return 0;
 }
@@ -7941,6 +8263,11 @@ RexxMethod2(int, oosqlrslt_double, POINTER, sqlCntxt, double, value)
  */
 RexxMethod2(int, oosqlrslt_error, POINTER, sqlCntxt, CSTRING, errMsg)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_error((sqlite3_context*)sqlCntxt, errMsg, -1);
     return 0;
 }
@@ -7950,6 +8277,11 @@ RexxMethod2(int, oosqlrslt_error, POINTER, sqlCntxt, CSTRING, errMsg)
  */
 RexxMethod2(int, oosqlrslt_errorCode, POINTER, sqlCntxt, int, errCode)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_error_code((sqlite3_context*)sqlCntxt, errCode);
     return 0;
 }
@@ -7959,6 +8291,11 @@ RexxMethod2(int, oosqlrslt_errorCode, POINTER, sqlCntxt, int, errCode)
  */
 RexxMethod1(int, oosqlrslt_errorNoMem, POINTER, sqlCntxt)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_error_nomem((sqlite3_context*)sqlCntxt);
     return 0;
 }
@@ -7968,6 +8305,11 @@ RexxMethod1(int, oosqlrslt_errorNoMem, POINTER, sqlCntxt)
  */
 RexxMethod1(int, oosqlrslt_errorTooBig, POINTER, sqlCntxt)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_error_toobig((sqlite3_context*)sqlCntxt);
     return 0;
 }
@@ -7977,6 +8319,11 @@ RexxMethod1(int, oosqlrslt_errorTooBig, POINTER, sqlCntxt)
  */
 RexxMethod2(int, oosqlrslt_int, POINTER, sqlCntxt, int, value)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_int((sqlite3_context*)sqlCntxt, value);
     return 0;
 }
@@ -7986,6 +8333,11 @@ RexxMethod2(int, oosqlrslt_int, POINTER, sqlCntxt, int, value)
  */
 RexxMethod2(int, oosqlrslt_int64, POINTER, sqlCntxt, int64_t, value)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_int64((sqlite3_context*)sqlCntxt, value);
     return 0;
 }
@@ -7995,6 +8347,11 @@ RexxMethod2(int, oosqlrslt_int64, POINTER, sqlCntxt, int64_t, value)
  */
 RexxMethod1(int, oosqlrslt_null, POINTER, sqlCntxt)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_null((sqlite3_context*)sqlCntxt);
     return 0;
 }
@@ -8004,6 +8361,11 @@ RexxMethod1(int, oosqlrslt_null, POINTER, sqlCntxt)
  */
 RexxMethod2(int, oosqlrslt_text, POINTER, sqlCntxt, CSTRING, txt)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_text((sqlite3_context*)sqlCntxt, txt, -1, SQLITE_TRANSIENT);
     return 0;
 }
@@ -8017,6 +8379,15 @@ RexxMethod2(int, oosqlrslt_text, POINTER, sqlCntxt, CSTRING, txt)
  */
 RexxMethod2(int, oosqlrslt_value, POINTER, sqlCntxt, POINTER, value)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+    if ( checkedValue(context->threadContext, value, 2) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_value((sqlite3_context*)sqlCntxt, (sqlite3_value *)value);
     return 0;
 }
@@ -8026,6 +8397,11 @@ RexxMethod2(int, oosqlrslt_value, POINTER, sqlCntxt, POINTER, value)
  */
 RexxMethod2(int, oosqlrslt_zeroBlob, POINTER, sqlCntxt, int, size)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_zeroblob((sqlite3_context*)sqlCntxt, size);
     return 0;
 }
@@ -8527,6 +8903,10 @@ RexxMethod3(int, oosqlstmt_bindValue, int32_t, index, POINTER, value, CSELF, pCS
     {
         return SQLITE_MISUSE;
     }
+    if ( checkedValue(context->threadContext, value, 2) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
 
     return sqlite3_bind_value(pCstmt->stmt, index, (sqlite3_value *)value);
 }
@@ -8977,6 +9357,7 @@ RexxMethod2(RexxObjectPtr, oosqlstmt_columnValue, int32_t, col, CSELF, pCSelf)
     col--;
 
     sqlite3_value *val = sqlite3_column_value(pCstmt->stmt, col);
+    registerHandle(val, hkColValue, pCstmt->stmt);
     return context->NewPointer(val);
 }
 
@@ -9056,6 +9437,7 @@ RexxMethod1(int, oosqlstmt_finalize, CSELF, pCSelf)
             context->SendMessage1(pCstmt->db, "DELSTMT", pCstmt->rexxSelf);
         }
 
+        forgetOwnedHandles(pCstmt->stmt);
         rc = sqlite3_finalize(pCstmt->stmt);
 
         pCstmt->stmt      = NULL;
@@ -12611,60 +12993,38 @@ RexxMethod2(RexxObjectPtr, oosqlfunc_init, RexxObjectPtr, functionEntry, OSELF, 
 #define ooSQLite_Routines_Section
 
 
-/**
- * Raises 88.900 for a null handle passed to a classic routine.  The classic
- * interface has handles, not objects, so nullObjectException() of APICommon,
- * which says "the ... object", is not used.
- *
- * @param name  What the handle is for, e.g. "mutex": the message is
- *              "Argument 1, the mutex handle, must not be null."
- */
-static void nullHandleException(RexxThreadContext *c, CSTRING name, size_t pos)
-{
-    char buffer[256];
-    snprintf(buffer, sizeof(buffer), "Argument %zd, the %s handle, must not be null", pos, name);
-    userDefinedMsgException(c, buffer);
-}
-
 static inline sqlite3_backup *routineBu(RexxCallContext *c, void *_bu, size_t pos)
 {
-    sqlite3_backup *bu = (sqlite3_backup *)_bu;
-    if ( bu == NULL )
-    {
-        nullHandleException(c->threadContext, "backup", pos);
-    }
-    return bu;
+    return (sqlite3_backup *)checkedHandle(c->threadContext, _bu, hkBackup, hkBackup, "backup", pos, NULL);
 }
 
 static inline sqlite3 *routineDB(RexxCallContext *c, void *_db, size_t pos)
 {
-    sqlite3 *db = (sqlite3 *)_db;
-    if ( db == NULL )
-    {
-        nullHandleException(c->threadContext, "database connection", pos);
-    }
-    return db;
+    return (sqlite3 *)checkedHandle(c->threadContext, _db, hkDB, hkDB, "database connection", pos, NULL);
 }
 
-static inline sqlite3_stmt *routineStmt(RexxCallContext *c, void *_stmt)
+static inline sqlite3_stmt *routineStmt(RexxCallContext *c, void *_stmt, size_t pos = 1, void **owner = NULL)
 {
-    sqlite3_stmt *stmt = (sqlite3_stmt *)_stmt;
-    if ( stmt == NULL )
-    {
-        nullHandleException(c->threadContext, "prepared statement", 1);
-    }
-    return stmt;
+    return (sqlite3_stmt *)checkedHandle(c->threadContext, _stmt, hkStmt, hkStmt, "prepared statement", pos, owner);
 }
 
+/**
+ * A mutex to enter, try or leave: allocated by oosqlMutexAlloc, or the mutex of
+ * a connection.
+ */
 static inline sqlite3_mutex *routineMutex(RexxCallContext *c, void *_mtx)
 {
-    sqlite3_mutex *mtx = (sqlite3_mutex *)_mtx;
-    if ( mtx == NULL )
-    {
-        nullHandleException(c->threadContext, "mutex", 1);
-    }
-    return mtx;
+    return (sqlite3_mutex *)checkedHandle(c->threadContext, _mtx, hkMutex, hkDbMutex, "mutex", 1, NULL);
 }
+
+/**
+ * A mutex to free: only one allocated by oosqlMutexAlloc.
+ */
+static inline sqlite3_mutex *routineAllocatedMutex(RexxCallContext *c, void *_mtx)
+{
+    return (sqlite3_mutex *)checkedHandle(c->threadContext, _mtx, hkMutex, hkMutex, "mutex", 1, NULL);
+}
+
 
 /**
  * Instantiates the hidden help object.  The instantiation will put the DB
@@ -13216,6 +13576,8 @@ RexxRoutine1(int, oosqlBackupFinish_rtn, POINTER, _bu)
         return SQLITE_MISUSE;
     }
 
+    // The backup is freed even when an error code is returned.
+    unregisterHandle(bu);
     return sqlite3_backup_finish(bu);
 }
 
@@ -13264,7 +13626,9 @@ RexxRoutine4(POINTER, oosqlBackupInit_rtn, POINTER, dstConn, POINTER, srcConn, O
         srcName = "main";
     }
 
-    return sqlite3_backup_init(dst, dstName, src, srcName);
+    sqlite3_backup *bu = sqlite3_backup_init(dst, dstName, src, srcName);
+    registerHandle(bu, hkBackup, NULL);
+    return bu;
 }
 
 /** oosqlBackupPageCount()
@@ -13505,6 +13869,10 @@ RexxRoutine3(int, oosqlBindValue_rtn, POINTER, _stmt, int32_t, index, POINTER, v
     {
         return SQLITE_MISUSE;
     }
+    if ( checkedValue(context->threadContext, value, 3) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
 
     return sqlite3_bind_value(stmt, index, (sqlite3_value *)value);
 }
@@ -13668,6 +14036,12 @@ RexxRoutine1(int, oosqlClose_rtn, POINTER, _db)
 
     int rc = sqlite3_close(db);
     helperCleanCallbacks(context, db);
+
+    if ( rc == SQLITE_OK )
+    {
+        unregisterHandle(db);
+        forgetOwnedHandles(db);
+    }
 
     return rc;
 }
@@ -14133,6 +14507,7 @@ RexxRoutine2(RexxObjectPtr, oosqlColumnValue_rtn, POINTER, _stmt, int32_t, col)
     col--;
 
     sqlite3_value *val = sqlite3_column_value(stmt, col);
+    registerHandle(val, hkColValue, stmt);
     return context->NewPointer(val);
 }
 
@@ -14853,9 +15228,23 @@ RexxRoutine2(int, oosqlExtendedResultCodes_rtn, POINTER, _db, logical_t, onOff)
  *         deleted. The, possible, error code is the return from a previous
  *         error.  Such as an error from a previously executed step.
  */
-RexxRoutine1(int, oosqlFinalize_rtn, POINTER, stmt)
+RexxRoutine1(int, oosqlFinalize_rtn, POINTER, _stmt)
 {
-    return sqlite3_finalize((sqlite3_stmt *)stmt);
+    if ( _stmt == NULL )
+    {
+        return SQLITE_OK;
+    }
+
+    sqlite3_stmt *stmt = routineStmt(context, _stmt);
+    if ( stmt == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
+    // The statement is deleted even when an error code is returned.
+    unregisterHandle(stmt);
+    forgetOwnedHandles(stmt);
+    return sqlite3_finalize(stmt);
 }
 
 /** oosqlGetAutocommit()
@@ -15072,7 +15461,9 @@ RexxRoutine1(POINTER, oosqlMutexAlloc_rtn, int, type)
         return NULL;
     }
 
-    return sqlite3_mutex_alloc(type);
+    sqlite3_mutex *mtx = sqlite3_mutex_alloc(type);
+    registerHandle(mtx, hkMutex, NULL);
+    return mtx;
 }
 
 /** oosqlMutexEnter()
@@ -15103,12 +15494,13 @@ RexxRoutine1(int, oosqlMutexEnter_rtn, POINTER, _mtx)
  */
 RexxRoutine1(int, oosqlMutexFree_rtn, POINTER, _mtx)
 {
-    sqlite3_mutex *mtx = routineMutex(context, _mtx);
+    sqlite3_mutex *mtx = routineAllocatedMutex(context, _mtx);
     if ( mtx == NULL )
     {
         return SQLITE_MISUSE;
     }
 
+    unregisterHandle(mtx);
     sqlite3_mutex_free(mtx);
 
     return SQLITE_OK;
@@ -15192,7 +15584,19 @@ RexxRoutine2(RexxObjectPtr, oosqlNextStmt_rtn, POINTER, _db, OPTIONAL_RexxObject
         }
         else
         {
-            stmt = (sqlite3_stmt *)context->PointerValue((RexxPointerObject)_stmt);
+            // A null handle starts from the first statement, as .nil does.
+            void *p     = context->PointerValue((RexxPointerObject)_stmt);
+            void *owner = db;
+            stmt = (p == NULL) ? NULL : routineStmt(context, p, 2, &owner);
+            if ( p != NULL && stmt == NULL )
+            {
+                return NULLOBJECT;
+            }
+            if ( owner != db )
+            {
+                notLiveHandleException(context->threadContext, "prepared statement", 2);
+                return NULLOBJECT;
+            }
         }
     }
 
@@ -15265,6 +15669,14 @@ RexxRoutine4(int, oosqlOpen_rtn, CSTRING, file, CSTRING, dbConn, OPTIONAL_int32_
         // Here we enable things that are enabled / disabled on a per database
         // connection basis that are set by default for ooSQLite.
         sqlite3_extended_result_codes(db, 1);
+    }
+
+    // Even on error the connection is (almost) always returned, and must be
+    // closed.
+    registerHandle(db, hkDB, NULL);
+    if ( db != NULL )
+    {
+        registerHandle(sqlite3_db_mutex(db), hkDbMutex, db);
     }
 
     context->SetContextVariable(dbConn, context->NewPointer(db));
@@ -15349,6 +15761,7 @@ RexxRoutine4(int, oosqlPrepare_rtn, POINTER, _db, CSTRING, sql, CSTRING, _stmt, 
         context->SetContextVariable(_tail, context->String(tail));
     }
 
+    registerHandle(stmt, hkStmt, db);
     context->SetContextVariable(_stmt, context->NewPointer(stmt));
 
     return rc;
@@ -15556,6 +15969,11 @@ RexxRoutine0(int, oosqlResetAutoExtension_rtn)
  */
 RexxRoutine3(int, oosqlResultBlob_rtn, POINTER, sqlCntxt, RexxObjectPtr, blob, OPTIONAL_int, size)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     POINTER data;
     int     length;
     if ( ! getResultBlobArg(context->threadContext, blob, argumentExists(3), size, 3, &data, &length) )
@@ -15573,6 +15991,11 @@ RexxRoutine3(int, oosqlResultBlob_rtn, POINTER, sqlCntxt, RexxObjectPtr, blob, O
  */
 RexxRoutine2(int, oosqlResultDouble_rtn, POINTER, sqlCntxt, double, value)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_double((sqlite3_context*)sqlCntxt, value);
     return 0;
 }
@@ -15582,6 +16005,11 @@ RexxRoutine2(int, oosqlResultDouble_rtn, POINTER, sqlCntxt, double, value)
  */
 RexxRoutine2(int, oosqlResultError_rtn, POINTER, sqlCntxt, CSTRING, errMsg)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_error((sqlite3_context*)sqlCntxt, errMsg, -1);
     return 0;
 }
@@ -15591,6 +16019,11 @@ RexxRoutine2(int, oosqlResultError_rtn, POINTER, sqlCntxt, CSTRING, errMsg)
  */
 RexxRoutine2(int, oosqlResultErrorCode_rtn, POINTER, sqlCntxt, int, errCode)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_error_code((sqlite3_context*)sqlCntxt, errCode);
     return 0;
 }
@@ -15600,6 +16033,11 @@ RexxRoutine2(int, oosqlResultErrorCode_rtn, POINTER, sqlCntxt, int, errCode)
  */
 RexxRoutine1(int, oosqlResultErrorNoMem_rtn, POINTER, sqlCntxt)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_error_nomem((sqlite3_context*)sqlCntxt);
     return 0;
 }
@@ -15609,6 +16047,11 @@ RexxRoutine1(int, oosqlResultErrorNoMem_rtn, POINTER, sqlCntxt)
  */
 RexxRoutine1(int, oosqlResultErrorTooBig_rtn, POINTER, sqlCntxt)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_error_toobig((sqlite3_context*)sqlCntxt);
     return 0;
 }
@@ -15618,6 +16061,11 @@ RexxRoutine1(int, oosqlResultErrorTooBig_rtn, POINTER, sqlCntxt)
  */
 RexxRoutine2(int, oosqlResultInt_rtn, POINTER, sqlCntxt, int, value)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_int((sqlite3_context*)sqlCntxt, value);
     return 0;
 }
@@ -15627,6 +16075,11 @@ RexxRoutine2(int, oosqlResultInt_rtn, POINTER, sqlCntxt, int, value)
  */
 RexxRoutine2(int, oosqlResultInt64_rtn, POINTER, sqlCntxt, int64_t, value)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_int64((sqlite3_context*)sqlCntxt, value);
     return 0;
 }
@@ -15636,6 +16089,11 @@ RexxRoutine2(int, oosqlResultInt64_rtn, POINTER, sqlCntxt, int64_t, value)
  */
 RexxRoutine1(int, oosqlResultNull_rtn, POINTER, sqlCntxt)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_null((sqlite3_context*)sqlCntxt);
     return 0;
 }
@@ -15645,6 +16103,11 @@ RexxRoutine1(int, oosqlResultNull_rtn, POINTER, sqlCntxt)
  */
 RexxRoutine2(int, oosqlResultText_rtn, POINTER, sqlCntxt, CSTRING, txt)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_text((sqlite3_context*)sqlCntxt, txt, -1, SQLITE_TRANSIENT);
     return 0;
 }
@@ -15658,6 +16121,15 @@ RexxRoutine2(int, oosqlResultText_rtn, POINTER, sqlCntxt, CSTRING, txt)
  */
 RexxRoutine2(int, oosqlResultValue_rtn, POINTER, sqlCntxt, POINTER, value)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+    if ( checkedValue(context->threadContext, value, 2) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_value((sqlite3_context*)sqlCntxt, (sqlite3_value *)value);
     return 0;
 }
@@ -15667,6 +16139,11 @@ RexxRoutine2(int, oosqlResultValue_rtn, POINTER, sqlCntxt, POINTER, value)
  */
 RexxRoutine2(int, oosqlResultZeroBlob_rtn, POINTER, sqlCntxt, int, size)
 {
+    if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     sqlite3_result_zeroblob((sqlite3_context*)sqlCntxt, size);
     return 0;
 }
@@ -15851,7 +16328,16 @@ RexxRoutine1(int, oosqlStep_rtn, POINTER, _stmt)
  */
 RexxRoutine1(logical_t, oosqlStmtBusy_rtn, POINTER, _stmt)
 {
-    sqlite3_stmt *stmt = (sqlite3_stmt *)_stmt;
+    if ( _stmt == NULL )
+    {
+        return 0;
+    }
+
+    sqlite3_stmt *stmt = routineStmt(context, _stmt);
+    if ( stmt == NULL )
+    {
+        return 0;
+    }
     return sqlite3_stmt_busy(stmt);
 }
 
@@ -16064,6 +16550,11 @@ RexxRoutine3(RexxObjectPtr, oosqlUpdateHook_rtn, POINTER, _db, CSTRING, rtnName,
  */
 RexxRoutine1(RexxObjectPtr, oosqlValueBlob_rtn, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return NULLOBJECT;
+    }
+
     return valueBlob(context->threadContext, (sqlite3_value *)sqlValue);
 }
 
@@ -16073,6 +16564,11 @@ RexxRoutine1(RexxObjectPtr, oosqlValueBlob_rtn, POINTER, sqlValue)
  */
 RexxRoutine1(int, oosqlValueBytes_rtn, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     return sqlite3_value_bytes((sqlite3_value *)sqlValue);
 }
 
@@ -16081,6 +16577,11 @@ RexxRoutine1(int, oosqlValueBytes_rtn, POINTER, sqlValue)
  */
 RexxRoutine1(RexxObjectPtr, oosqlValueDouble_rtn, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return NULLOBJECT;
+    }
+
     RexxObjectPtr result = TheNilObj;
 
     if ( sqlite3_value_type((sqlite3_value *)sqlValue) !=  SQLITE_NULL )
@@ -16095,6 +16596,11 @@ RexxRoutine1(RexxObjectPtr, oosqlValueDouble_rtn, POINTER, sqlValue)
  */
 RexxRoutine1(RexxObjectPtr, oosqlValueInt_rtn, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return NULLOBJECT;
+    }
+
     RexxObjectPtr result = TheNilObj;
 
     if ( sqlite3_value_type((sqlite3_value *)sqlValue) !=  SQLITE_NULL )
@@ -16111,6 +16617,11 @@ RexxRoutine1(RexxObjectPtr, oosqlValueInt_rtn, POINTER, sqlValue)
  */
 RexxRoutine1(RexxObjectPtr, oosqlValueInt64_rtn, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return NULLOBJECT;
+    }
+
     RexxObjectPtr result = TheNilObj;
 
     if ( sqlite3_value_type((sqlite3_value *)sqlValue) !=  SQLITE_NULL )
@@ -16126,6 +16637,11 @@ RexxRoutine1(RexxObjectPtr, oosqlValueInt64_rtn, POINTER, sqlValue)
  */
 RexxRoutine1(int, oosqlValueNumericType_rtn, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     return sqlite3_value_numeric_type((sqlite3_value *)sqlValue);
 }
 
@@ -16135,6 +16651,11 @@ RexxRoutine1(int, oosqlValueNumericType_rtn, POINTER, sqlValue)
  */
 RexxRoutine1(RexxObjectPtr, oosqlValueText_rtn, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return NULLOBJECT;
+    }
+
     const char *t = (const char *)sqlite3_value_text((sqlite3_value *)sqlValue);
 
     if ( t == NULL )
@@ -16150,6 +16671,11 @@ RexxRoutine1(RexxObjectPtr, oosqlValueText_rtn, POINTER, sqlValue)
  */
 RexxRoutine1(int, oosqlValueType_rtn, POINTER, sqlValue)
 {
+    if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
+    {
+        return SQLITE_MISUSE;
+    }
+
     return sqlite3_value_type((sqlite3_value *)sqlValue);
 }
 
