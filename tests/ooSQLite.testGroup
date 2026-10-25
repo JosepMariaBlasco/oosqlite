@@ -9709,6 +9709,124 @@ Done:
 
 /******************************************************************************/
 /*                                                                            */
+/* Section C13: Classic — handles in use on another thread                    */
+/*                                                                            */
+/* A routine that frees a handle (oosqlFinalize, oosqlClose,                  */
+/* oosqlBackupFinish, oosqlMutexFree) while another thread is using it, or a  */
+/* handle it owns, waits until that thread is done with it.  Before, the      */
+/* handle could be freed between the check of the other thread and its use:   */
+/* a crash, or freed memory read (technical note #60).                        */
+/*                                                                            */
+/* The race is forced with a test hook of the library: when the process       */
+/* starts with OOSQLITE_TEST_HOOKS=1 (the CI does), the worker thread pauses  */
+/* for 400 ms right after the check of its handle, and this thread frees the  */
+/* handle during the pause.  Without the hook the tests still pass, but the   */
+/* race is left to chance.                                                    */
+/*                                                                            */
+/******************************************************************************/
+
+::Method pinHooks
+  -- Whether the race is forced (see above)
+  Return Value("OOSQLITE_TEST_HOOKS", , "ENVIRONMENT") == "1"
+
+::Method pinRace
+  -- Starts method name of a PinWorker with args on another thread, waits
+  -- 100 ms, so that the worker is in its pause, and returns the worker
+  Use Strict Arg name, args
+  w = .PinWorker~new
+  w~startWith(name, args)
+  Call SysSleep 0.1
+  Return w
+
+::Method testClassicPinFinalizeWaitsForStep
+  db = self~classicOpenMemory
+  Call oosqlExec db, "CREATE TABLE t(a); INSERT INTO t VALUES('row1');"
+  Call oosqlPrepare db, "SELECT a FROM t;", "stmt"
+  w = self~pinRace("step", .array~of(stmt))
+  Call Time "R"
+  self~assertEquals(0, oosqlFinalize(stmt), "finalize")
+  waited = Time("E")
+  self~assertEquals(.ooSQLite~ROW, w~wait, "the worker stepped a live statement")
+  If self~pinHooks Then
+    self~assertTrue(waited > 0.2, "finalize waited for the worker:" waited)
+  self~assertEquals(self~notLive(1, "prepared statement"), -
+    self~nullHandleError("oosqlStep", .array~of(stmt)), "the statement is finalized")
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicPinCloseWaitsForExec
+  db = self~classicOpenMemory
+  Call oosqlExec db, "CREATE TABLE t(a);"
+  w = self~pinRace("exec", .array~of(db))
+  self~assertEquals(0, oosqlClose(db), "close")
+  self~assertEquals("0", w~wait, "the worker ran its INSERT on a live connection")
+  self~assertEquals(self~notLive(1, "database connection"), -
+    self~nullHandleError("oosqlErrCode", .array~of(db)), "the connection is closed")
+
+::Method testClassicPinCloseBusyStaysLive
+  -- The connection still has a statement: close waits, then gives BUSY, and
+  -- the connection is still usable
+  db = self~classicOpenMemory
+  Call oosqlExec db, "CREATE TABLE t(a); INSERT INTO t VALUES('row1');"
+  Call oosqlPrepare db, "SELECT a FROM t;", "stmt"
+  w = self~pinRace("step", .array~of(stmt))
+  self~assertEquals(.ooSQLite~BUSY, oosqlClose(db), "close with a statement")
+  self~assertEquals(.ooSQLite~ROW, w~wait, "the worker")
+  self~assertEquals(0, oosqlExec(db, "SELECT 1;"), "the connection is still live")
+  self~assertEquals(0, oosqlFinalize(stmt))
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicPinFinalizeWaitsForColumnValue
+  -- A value of oosqlColumnValue belongs to its statement
+  db = self~classicOpenMemory
+  Call oosqlExec db, "CREATE TABLE t(a); INSERT INTO t VALUES('row1');"
+  Call oosqlPrepare db, "SELECT a FROM t;", "stmt"
+  Call oosqlStep stmt
+  v = oosqlColumnValue(stmt, 1)
+  w = self~pinRace("value", .array~of(v))
+  self~assertEquals(0, oosqlFinalize(stmt), "finalize")
+  self~assertEquals("row1", w~wait, "the worker read a live value")
+  self~assertEquals(self~notLive(1, "value"), -
+    self~nullHandleError("oosqlValueText", .array~of(v)), "the value is gone")
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicPinBackupFinishWaitsForStep
+  src = self~classicOpenMemory
+  Call oosqlExec src, "CREATE TABLE t(a); INSERT INTO t VALUES('row1');"
+  dst = self~classicOpenMemory
+  bu = oosqlBackupInit(dst, src)
+  w = self~pinRace("backup", .array~of(bu))
+  self~assertEquals(0, oosqlBackupFinish(bu), "backup finish")
+  self~assertEquals(.ooSQLite~DONE, w~wait, "the worker copied the database")
+  self~assertEquals(self~notLive(1, "backup"), -
+    self~nullHandleError("oosqlBackupStep", .array~of(bu, -1)), "the backup is finished")
+  self~assertEquals(0, oosqlClose(dst))
+  self~assertEquals(0, oosqlClose(src))
+
+::Method testClassicPinMutexFreeWaitsForLeave
+  mtx = oosqlMutexAlloc(.ooSQLite~MUTEX_FAST)
+  w = .PinWorker~new
+  w~startWith("leave", .array~of(mtx))
+  w~entered                         -- the worker has the mutex now
+  Call SysSleep 0.1
+  self~assertEquals(0, oosqlMutexFree(mtx), "free")
+  self~assertEquals("0", w~wait, "the worker left a live mutex")
+  self~assertEquals(self~notLive(1, "mutex"), -
+    self~nullHandleError("oosqlMutexEnter", .array~of(mtx)), "the mutex is freed")
+
+::Method testClassicPinOwnThread
+  -- A thread does not wait for itself: a user function closes the
+  -- connection whose oosqlExec is running it (BUSY, as before)
+  db = self~classicOpenMemory
+  .local~classicPinDb = db
+  .local~classicPinSelfRc = ""
+  Call oosqlCreateFunction db, "selfclose", 0, "classicPinSelfCloseCB"
+  self~assertEquals(0, oosqlExec(db, "SELECT selfclose();"), "exec")
+  self~assertEquals(.ooSQLite~BUSY, .local~classicPinSelfRc, -
+    "close from inside gives BUSY and does not wait")
+  self~assertEquals(0, oosqlClose(db))
+
+/******************************************************************************/
+/*                                                                            */
 /* Callback routines for Section C6                                           */
 /*                                                                            */
 /* These ::Routine definitions implement the callbacks for classic callback   */
@@ -10188,3 +10306,60 @@ Trapped:
   Expose done answer
   Guard On When done
   Return answer
+
+-- Section C13: uses a classic handle on another thread, pausing right after
+-- the check of the handle when the test hooks are on
+::Class PinWorker
+::Method init
+  Expose done answer entered
+  done = .false
+  entered = .false
+  answer = ""
+::Method arm Private
+  -- A fresh token: only the next handle check (this thread's) pauses
+  Call Value "OOSQLITE_TEST_PIN_PAUSE", Random(1, 999999)"."Time("F") "400", -
+    "ENVIRONMENT"
+::Method step Unguarded
+  Use Strict Arg stmt
+  self~arm
+  -- Only the step: finalize may free the statement as soon as it returns
+  self~finish(oosqlStep(stmt))
+::Method exec Unguarded
+  Use Strict Arg db
+  self~arm
+  self~finish(oosqlExec(db, "INSERT INTO t VALUES('row2');"))
+::Method value Unguarded
+  Use Strict Arg v
+  self~arm
+  self~finish(oosqlValueText(v))
+::Method backup Unguarded
+  Use Strict Arg bu
+  self~arm
+  self~finish(oosqlBackupStep(bu, -1))
+::Method leave Unguarded
+  Use Strict Arg mtx
+  Call oosqlMutexEnter mtx
+  self~arm
+  self~setEntered
+  self~finish(oosqlMutexLeave(mtx))
+::Method setEntered
+  Expose entered
+  entered = .true
+::Method entered
+  Expose entered
+  Guard On When entered
+::Method finish
+  Expose done answer
+  Use Strict Arg answer
+  done = .true
+::Method wait
+  Expose done answer
+  Guard On When done
+  Return answer
+
+-- Section C13: a user function that closes the connection running it
+::Routine classicPinSelfCloseCB Public
+  Use Arg db, ctx, userData
+  .local~classicPinSelfRc = oosqlClose(.local~classicPinDb)
+  Call oosqlResultInt ctx, 1
+  Return 0

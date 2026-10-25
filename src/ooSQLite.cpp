@@ -110,6 +110,43 @@ static std::unordered_map<void *, LiveHandle> *liveHandles   = NULL;
 static sqlite3_mutex                          *liveHandleMtx = NULL;
 
 /**
+ * A test hook.  When the process starts with OOSQLITE_TEST_HOOKS=1, a handle
+ * check that succeeds pauses when OOSQLITE_TEST_PIN_PAUSE holds "token ms" with
+ * a token not seen before: only the first check after the variable is changed
+ * pauses.  The tests use it to stop one thread between the check of a handle
+ * and its use, so that another thread can free the handle there.
+ */
+static bool testHooks = false;
+static char testPauseToken[128] = "";
+
+static void testPinPause()
+{
+    const char *v = getenv("OOSQLITE_TEST_PIN_PAUSE");
+    if ( v == NULL || *v == '\0' )
+    {
+        return;
+    }
+
+    int ms = 0;
+    bool fresh = false;
+
+    sqlite3_mutex_enter(liveHandleMtx);
+    if ( strcmp(v, testPauseToken) != 0 && strlen(v) < sizeof(testPauseToken) )
+    {
+        strcpy(testPauseToken, v);
+        const char *sp = strrchr(v, ' ');
+        ms = sp != NULL ? atoi(sp + 1) : 0;
+        fresh = true;
+    }
+    sqlite3_mutex_leave(liveHandleMtx);
+
+    if ( fresh && ms > 0 )
+    {
+        sqlite3_sleep(ms);
+    }
+}
+
+/**
  * Records a handle.  Recording a handle that is already there counts it once
  * more (for nested calls of user functions); a handle of another kind there
  * belonged to memory SQLite has freed and reused, and is replaced.
@@ -295,6 +332,10 @@ static void *checkedHandle(RexxThreadContext *c, void *h, HandleKind kind1, Hand
         notLiveHandleException(c, name, pos);
         return NULL;
     }
+    if ( testHooks )
+    {
+        testPinPause();
+    }
     return h;
 }
 
@@ -455,6 +496,9 @@ void RexxEntry ooSQLiteLoad(RexxThreadContext *c)
     {
         TheCallbackTrampoline = (RexxRoutineObject)c->RequestGlobalReference(tramp);
     }
+
+    const char *hooks = getenv("OOSQLITE_TEST_HOOKS");
+    testHooks = hooks != NULL && strcmp(hooks, "1") == 0;
 
     liveHandleMtx = sqlite3_mutex_alloc(SQLITE_MUTEX_FAST);
     liveHandles   = new (std::nothrow) std::unordered_map<void *, LiveHandle>;

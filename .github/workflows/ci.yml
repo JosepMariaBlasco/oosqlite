@@ -31,6 +31,8 @@ jobs:
         run: |
           export LD_LIBRARY_PATH="$PWD/../bin/linux"
           export REXX_PATH="$PWD/framework:$PWD/../bin/linux"
+          # Lets the tests of section C13 force their race (tests/ooSQLite.testGroup)
+          export OOSQLITE_TEST_HOOKS=1
           rexx ooSQLite.testGroup 2>&1 | tee test-output.txt
           # The test group exits with 0 even when tests fail, so the summary
           # decides.  If the process crashes there is no summary and this fails.
