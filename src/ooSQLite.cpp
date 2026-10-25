@@ -51,6 +51,7 @@
 #include "APICommon.hpp"
 #include "ooSqlSysLibrary.hpp"
 
+#include <condition_variable>
 #include <memory>
 #include <new>
 #include <unordered_map>
@@ -86,6 +87,15 @@ RexxObjectPtr       TheHiddenHelper       = NULLOBJECT;
  * The registry has its own mutex: the critical section of ooSQLite is held
  * while ensureFinalized() finalizes statements, which must update the
  * registry, and that mutex is not recursive.
+ *
+ * Handles in use.  A check and the use of the handle that follows are not
+ * atomic: another thread could free the handle in between.  So a routine that
+ * declares a HandlePins object pins every handle it checks until it returns,
+ * and the routines that free a handle (freeHandle(), claimHandle()) wait until
+ * no other thread has it, or a handle it owns, pinned.  The thread that frees
+ * a handle does not wait for its own pins (a callback can free what the
+ * routine that runs it has pinned).  A routine without a HandlePins object
+ * pins nothing, and is not protected.
  */
 typedef enum
 {
@@ -104,10 +114,99 @@ typedef struct _LiveHandle
     HandleKind  kind;
     void       *owner;
     size_t      count;    // Nested calls of user functions share a context
+    size_t      pins;     // Pinned by routines that are using it
+    void       *claimer;  // The thread that is freeing it, or NULL
 } LiveHandle;
 
 static std::unordered_map<void *, LiveHandle> *liveHandles   = NULL;
 static sqlite3_mutex                          *liveHandleMtx = NULL;
+
+/**
+ * The registry mutex as a lock, for the condition variable the routines that
+ * free a handle wait on.
+ */
+class RegistryLock
+{
+public:
+    void lock()   { sqlite3_mutex_enter(liveHandleMtx); }
+    void unlock() { sqlite3_mutex_leave(liveHandleMtx); }
+};
+
+static std::condition_variable_any *liveHandleCv = NULL;
+static size_t                        liveHandleWaiters = 0;   // under the registry mutex
+
+/**
+ * Waits on the condition variable of the registry; the registry mutex must be
+ * held, through lock.
+ */
+static void waitLocked(RegistryLock &lock)
+{
+    liveHandleWaiters++;
+    liveHandleCv->wait(lock);
+    liveHandleWaiters--;
+}
+
+/**
+ * Wakes the threads waiting on the registry, if any.  The registry mutex must
+ * be held: the count of waiters is read under it.
+ */
+static inline void notifyLocked()
+{
+    if ( liveHandleWaiters > 0 )
+    {
+        liveHandleCv->notify_all();
+    }
+}
+
+// The handles this thread has pinned, and how many HandlePins objects are
+// active on it.  A slot is NULL when this thread freed that handle itself.
+#define MAX_THREAD_PINS 256
+typedef struct _ThreadPins
+{
+    size_t  count;
+    size_t  guards;
+    void   *pins[MAX_THREAD_PINS];
+} ThreadPins;
+
+static thread_local ThreadPins tlsThreadPins;   // zero-initialized
+
+// One TLS lookup per use: tp() is called once and the reference kept.
+static inline ThreadPins &tp() { return tlsThreadPins; }
+
+// Identifies this thread as the one freeing a handle.
+static inline void *thisThread() { return (void *)&tlsThreadPins; }
+
+/**
+ * The pins this thread holds on h.  The registry mutex must be held (or not,
+ * the pins of this thread are only changed by this thread).
+ */
+static size_t ownPins(void *h)
+{
+    ThreadPins &t = tp();
+    size_t n = 0;
+    for ( size_t i = 0; i < t.count; i++ )
+    {
+        if ( t.pins[i] == h )
+        {
+            n++;
+        }
+    }
+    return n;
+}
+
+/**
+ * Pins the handles a routine checks until it returns: declare one at the
+ * start of every routine or method that checks a handle.
+ */
+class HandlePins
+{
+public:
+    HandlePins() : t(tp()), mark(t.count) { t.guards++; }
+    ~HandlePins();
+private:
+    ThreadPins &t;
+    size_t      mark;
+};
 
 /**
  * A test hook.  When the process starts with OOSQLITE_TEST_HOOKS=1, a handle
@@ -170,7 +269,7 @@ static void registerHandle(void *h, HandleKind kind, void *owner)
     }
     else
     {
-        LiveHandle lh = { kind, owner, 1 };
+        LiveHandle lh = { kind, owner, 1, 0, NULL };
         (*liveHandles)[h] = lh;
     }
 
@@ -209,6 +308,9 @@ static void unregisterHandle(void *h)
  * Removes the handles owned by owner: the values of a statement that is
  * finalized, the mutex of a connection that is closed.
  */
+static bool pinnedByOthers(void *h);
+static void dropOwnPins(void *h);
+
 static void forgetOwnedHandles(void *owner)
 {
     if ( owner == NULL || liveHandles == NULL )
@@ -216,13 +318,21 @@ static void forgetOwnedHandles(void *owner)
         return;
     }
 
-    sqlite3_mutex_enter(liveHandleMtx);
+    RegistryLock lock;
+    lock.lock();
+
+    // Another thread may be using one of them (see Handles in use)
+    while ( pinnedByOthers(owner) )
+    {
+        waitLocked(lock);
+    }
 
     std::unordered_map<void *, LiveHandle>::iterator it = liveHandles->begin();
     while ( it != liveHandles->end() )
     {
         if ( it->second.owner == owner )
         {
+            dropOwnPins(it->first);
             it = liveHandles->erase(it);
         }
         else
@@ -231,7 +341,8 @@ static void forgetOwnedHandles(void *owner)
         }
     }
 
-    sqlite3_mutex_leave(liveHandleMtx);
+    notifyLocked();
+    lock.unlock();
 }
 
 /**
@@ -247,9 +358,18 @@ static bool isLiveHandle(void *h, HandleKind kind1, HandleKind kind2, void **own
         return false;
     }
 
-    sqlite3_mutex_enter(liveHandleMtx);
+    RegistryLock lock;
+    lock.lock();
 
     std::unordered_map<void *, LiveHandle>::iterator it = liveHandles->find(h);
+
+    // Another thread is closing it: wait to know whether it is still live
+    while ( it != liveHandles->end() && it->second.claimer != NULL && it->second.claimer != thisThread() )
+    {
+        waitLocked(lock);
+        it = liveHandles->find(h);
+    }
+
     if ( it != liveHandles->end() && (it->second.kind == kind1 || it->second.kind == kind2) )
     {
         live = true;
@@ -257,11 +377,200 @@ static bool isLiveHandle(void *h, HandleKind kind1, HandleKind kind2, void **own
         {
             *owner = it->second.owner;
         }
+        ThreadPins &t = tp();
+        if ( t.guards > 0 && t.count < MAX_THREAD_PINS )
+        {
+            it->second.pins++;
+            t.pins[t.count++] = h;
+        }
     }
 
-    sqlite3_mutex_leave(liveHandleMtx);
+    lock.unlock();
 
     return live;
+}
+
+HandlePins::~HandlePins()
+{
+    t.guards--;
+    if ( t.count == mark )
+    {
+        return;
+    }
+
+    sqlite3_mutex_enter(liveHandleMtx);
+    for ( size_t i = mark; i < t.count; i++ )
+    {
+        if ( t.pins[i] == NULL )
+        {
+            continue;
+        }
+        std::unordered_map<void *, LiveHandle>::iterator it = liveHandles->find(t.pins[i]);
+        if ( it != liveHandles->end() && it->second.pins > 0 )
+        {
+            it->second.pins--;
+        }
+    }
+    t.count = mark;
+    notifyLocked();
+    sqlite3_mutex_leave(liveHandleMtx);
+}
+
+/**
+ * Whether a thread other than this one has h, or a handle owned by h, pinned.
+ * The registry mutex must be held.
+ */
+static bool pinnedByOthers(void *h)
+{
+    std::unordered_map<void *, LiveHandle>::iterator it = liveHandles->find(h);
+    if ( it != liveHandles->end() && it->second.pins > ownPins(h) )
+    {
+        return true;
+    }
+    for ( it = liveHandles->begin(); it != liveHandles->end(); it++ )
+    {
+        if ( it->second.owner == h && it->second.pins > ownPins(it->first) )
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Drops the pins this thread holds on h: before waiting for another thread
+ * that is freeing h, and when this thread frees h itself.
+ */
+static void dropOwnPins(void *h)
+{
+    std::unordered_map<void *, LiveHandle>::iterator it = liveHandles->find(h);
+    ThreadPins &t = tp();
+    for ( size_t i = 0; i < t.count; i++ )
+    {
+        if ( t.pins[i] == h )
+        {
+            t.pins[i] = NULL;
+            if ( it != liveHandles->end() && it->second.pins > 0 )
+            {
+                it->second.pins--;
+            }
+        }
+    }
+}
+
+/**
+ * Claims h for this thread, to free it: waits until no other thread has h, or
+ * a handle owned by h, pinned, and no other thread is freeing h.  New checks
+ * of h by other threads wait until the claim is released.  The registry mutex
+ * must be held, through lock.
+ *
+ * @return  False if h is not live any more (another thread freed it while this
+ *          one waited).
+ */
+static bool claimLocked(void *h, RegistryLock &lock)
+{
+    for (;;)
+    {
+        std::unordered_map<void *, LiveHandle>::iterator it = liveHandles->find(h);
+        if ( it == liveHandles->end() )
+        {
+            return false;
+        }
+        if ( it->second.claimer != NULL && it->second.claimer != thisThread() )
+        {
+            // Another thread is freeing it: do not keep it waiting for us
+            dropOwnPins(h);
+            waitLocked(lock);
+            continue;
+        }
+        if ( pinnedByOthers(h) )
+        {
+            waitLocked(lock);
+            continue;
+        }
+        it->second.claimer = thisThread();
+        return true;
+    }
+}
+
+/**
+ * Removes h and the handles it owns.  The registry mutex must be held.
+ */
+static void eraseLocked(void *h)
+{
+    dropOwnPins(h);
+    liveHandles->erase(h);
+    std::unordered_map<void *, LiveHandle>::iterator it = liveHandles->begin();
+    while ( it != liveHandles->end() )
+    {
+        if ( it->second.owner == h )
+        {
+            dropOwnPins(it->first);
+            it = liveHandles->erase(it);
+        }
+        else
+        {
+            it++;
+        }
+    }
+}
+
+/**
+ * For a routine about to free h, which SQLite always frees (finalize, backup
+ * finish, mutex free): waits until no other thread uses h or a handle it owns,
+ * then removes them from the registry.
+ *
+ * @return  False if h was freed by another thread meanwhile: it must not be
+ *          freed again.
+ */
+static bool freeHandle(void *h)
+{
+    RegistryLock lock;
+    lock.lock();
+    bool ok = claimLocked(h, lock);
+    if ( ok )
+    {
+        eraseLocked(h);
+    }
+    notifyLocked();
+    lock.unlock();
+    return ok;
+}
+
+/**
+ * For a routine about to close a connection, which SQLite may refuse: waits as
+ * freeHandle() does, and keeps h claimed until releaseHandle().
+ */
+static bool claimHandle(void *h)
+{
+    RegistryLock lock;
+    lock.lock();
+    bool ok = claimLocked(h, lock);
+    lock.unlock();
+    return ok;
+}
+
+/**
+ * Ends the claim of claimHandle(): removes h and what it owns if it was freed,
+ * keeps it live otherwise.
+ */
+static void releaseHandle(void *h, bool freed)
+{
+    sqlite3_mutex_enter(liveHandleMtx);
+    if ( freed )
+    {
+        eraseLocked(h);
+    }
+    else
+    {
+        std::unordered_map<void *, LiveHandle>::iterator it = liveHandles->find(h);
+        if ( it != liveHandles->end() )
+        {
+            it->second.claimer = NULL;
+        }
+    }
+    notifyLocked();
+    sqlite3_mutex_leave(liveHandleMtx);
 }
 
 /**
@@ -502,7 +811,8 @@ void RexxEntry ooSQLiteLoad(RexxThreadContext *c)
 
     liveHandleMtx = sqlite3_mutex_alloc(SQLITE_MUTEX_FAST);
     liveHandles   = new (std::nothrow) std::unordered_map<void *, LiveHandle>;
-    if ( liveHandleMtx == NULL || liveHandles == NULL )
+    liveHandleCv  = new (std::nothrow) std::condition_variable_any;
+    if ( liveHandleMtx == NULL || liveHandles == NULL || liveHandleCv == NULL )
     {
         executionErrorException(c, "Could not allocate the registry of handles, abort on package load");
     }
@@ -536,6 +846,8 @@ void RexxEntry ooSQLiteUnload(RexxThreadContext *c)
 
     delete liveHandles;
     liveHandles = NULL;
+    delete liveHandleCv;
+    liveHandleCv = NULL;
     sqlite3_mutex_free(liveHandleMtx);
     liveHandleMtx = NULL;
 
@@ -8162,6 +8474,7 @@ static RexxObjectPtr valueBlob(RexxThreadContext *c, sqlite3_value *value)
  */
 RexxMethod1(RexxObjectPtr, oosqlval_blob, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return NULLOBJECT;
@@ -8176,6 +8489,7 @@ RexxMethod1(RexxObjectPtr, oosqlval_blob, POINTER, sqlValue)
  */
 RexxMethod1(int, oosqlval_bytes, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -8190,6 +8504,7 @@ RexxMethod1(int, oosqlval_bytes, POINTER, sqlValue)
  */
 RexxMethod1(RexxObjectPtr, oosqlval_double, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return NULLOBJECT;
@@ -8210,6 +8525,7 @@ RexxMethod1(RexxObjectPtr, oosqlval_double, POINTER, sqlValue)
  */
 RexxMethod1(RexxObjectPtr, oosqlval_int, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return NULLOBJECT;
@@ -8230,6 +8546,7 @@ RexxMethod1(RexxObjectPtr, oosqlval_int, POINTER, sqlValue)
  */
 RexxMethod1(RexxObjectPtr, oosqlval_int64, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return NULLOBJECT;
@@ -8250,6 +8567,7 @@ RexxMethod1(RexxObjectPtr, oosqlval_int64, POINTER, sqlValue)
  */
 RexxMethod1(int, oosqlval_numericType, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -8264,6 +8582,7 @@ RexxMethod1(int, oosqlval_numericType, POINTER, sqlValue)
  */
 RexxMethod1(RexxObjectPtr, oosqlval_text, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return NULLOBJECT;
@@ -8284,6 +8603,7 @@ RexxMethod1(RexxObjectPtr, oosqlval_text, POINTER, sqlValue)
  */
 RexxMethod1(int, oosqlval_type, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -8362,6 +8682,7 @@ static bool getResultBlobArg(RexxThreadContext *c, RexxObjectPtr blob, bool size
  */
 RexxMethod3(int, oosqlrslt_blob, POINTER, sqlCntxt, RexxObjectPtr, blob, OPTIONAL_int, size)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -8384,6 +8705,7 @@ RexxMethod3(int, oosqlrslt_blob, POINTER, sqlCntxt, RexxObjectPtr, blob, OPTIONA
  */
 RexxMethod2(int, oosqlrslt_double, POINTER, sqlCntxt, double, value)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -8398,6 +8720,7 @@ RexxMethod2(int, oosqlrslt_double, POINTER, sqlCntxt, double, value)
  */
 RexxMethod2(int, oosqlrslt_error, POINTER, sqlCntxt, CSTRING, errMsg)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -8412,6 +8735,7 @@ RexxMethod2(int, oosqlrslt_error, POINTER, sqlCntxt, CSTRING, errMsg)
  */
 RexxMethod2(int, oosqlrslt_errorCode, POINTER, sqlCntxt, int, errCode)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -8426,6 +8750,7 @@ RexxMethod2(int, oosqlrslt_errorCode, POINTER, sqlCntxt, int, errCode)
  */
 RexxMethod1(int, oosqlrslt_errorNoMem, POINTER, sqlCntxt)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -8440,6 +8765,7 @@ RexxMethod1(int, oosqlrslt_errorNoMem, POINTER, sqlCntxt)
  */
 RexxMethod1(int, oosqlrslt_errorTooBig, POINTER, sqlCntxt)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -8454,6 +8780,7 @@ RexxMethod1(int, oosqlrslt_errorTooBig, POINTER, sqlCntxt)
  */
 RexxMethod2(int, oosqlrslt_int, POINTER, sqlCntxt, int, value)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -8468,6 +8795,7 @@ RexxMethod2(int, oosqlrslt_int, POINTER, sqlCntxt, int, value)
  */
 RexxMethod2(int, oosqlrslt_int64, POINTER, sqlCntxt, int64_t, value)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -8482,6 +8810,7 @@ RexxMethod2(int, oosqlrslt_int64, POINTER, sqlCntxt, int64_t, value)
  */
 RexxMethod1(int, oosqlrslt_null, POINTER, sqlCntxt)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -8496,6 +8825,7 @@ RexxMethod1(int, oosqlrslt_null, POINTER, sqlCntxt)
  */
 RexxMethod2(int, oosqlrslt_text, POINTER, sqlCntxt, CSTRING, txt)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -8514,6 +8844,7 @@ RexxMethod2(int, oosqlrslt_text, POINTER, sqlCntxt, CSTRING, txt)
  */
 RexxMethod2(int, oosqlrslt_value, POINTER, sqlCntxt, POINTER, value)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -8532,6 +8863,7 @@ RexxMethod2(int, oosqlrslt_value, POINTER, sqlCntxt, POINTER, value)
  */
 RexxMethod2(int, oosqlrslt_zeroBlob, POINTER, sqlCntxt, int, size)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -9035,6 +9367,7 @@ RexxMethod3(int, oosqlstmt_bindText, int32_t, index, CSTRING, text, CSELF, pCSel
  */
 RexxMethod3(int, oosqlstmt_bindValue, int32_t, index, POINTER, value, CSELF, pCSelf)
 {
+    HandlePins handlePins;   // see Handles in use
     pCooSQLiteStmt pCstmt = requiredStmt(context, pCSelf);
     if ( pCstmt == NULL )
     {
@@ -13603,6 +13936,7 @@ RexxRoutine1(RexxObjectPtr, ooSQLiteEnquote_rtn, OPTIONAL_RexxObjectPtr, values)
  */
 RexxRoutine2(int, ooSQLiteRegisterBuiltin_rtn, POINTER, _db, CSTRING, name)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -13717,14 +14051,20 @@ RexxRoutine1(int, oosqlAutoExtension_rtn, CSTRING, extensionName)
  */
 RexxRoutine1(int, oosqlBackupFinish_rtn, POINTER, _bu)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_backup *bu = routineBu(context, _bu, 1);
     if ( bu == NULL )
     {
         return SQLITE_MISUSE;
     }
 
-    // The backup is freed even when an error code is returned.
-    unregisterHandle(bu);
+    // The backup is freed even when an error code is returned.  Another thread
+    // may be using it: wait.
+    if ( ! freeHandle(bu) )
+    {
+        notLiveHandleException(context->threadContext, "backup", 1);
+        return SQLITE_MISUSE;
+    }
     return sqlite3_backup_finish(bu);
 }
 
@@ -13756,6 +14096,7 @@ RexxRoutine1(int, oosqlBackupFinish_rtn, POINTER, _bu)
 RexxRoutine4(POINTER, oosqlBackupInit_rtn, POINTER, dstConn, POINTER, srcConn, OPTIONAL_CSTRING, dstName,
              OPTIONAL_CSTRING, srcName)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *dst = routineDB(context, dstConn, 1);
     sqlite3 *src = routineDB(context, srcConn, 2);
 
@@ -13784,6 +14125,7 @@ RexxRoutine4(POINTER, oosqlBackupInit_rtn, POINTER, dstConn, POINTER, srcConn, O
  */
 RexxRoutine1(int, oosqlBackupPageCount_rtn, POINTER, _bu)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_backup *bu = routineBu(context, _bu, 1);
     if ( bu == NULL )
     {
@@ -13799,6 +14141,7 @@ RexxRoutine1(int, oosqlBackupPageCount_rtn, POINTER, _bu)
  */
 RexxRoutine1(int, oosqlBackupRemaining_rtn, POINTER, _bu)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_backup *bu = routineBu(context, _bu, 1);
     if ( bu == NULL )
     {
@@ -13814,6 +14157,7 @@ RexxRoutine1(int, oosqlBackupRemaining_rtn, POINTER, _bu)
  */
 RexxRoutine2(int, oosqlBackupStep_rtn, POINTER, _bu, OPTIONAL_int, pageCount)
 {
+    HandlePins handlePins;   // see Handles in use
     CallerContext callerContext(context->threadContext);
 
     sqlite3_backup *bu = routineBu(context, _bu, 1);
@@ -13831,6 +14175,7 @@ RexxRoutine2(int, oosqlBackupStep_rtn, POINTER, _bu, OPTIONAL_int, pageCount)
  */
 RexxRoutine3(int, oosqlBindBlob_rtn, POINTER, _stmt, int32_t, index, RexxObjectPtr, value)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -13877,6 +14222,7 @@ RexxRoutine3(int, oosqlBindBlob_rtn, POINTER, _stmt, int32_t, index, RexxObjectP
  */
 RexxRoutine3(int, oosqlBindDouble_rtn, POINTER, _stmt, int32_t, index, double, value)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -13892,6 +14238,7 @@ RexxRoutine3(int, oosqlBindDouble_rtn, POINTER, _stmt, int32_t, index, double, v
  */
 RexxRoutine3(int, oosqlBindInt_rtn, POINTER, _stmt, int32_t, index, int, value)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -13907,6 +14254,7 @@ RexxRoutine3(int, oosqlBindInt_rtn, POINTER, _stmt, int32_t, index, int, value)
  */
 RexxRoutine3(int, oosqlBindInt64_rtn, POINTER, _stmt, int32_t, index, int64_t, value)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -13922,6 +14270,7 @@ RexxRoutine3(int, oosqlBindInt64_rtn, POINTER, _stmt, int32_t, index, int64_t, v
  */
 RexxRoutine2(int, oosqlBindNull_rtn, POINTER, _stmt, int32_t, index)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -13937,6 +14286,7 @@ RexxRoutine2(int, oosqlBindNull_rtn, POINTER, _stmt, int32_t, index)
  */
 RexxRoutine1(int, oosqlBindParameterCount_rtn, POINTER, _stmt)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -13952,6 +14302,7 @@ RexxRoutine1(int, oosqlBindParameterCount_rtn, POINTER, _stmt)
  */
 RexxRoutine2(int, oosqlBindParameterIndex_rtn, POINTER, _stmt, CSTRING, name)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -13967,6 +14318,7 @@ RexxRoutine2(int, oosqlBindParameterIndex_rtn, POINTER, _stmt, CSTRING, name)
  */
 RexxRoutine2(RexxObjectPtr, oosqlBindParameterName_rtn, POINTER, _stmt, int, index)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -13982,6 +14334,7 @@ RexxRoutine2(RexxObjectPtr, oosqlBindParameterName_rtn, POINTER, _stmt, int, ind
  */
 RexxRoutine3(int, oosqlBindText_rtn, POINTER, _stmt, int32_t, index, CSTRING, text)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14013,6 +14366,7 @@ RexxRoutine3(int, oosqlBindText_rtn, POINTER, _stmt, int32_t, index, CSTRING, te
  */
 RexxRoutine3(int, oosqlBindValue_rtn, POINTER, _stmt, int32_t, index, POINTER, value)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14032,6 +14386,7 @@ RexxRoutine3(int, oosqlBindValue_rtn, POINTER, _stmt, int32_t, index, POINTER, v
  */
 RexxRoutine3(int, oosqlBindZeroBlob_rtn, POINTER, _stmt, int32_t, index, int, length)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14076,6 +14431,7 @@ RexxRoutine3(int, oosqlBindZeroBlob_rtn, POINTER, _stmt, int32_t, index, int, le
  */
 RexxRoutine3(RexxObjectPtr, oosqlBusyHandler_rtn, POINTER, _db, CSTRING, rtnName, OPTIONAL_RexxObjectPtr, userData)
 {
+    HandlePins handlePins;   // see Handles in use
     CallerContext callerContext(context->threadContext);
 
     sqlite3 *db = routineDB(context, _db, 1);
@@ -14104,6 +14460,7 @@ RexxRoutine3(RexxObjectPtr, oosqlBusyHandler_rtn, POINTER, _db, CSTRING, rtnName
  */
 RexxRoutine2(int, oosqlBusyTimeOut_rtn, POINTER, _db, int, ms)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -14151,6 +14508,7 @@ RexxRoutine1(int, oosqlCancelAutoExtension_rtn, CSTRING, extensionName)
  */
 RexxRoutine1(int, oosqlChanges_rtn, POINTER, _db)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -14165,6 +14523,7 @@ RexxRoutine1(int, oosqlChanges_rtn, POINTER, _db)
  */
 RexxRoutine1(int, oosqlClearBindings_rtn, POINTER, _stmt)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14179,6 +14538,7 @@ RexxRoutine1(int, oosqlClearBindings_rtn, POINTER, _stmt)
  */
 RexxRoutine1(int, oosqlClose_rtn, POINTER, _db)
 {
+    HandlePins handlePins;   // see Handles in use
     CallerContext callerContext(context->threadContext);
 
     sqlite3 *db = routineDB(context, _db, 1);
@@ -14187,14 +14547,17 @@ RexxRoutine1(int, oosqlClose_rtn, POINTER, _db)
         return SQLITE_MISUSE;
     }
 
-    int rc = sqlite3_close(db);
-    helperCleanCallbacks(context, db);
-
-    if ( rc == SQLITE_OK )
+    // Another thread may be using the connection, or one of its statements:
+    // wait, and keep other threads out until SQLite has closed it, or not.
+    if ( ! claimHandle(db) )
     {
-        unregisterHandle(db);
-        forgetOwnedHandles(db);
+        notLiveHandleException(context->threadContext, "database connection", 1);
+        return SQLITE_MISUSE;
     }
+
+    int rc = sqlite3_close(db);
+    releaseHandle(db, rc == SQLITE_OK);
+    helperCleanCallbacks(context, db);
 
     return rc;
 }
@@ -14231,6 +14594,7 @@ RexxRoutine1(int, oosqlClose_rtn, POINTER, _db)
  */
 RexxRoutine3(RexxObjectPtr, oosqlCollationNeeded_rtn, POINTER, _db, CSTRING, rtnName, OPTIONAL_RexxObjectPtr, userData)
 {
+    HandlePins handlePins;   // see Handles in use
     RexxObjectPtr result = context->Int32(SQLITE_MISUSE);
 
     sqlite3 *db = routineDB(context, _db, 1);
@@ -14253,6 +14617,7 @@ RexxRoutine3(RexxObjectPtr, oosqlCollationNeeded_rtn, POINTER, _db, CSTRING, rtn
  */
 RexxRoutine2(RexxObjectPtr, oosqlColumnBlob_rtn, POINTER, _stmt, int32_t, col)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14279,6 +14644,7 @@ RexxRoutine2(RexxObjectPtr, oosqlColumnBlob_rtn, POINTER, _stmt, int32_t, col)
  */
 RexxRoutine2(int, oosqlColumnBytes_rtn, POINTER, _stmt, int32_t, col)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14295,6 +14661,7 @@ RexxRoutine2(int, oosqlColumnBytes_rtn, POINTER, _stmt, int32_t, col)
  */
 RexxRoutine1(int, oosqlColumnCount_rtn, POINTER, _stmt)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14315,6 +14682,7 @@ RexxRoutine1(int, oosqlColumnCount_rtn, POINTER, _stmt)
  */
 RexxRoutine2(RexxObjectPtr, oosqlColumnDatabaseName_rtn, POINTER, _stmt, int32_t, col)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14341,6 +14709,7 @@ RexxRoutine2(RexxObjectPtr, oosqlColumnDatabaseName_rtn, POINTER, _stmt, int32_t
  */
 RexxRoutine2(RexxObjectPtr, oosqlColumnDeclType_rtn, POINTER, _stmt, int32_t, col)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14362,6 +14731,7 @@ RexxRoutine2(RexxObjectPtr, oosqlColumnDeclType_rtn, POINTER, _stmt, int32_t, co
  */
 RexxRoutine2(RexxObjectPtr, oosqlColumnDouble_rtn, POINTER, _stmt, int32_t, col)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14398,6 +14768,7 @@ RexxRoutine2(RexxObjectPtr, oosqlColumnDouble_rtn, POINTER, _stmt, int32_t, col)
  */
 RexxRoutine2(int, oosqlColumnIndex_rtn, POINTER, _stmt, CSTRING, _colName)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14467,6 +14838,7 @@ done_out:
  */
 RexxRoutine2(intptr_t, oosqlColumnInt_rtn, POINTER, _stmt, int32_t, col)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14487,6 +14859,7 @@ RexxRoutine2(intptr_t, oosqlColumnInt_rtn, POINTER, _stmt, int32_t, col)
  */
 RexxRoutine2(int64_t, oosqlColumnInt64_rtn, POINTER, _stmt, int32_t, col)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14513,6 +14886,7 @@ RexxRoutine2(int64_t, oosqlColumnInt64_rtn, POINTER, _stmt, int32_t, col)
  */
 RexxRoutine2(RexxObjectPtr, oosqlColumnName_rtn, POINTER, _stmt, int32_t, col)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14537,6 +14911,7 @@ RexxRoutine2(RexxObjectPtr, oosqlColumnName_rtn, POINTER, _stmt, int32_t, col)
  */
 RexxRoutine2(RexxObjectPtr, oosqlColumnOriginName_rtn, POINTER, _stmt, int32_t, col)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14560,6 +14935,7 @@ RexxRoutine2(RexxObjectPtr, oosqlColumnOriginName_rtn, POINTER, _stmt, int32_t, 
  */
 RexxRoutine2(RexxObjectPtr, oosqlColumnTableName_rtn, POINTER, _stmt, int32_t, col)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14589,6 +14965,7 @@ RexxRoutine2(RexxObjectPtr, oosqlColumnTableName_rtn, POINTER, _stmt, int32_t, c
  */
 RexxRoutine3(RexxObjectPtr, oosqlColumnText_rtn, POINTER, _stmt, int32_t, col, OPTIONAL_RexxObjectPtr, nullObj)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14614,6 +14991,7 @@ RexxRoutine3(RexxObjectPtr, oosqlColumnText_rtn, POINTER, _stmt, int32_t, col, O
  */
 RexxRoutine2(int, oosqlColumnType_rtn, POINTER, _stmt, int32_t, col)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14651,6 +15029,7 @@ RexxRoutine2(int, oosqlColumnType_rtn, POINTER, _stmt, int32_t, col)
  */
 RexxRoutine2(RexxObjectPtr, oosqlColumnValue_rtn, POINTER, _stmt, int32_t, col)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -14693,6 +15072,7 @@ RexxRoutine2(RexxObjectPtr, oosqlColumnValue_rtn, POINTER, _stmt, int32_t, col)
  */
 RexxRoutine3(RexxObjectPtr, oosqlCommitHook_rtn, POINTER, _db, CSTRING, rtnName, OPTIONAL_RexxObjectPtr, userData)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -14771,6 +15151,7 @@ RexxRoutine1(logical_t, oosqlComplete_rtn, CSTRING, sql)
 RexxRoutine4(RexxObjectPtr, oosqlCreateCollation_rtn, POINTER, _db, CSTRING, rtnName, CSTRING, collationName,
              OPTIONAL_RexxObjectPtr, userData)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -14859,6 +15240,7 @@ RexxRoutine7(RexxObjectPtr, oosqlCreateFunction_rtn, POINTER, _db, CSTRING, func
              OPTIONAL_CSTRING, funcRtnName, OPTIONAL_CSTRING, stepRtnName, OPTIONAL_CSTRING, finalRtnName,
              OPTIONAL_RexxObjectPtr, userData)
 {
+    HandlePins handlePins;   // see Handles in use
     RexxObjectPtr result = context->Int32(SQLITE_MISUSE);
     int           rc     = SQLITE_MISUSE;
 
@@ -15043,6 +15425,7 @@ RexxRoutine7(RexxObjectPtr, oosqlCreateFunction_rtn, POINTER, _db, CSTRING, func
  */
 RexxRoutine1(int, oosqlDataCount_rtn, POINTER, _stmt)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -15058,6 +15441,7 @@ RexxRoutine1(int, oosqlDataCount_rtn, POINTER, _stmt)
  */
 RexxRoutine2(RexxObjectPtr, oosqlDbFileName_rtn, POINTER, _db, CSTRING, name)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15073,6 +15457,7 @@ RexxRoutine2(RexxObjectPtr, oosqlDbFileName_rtn, POINTER, _db, CSTRING, name)
  */
 RexxRoutine1(POINTER, oosqlDbHandle_rtn, POINTER, _stmt)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -15088,6 +15473,7 @@ RexxRoutine1(POINTER, oosqlDbHandle_rtn, POINTER, _stmt)
  */
 RexxRoutine1(POINTER, oosqlDbMutex_rtn, POINTER, _db)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15104,6 +15490,7 @@ RexxRoutine1(POINTER, oosqlDbMutex_rtn, POINTER, _db)
  */
 RexxRoutine2(int, oosqlDbReadOnly_rtn, POINTER, _db, CSTRING, name)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15119,6 +15506,7 @@ RexxRoutine2(int, oosqlDbReadOnly_rtn, POINTER, _db, CSTRING, name)
  */
 RexxRoutine1(int, oosqlDbReleaseMemory_rtn, POINTER, _db)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15133,6 +15521,7 @@ RexxRoutine1(int, oosqlDbReleaseMemory_rtn, POINTER, _db)
  */
 RexxRoutine4(int, oosqlDbStatus_rtn, POINTER, _db, int, param, RexxObjectPtr, _result, OPTIONAL_logical_t, reset)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15147,6 +15536,7 @@ RexxRoutine4(int, oosqlDbStatus_rtn, POINTER, _db, int, param, RexxObjectPtr, _r
  */
 RexxRoutine2(int, oosqlEnableLoadExtension_rtn, POINTER, _db, OPTIONAL_logical_t, on)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15162,6 +15552,7 @@ RexxRoutine2(int, oosqlEnableLoadExtension_rtn, POINTER, _db, OPTIONAL_logical_t
  */
 RexxRoutine1(int, oosqlErrCode_rtn, POINTER, _db)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15176,6 +15567,7 @@ RexxRoutine1(int, oosqlErrCode_rtn, POINTER, _db)
  */
 RexxRoutine1(RexxObjectPtr, oosqlErrMsg_rtn, POINTER, _db)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15242,6 +15634,7 @@ RexxRoutine1(RexxObjectPtr, oosqlErrStr_rtn, int, resultCode)
 RexxRoutine5(RexxObjectPtr, oosqlExec_rtn, POINTER, _db, CSTRING, sql, OPTIONAL_logical_t, doCallback,
              OPTIONAL_uint32_t, format, OPTIONAL_CSTRING, rtnName)
 {
+    HandlePins handlePins;   // see Handles in use
     CallerContext callerContext(context->threadContext);
 
     sqlite3 *db = routineDB(context, _db, 1);
@@ -15386,6 +15779,7 @@ RexxRoutine2(int, oosqlExtendedResultCodes_rtn, POINTER, _db, logical_t, onOff)
  */
 RexxRoutine1(int, oosqlFinalize_rtn, POINTER, _stmt)
 {
+    HandlePins handlePins;   // see Handles in use
     CallerContext callerContext(context->threadContext);
 
     if ( _stmt == NULL )
@@ -15399,9 +15793,13 @@ RexxRoutine1(int, oosqlFinalize_rtn, POINTER, _stmt)
         return SQLITE_MISUSE;
     }
 
-    // The statement is deleted even when an error code is returned.
-    unregisterHandle(stmt);
-    forgetOwnedHandles(stmt);
+    // The statement is deleted even when an error code is returned.  Another
+    // thread may be using it, or one of its values: wait.
+    if ( ! freeHandle(stmt) )
+    {
+        notLiveHandleException(context->threadContext, "prepared statement", 1);
+        return SQLITE_MISUSE;
+    }
     return sqlite3_finalize(stmt);
 }
 
@@ -15411,6 +15809,7 @@ RexxRoutine1(int, oosqlFinalize_rtn, POINTER, _stmt)
  */
 RexxRoutine1(logical_t, oosqlGetAutocommit_rtn, POINTER, _db)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15426,6 +15825,7 @@ RexxRoutine1(logical_t, oosqlGetAutocommit_rtn, POINTER, _db)
  */
 RexxRoutine1(int, oosqlInterrupt_rtn, POINTER, _db)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15469,6 +15869,7 @@ RexxRoutine1(logical_t, oosqlIsHandleNull_rtn, POINTER, handle)
  */
 RexxRoutine2(int, oosqlKey_rtn, POINTER, _db, CSTRING, key)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15482,6 +15883,7 @@ RexxRoutine2(int, oosqlKey_rtn, POINTER, _db, CSTRING, key)
 
 RexxRoutine2(int, oosqlKey_rtn, POINTER, _db, CSTRING, key)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15498,6 +15900,7 @@ RexxRoutine2(int, oosqlKey_rtn, POINTER, _db, CSTRING, key)
  */
 RexxRoutine1(int64_t, oosqlLastInsertRowID_rtn, POINTER, _db)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15541,6 +15944,7 @@ RexxRoutine1(RexxObjectPtr, oosqlLibVersion_rtn, NAME, name)
  */
 RexxRoutine3(int, oosqlLimit_rtn, POINTER, _db, int, id, int, value)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15558,6 +15962,7 @@ RexxRoutine3(int, oosqlLimit_rtn, POINTER, _db, int, id, int, value)
  */
 RexxRoutine3(int, oosqlLoadExtension_rtn, POINTER, _db, CSTRING, library, OPTIONAL_CSTRING, entryPoint)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15632,6 +16037,7 @@ RexxRoutine1(POINTER, oosqlMutexAlloc_rtn, int, type)
  */
 RexxRoutine1(int, oosqlMutexEnter_rtn, POINTER, _mtx)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_mutex *mtx = routineMutex(context, _mtx);
     if ( mtx == NULL )
     {
@@ -15652,13 +16058,19 @@ RexxRoutine1(int, oosqlMutexEnter_rtn, POINTER, _mtx)
  */
 RexxRoutine1(int, oosqlMutexFree_rtn, POINTER, _mtx)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_mutex *mtx = routineAllocatedMutex(context, _mtx);
     if ( mtx == NULL )
     {
         return SQLITE_MISUSE;
     }
 
-    unregisterHandle(mtx);
+    // Another thread may be using it: wait.
+    if ( ! freeHandle(mtx) )
+    {
+        notLiveHandleException(context->threadContext, "mutex", 1);
+        return SQLITE_MISUSE;
+    }
     sqlite3_mutex_free(mtx);
 
     return SQLITE_OK;
@@ -15673,6 +16085,7 @@ RexxRoutine1(int, oosqlMutexFree_rtn, POINTER, _mtx)
  */
 RexxRoutine1(int, oosqlMutexLeave_rtn, POINTER, _mtx)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_mutex *mtx = routineMutex(context, _mtx);
     if ( mtx == NULL )
     {
@@ -15694,6 +16107,7 @@ RexxRoutine1(int, oosqlMutexLeave_rtn, POINTER, _mtx)
  */
 RexxRoutine1(int, oosqlMutexTry_rtn, POINTER, _mtx)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_mutex *mtx = routineMutex(context, _mtx);
     if ( mtx == NULL )
     {
@@ -15722,6 +16136,7 @@ RexxRoutine1(int, oosqlMutexTry_rtn, POINTER, _mtx)
  */
 RexxRoutine2(RexxObjectPtr, oosqlNextStmt_rtn, POINTER, _db, OPTIONAL_RexxObjectPtr, _stmt)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15899,6 +16314,7 @@ RexxRoutine4(int, oosqlOpen_rtn, CSTRING, file, CSTRING, dbConn, OPTIONAL_int32_
  */
 RexxRoutine4(int, oosqlPrepare_rtn, POINTER, _db, CSTRING, sql, CSTRING, _stmt, OPTIONAL_CSTRING, _tail)
 {
+    HandlePins handlePins;   // see Handles in use
     CallerContext callerContext(context->threadContext);
 
     sqlite3_stmt *stmt   = NULL;
@@ -15972,6 +16388,7 @@ RexxRoutine4(int, oosqlPrepare_rtn, POINTER, _db, CSTRING, sql, CSTRING, _stmt, 
  */
 RexxRoutine3(RexxObjectPtr, oosqlProfile_rtn, POINTER, _db, CSTRING, rtnName, OPTIONAL_RexxObjectPtr, userData)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -16028,6 +16445,7 @@ RexxRoutine3(RexxObjectPtr, oosqlProfile_rtn, POINTER, _db, CSTRING, rtnName, OP
 RexxRoutine4(RexxObjectPtr, oosqlProgressHandler_rtn, POINTER, _db, CSTRING, rtnName, int, instructions,
              OPTIONAL_RexxObjectPtr, userData)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -16056,6 +16474,7 @@ RexxRoutine4(RexxObjectPtr, oosqlProgressHandler_rtn, POINTER, _db, CSTRING, rtn
  */
 RexxRoutine2(int, oosqlRekey_rtn, POINTER, _db, CSTRING, key)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -16079,6 +16498,7 @@ RexxRoutine2(int, oosqlRekey_rtn, POINTER, _db, CSTRING, key)
  */
 RexxRoutine2(int, oosqlRekey_rtn, POINTER, _db, CSTRING, key)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -16104,6 +16524,7 @@ RexxRoutine1(int, oosqlReleaseMemory_rtn, int, nBytes)
  */
 RexxRoutine1(int, oosqlReset_rtn, POINTER, _stmt)
 {
+    HandlePins handlePins;   // see Handles in use
     CallerContext callerContext(context->threadContext);
 
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
@@ -16133,6 +16554,7 @@ RexxRoutine0(int, oosqlResetAutoExtension_rtn)
  */
 RexxRoutine3(int, oosqlResultBlob_rtn, POINTER, sqlCntxt, RexxObjectPtr, blob, OPTIONAL_int, size)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -16155,6 +16577,7 @@ RexxRoutine3(int, oosqlResultBlob_rtn, POINTER, sqlCntxt, RexxObjectPtr, blob, O
  */
 RexxRoutine2(int, oosqlResultDouble_rtn, POINTER, sqlCntxt, double, value)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -16169,6 +16592,7 @@ RexxRoutine2(int, oosqlResultDouble_rtn, POINTER, sqlCntxt, double, value)
  */
 RexxRoutine2(int, oosqlResultError_rtn, POINTER, sqlCntxt, CSTRING, errMsg)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -16183,6 +16607,7 @@ RexxRoutine2(int, oosqlResultError_rtn, POINTER, sqlCntxt, CSTRING, errMsg)
  */
 RexxRoutine2(int, oosqlResultErrorCode_rtn, POINTER, sqlCntxt, int, errCode)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -16197,6 +16622,7 @@ RexxRoutine2(int, oosqlResultErrorCode_rtn, POINTER, sqlCntxt, int, errCode)
  */
 RexxRoutine1(int, oosqlResultErrorNoMem_rtn, POINTER, sqlCntxt)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -16211,6 +16637,7 @@ RexxRoutine1(int, oosqlResultErrorNoMem_rtn, POINTER, sqlCntxt)
  */
 RexxRoutine1(int, oosqlResultErrorTooBig_rtn, POINTER, sqlCntxt)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -16225,6 +16652,7 @@ RexxRoutine1(int, oosqlResultErrorTooBig_rtn, POINTER, sqlCntxt)
  */
 RexxRoutine2(int, oosqlResultInt_rtn, POINTER, sqlCntxt, int, value)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -16239,6 +16667,7 @@ RexxRoutine2(int, oosqlResultInt_rtn, POINTER, sqlCntxt, int, value)
  */
 RexxRoutine2(int, oosqlResultInt64_rtn, POINTER, sqlCntxt, int64_t, value)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -16253,6 +16682,7 @@ RexxRoutine2(int, oosqlResultInt64_rtn, POINTER, sqlCntxt, int64_t, value)
  */
 RexxRoutine1(int, oosqlResultNull_rtn, POINTER, sqlCntxt)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -16267,6 +16697,7 @@ RexxRoutine1(int, oosqlResultNull_rtn, POINTER, sqlCntxt)
  */
 RexxRoutine2(int, oosqlResultText_rtn, POINTER, sqlCntxt, CSTRING, txt)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -16285,6 +16716,7 @@ RexxRoutine2(int, oosqlResultText_rtn, POINTER, sqlCntxt, CSTRING, txt)
  */
 RexxRoutine2(int, oosqlResultValue_rtn, POINTER, sqlCntxt, POINTER, value)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -16303,6 +16735,7 @@ RexxRoutine2(int, oosqlResultValue_rtn, POINTER, sqlCntxt, POINTER, value)
  */
 RexxRoutine2(int, oosqlResultZeroBlob_rtn, POINTER, sqlCntxt, int, size)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedCntxt(context->threadContext, sqlCntxt, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -16339,6 +16772,7 @@ RexxRoutine2(int, oosqlResultZeroBlob_rtn, POINTER, sqlCntxt, int, size)
  */
 RexxRoutine3(RexxObjectPtr, oosqlRollbackHook_rtn, POINTER, _db, CSTRING, rtnName, OPTIONAL_RexxObjectPtr, userData)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -16409,6 +16843,7 @@ RexxRoutine3(RexxObjectPtr, oosqlRollbackHook_rtn, POINTER, _db, CSTRING, rtnNam
  */
 RexxRoutine3(RexxObjectPtr, oosqlSetAuthorizer_rtn, POINTER, _db, CSTRING, rtnName, OPTIONAL_RexxObjectPtr, userData)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -16443,6 +16878,7 @@ RexxRoutine1(int64_t, oosqlSoftHeapLimit64_rtn, int64_t, n)
  */
 RexxRoutine1(RexxObjectPtr, oosqlSql_rtn, POINTER, _stmt)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -16467,6 +16903,7 @@ RexxRoutine3(int, oosqlStatus_rtn, int, param, RexxObjectPtr, result, OPTIONAL_l
  */
 RexxRoutine1(int, oosqlStep_rtn, POINTER, _stmt)
 {
+    HandlePins handlePins;   // see Handles in use
     CallerContext callerContext(context->threadContext);
 
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
@@ -16494,6 +16931,7 @@ RexxRoutine1(int, oosqlStep_rtn, POINTER, _stmt)
  */
 RexxRoutine1(logical_t, oosqlStmtBusy_rtn, POINTER, _stmt)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( _stmt == NULL )
     {
         return 0;
@@ -16514,6 +16952,7 @@ RexxRoutine1(logical_t, oosqlStmtBusy_rtn, POINTER, _stmt)
  */
 RexxRoutine1(logical_t, oosqlStmtReadonly_rtn, POINTER, _stmt)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -16529,6 +16968,7 @@ RexxRoutine1(logical_t, oosqlStmtReadonly_rtn, POINTER, _stmt)
  */
 RexxRoutine3(int, oosqlStmtStatus_rtn, POINTER, _stmt, int, param, OPTIONAL_logical_t, reset)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -16575,6 +17015,7 @@ RexxRoutine2(int, oosqlStrGlob_rtn, CSTRING, glob, CSTRING, str)
 RexxRoutine5(int, oosqlTableColumnMetadata_rtn, POINTER, _db, CSTRING, tableName, CSTRING, colName, RexxObjectPtr, results,
              OPTIONAL_CSTRING, dbName)
 {
+    HandlePins handlePins;   // see Handles in use
     CallerContext callerContext(context->threadContext);
 
     sqlite3 *db = routineDB(context, _db, 1);
@@ -16606,6 +17047,7 @@ RexxRoutine0(int, oosqlThreadSafe_rtn)
  */
 RexxRoutine1(int, oosqlTotalChanges_rtn, POINTER, _db)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -16651,6 +17093,7 @@ RexxRoutine1(int, oosqlTotalChanges_rtn, POINTER, _db)
  */
 RexxRoutine3(RexxObjectPtr, oosqlTrace_rtn, POINTER, _db, CSTRING, rtnName, OPTIONAL_RexxObjectPtr, userData)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -16703,6 +17146,7 @@ RexxRoutine3(RexxObjectPtr, oosqlTrace_rtn, POINTER, _db, CSTRING, rtnName, OPTI
  */
 RexxRoutine3(RexxObjectPtr, oosqlUpdateHook_rtn, POINTER, _db, CSTRING, rtnName, OPTIONAL_RexxObjectPtr, userData)
 {
+    HandlePins handlePins;   // see Handles in use
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -16718,6 +17162,7 @@ RexxRoutine3(RexxObjectPtr, oosqlUpdateHook_rtn, POINTER, _db, CSTRING, rtnName,
  */
 RexxRoutine1(RexxObjectPtr, oosqlValueBlob_rtn, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return NULLOBJECT;
@@ -16732,6 +17177,7 @@ RexxRoutine1(RexxObjectPtr, oosqlValueBlob_rtn, POINTER, sqlValue)
  */
 RexxRoutine1(int, oosqlValueBytes_rtn, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -16745,6 +17191,7 @@ RexxRoutine1(int, oosqlValueBytes_rtn, POINTER, sqlValue)
  */
 RexxRoutine1(RexxObjectPtr, oosqlValueDouble_rtn, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return NULLOBJECT;
@@ -16764,6 +17211,7 @@ RexxRoutine1(RexxObjectPtr, oosqlValueDouble_rtn, POINTER, sqlValue)
  */
 RexxRoutine1(RexxObjectPtr, oosqlValueInt_rtn, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return NULLOBJECT;
@@ -16785,6 +17233,7 @@ RexxRoutine1(RexxObjectPtr, oosqlValueInt_rtn, POINTER, sqlValue)
  */
 RexxRoutine1(RexxObjectPtr, oosqlValueInt64_rtn, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return NULLOBJECT;
@@ -16805,6 +17254,7 @@ RexxRoutine1(RexxObjectPtr, oosqlValueInt64_rtn, POINTER, sqlValue)
  */
 RexxRoutine1(int, oosqlValueNumericType_rtn, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return SQLITE_MISUSE;
@@ -16819,6 +17269,7 @@ RexxRoutine1(int, oosqlValueNumericType_rtn, POINTER, sqlValue)
  */
 RexxRoutine1(RexxObjectPtr, oosqlValueText_rtn, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return NULLOBJECT;
@@ -16839,6 +17290,7 @@ RexxRoutine1(RexxObjectPtr, oosqlValueText_rtn, POINTER, sqlValue)
  */
 RexxRoutine1(int, oosqlValueType_rtn, POINTER, sqlValue)
 {
+    HandlePins handlePins;   // see Handles in use
     if ( checkedValue(context->threadContext, sqlValue, 1) == NULL )
     {
         return SQLITE_MISUSE;
