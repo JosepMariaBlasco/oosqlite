@@ -590,6 +590,18 @@
     that returned something that is not a whole number gave a message naming the routine "(null)".
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">lastErrMsg and lastErrCode of the extension classes</emphasis></term>
+  <listitem>
+  <para>
+    The <link linkend="atrLastErrMsgClsExt">lastErrMsg</link> and <link linkend="atrLastErrCodeClsExt">lastErrCode</link>
+    attributes of the ooSQLExtensions class, and those of the <link linkend="atrLastErrMsgClsPack">ooSQLPackage</link>
+    and <link linkend="atrLastErrMsgClsLib">ooSQLLibrary</link> objects, returned objects that nothing kept alive. A
+    call that succeeded set lastErrMsg to <computeroutput>no error</computeroutput> without keeping it, and the error of
+    a library, set while <link linkend="mthLoadLibrary">loadLibrary</link> resolved its functions, was kept only until
+    the next call to a method of ooSQLExtensions. Once the garbage collector had run, reading the attribute crashed the interpreter, or returned some
+    other string. The attributes now keep their values until they are replaced.
+  </para>
+  </listitem></varlistentry>
 </variablelist>
 </section>
 
@@ -676,6 +688,20 @@
     whatever the memory held, for instance <computeroutput>189372</computeroutput>, with a NOMETHOD condition, and the
     error messages of the classic callbacks named the wrong routine. The names are now copied when the callback is
     registered.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">The null attribute and the file name of a connection</emphasis></term>
+  <listitem>
+  <para>
+    Two more strings were kept as pointers into the strings given as arguments. The <link
+    linkend="atrNullClsOOSQLite">null</link> attribute of the ooSQLite class and the <link
+    linkend="atrNullClsOOSQLiteConnection">null</link> attribute of a connection kept a copy of the value, but the
+    connections and statements created afterwards got theirs from a pointer to the original argument: with a value built
+    at run time, such as <computeroutput>'NU' || 'LL'</computeroutput>, they could get garbage, and show it for SQL NULL.
+    The name of the database file used in the error messages, such as "The <emphasis role="italic">name</emphasis> data
+    base is not open", pointed into the argument of <link linkend="mthNewClsOOSQLiteConnection">new</link>, which is a
+    temporary string when the file is given as a File object. Both now use their own copy. The null value also keeps all
+    its characters now: a value with a <computeroutput>"00"x</computeroutput> character was cut there before.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">enquote and ooSQLiteEnquote: no length limit, and a stem with one value</emphasis></term>
