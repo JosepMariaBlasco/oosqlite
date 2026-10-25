@@ -8482,6 +8482,207 @@ Syntax:
 
 /******************************************************************************/
 /*                                                                            */
+/* Section C10: Classic — the registry of live handles                        */
+/*                                                                            */
+/* ooSQLite records every handle it gives out (connections, statements,       */
+/* backups, mutexes, the mutex of a connection, the values of oosqlColumn-    */
+/* Value) and, for the duration of a call of a user defined function, its     */
+/* SQLite context and the values of its arguments.  A handle that is not      */
+/* live, or not of the kind the argument needs, raises 88.900.  Each of       */
+/* these cases crashed or misbehaved before (technical note #56).             */
+/*                                                                            */
+/******************************************************************************/
+
+::Method notLive
+  -- The message of the 88.900 raised for a handle that is not live
+  Use Strict Arg pos, name
+  Return "88.900 Argument" pos", the" name "handle, is not a live" name "handle."
+
+::Method sendError
+  -- Sends the message name with args to receiver, returns the code and
+  -- message of the syntax error it raises
+  Use Strict Arg receiver, name, args
+  Signal On Syntax
+  receiver~sendWith(name, args)
+  Return "no error"
+Syntax:
+  co = Condition("O")
+  Return co~code co~message
+
+::Method testClassicRegistryFinalizedStmt
+  -- oosqlStep or oosqlFinalize on a finalized statement: SIGSEGV before
+  db = self~classicOpenMemory
+  Call oosqlPrepare db, "SELECT 1;", "stmt"
+  self~assertEquals(0, oosqlFinalize(stmt), "first finalize")
+  self~assertEquals(self~notLive(1, "prepared statement"), -
+    self~nullHandleError("oosqlStep", .array~of(stmt)), "oosqlStep on a finalized statement")
+  self~assertEquals(self~notLive(1, "prepared statement"), -
+    self~nullHandleError("oosqlFinalize", .array~of(stmt)), "oosqlFinalize twice")
+  self~assertEquals(self~notLive(1, "prepared statement"), -
+    self~nullHandleError("oosqlStmtBusy", .array~of(stmt)), "oosqlStmtBusy on a finalized statement")
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicRegistryClosedDb
+  -- oosqlExec after oosqlClose: MISUSE by luck before (freed memory)
+  db = self~classicOpenMemory
+  self~assertEquals(0, oosqlClose(db), "close")
+  self~assertEquals(self~notLive(1, "database connection"), -
+    self~nullHandleError("oosqlExec", .array~of(db, "SELECT 1;")), "oosqlExec on a closed connection")
+  self~assertEquals(self~notLive(1, "database connection"), -
+    self~nullHandleError("oosqlClose", .array~of(db)), "oosqlClose twice")
+
+::Method testClassicRegistryWrongKind
+  -- A handle of one kind where another is needed
+  db = self~classicOpenMemory
+  Call oosqlPrepare db, "SELECT 1;", "stmt"
+  -- oosqlStep with a connection handle: SIGSEGV before
+  self~assertEquals(self~notLive(1, "prepared statement"), -
+    self~nullHandleError("oosqlStep", .array~of(db)), "oosqlStep with a connection handle")
+  -- oosqlExec with a statement handle: MISUSE before
+  self~assertEquals(self~notLive(1, "database connection"), -
+    self~nullHandleError("oosqlExec", .array~of(stmt, "SELECT 1;")), "oosqlExec with a statement handle")
+  self~assertEquals(self~notLive(1, "mutex"), -
+    self~nullHandleError("oosqlMutexEnter", .array~of(db)), "oosqlMutexEnter with a connection handle")
+  self~assertEquals(self~notLive(1, "backup"), -
+    self~nullHandleError("oosqlBackupStep", .array~of(stmt)), "oosqlBackupStep with a statement handle")
+  self~assertEquals(0, oosqlFinalize(stmt))
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicRegistryMutexFreedTwice
+  -- oosqlMutexFree twice: abort (double free) before
+  mtx = oosqlMutexAlloc(.ooSQLite~MUTEX_FAST)
+  self~assertEquals(0, oosqlMutexFree(mtx), "first free")
+  self~assertEquals(self~notLive(1, "mutex"), -
+    self~nullHandleError("oosqlMutexFree", .array~of(mtx)), "oosqlMutexFree twice")
+  self~assertEquals(self~notLive(1, "mutex"), -
+    self~nullHandleError("oosqlMutexEnter", .array~of(mtx)), "oosqlMutexEnter on a freed mutex")
+
+::Method testClassicRegistryDbMutex
+  -- The mutex of a connection can be entered and left, not freed, and dies
+  -- with its connection
+  db = self~classicOpenMemory
+  mtx = oosqlDbMutex(db)
+  self~assertEquals(0, oosqlMutexEnter(mtx), "enter the mutex of the connection")
+  self~assertEquals(0, oosqlMutexLeave(mtx), "leave the mutex of the connection")
+  self~assertEquals(self~notLive(1, "mutex"), -
+    self~nullHandleError("oosqlMutexFree", .array~of(mtx)), "oosqlMutexFree of the mutex of a connection")
+  self~assertEquals(0, oosqlClose(db))
+  self~assertEquals(self~notLive(1, "mutex"), -
+    self~nullHandleError("oosqlMutexEnter", .array~of(mtx)), "the mutex of a closed connection")
+
+::Method testClassicRegistryFinishedBackup
+  dst = self~classicOpenMemory
+  src = self~classicOpenMemory
+  Call oosqlExec src, "CREATE TABLE t(a); INSERT INTO t VALUES(1);"
+  bu = oosqlBackupInit(dst, src)
+  self~assertFalse(oosqlIsHandleNull(bu), "backup handle")
+  self~assertEquals(.ooSQLite~DONE, oosqlBackupStep(bu, -1), "backup step")
+  self~assertEquals(0, oosqlBackupFinish(bu), "backup finish")
+  self~assertEquals(self~notLive(1, "backup"), -
+    self~nullHandleError("oosqlBackupStep", .array~of(bu, -1)), "oosqlBackupStep on a finished backup")
+  self~assertEquals(self~notLive(1, "backup"), -
+    self~nullHandleError("oosqlBackupFinish", .array~of(bu)), "oosqlBackupFinish twice")
+  self~assertEquals(0, oosqlClose(dst))
+  self~assertEquals(0, oosqlClose(src))
+
+::Method testClassicRegistryNextStmt
+  -- The statement given to oosqlNextStmt must be live and of that connection
+  db = self~classicOpenMemory
+  db2 = self~classicOpenMemory
+  Call oosqlPrepare db, "SELECT 1;", "stmt"
+  Call oosqlPrepare db2, "SELECT 2;", "stmt2"
+  self~assertEquals(self~notLive(2, "prepared statement"), -
+    self~nullHandleError("oosqlNextStmt", .array~of(db, stmt2)), "a statement of another connection")
+  self~assertEquals(0, oosqlFinalize(stmt))
+  self~assertEquals(self~notLive(2, "prepared statement"), -
+    self~nullHandleError("oosqlNextStmt", .array~of(db, stmt)), "a finalized statement")
+  self~assertEquals(0, oosqlFinalize(stmt2))
+  self~assertEquals(0, oosqlClose(db))
+  self~assertEquals(0, oosqlClose(db2))
+
+::Method testClassicRegistryCloseBusy
+  -- A close that fails leaves the connection, and its statements, live
+  db = self~classicOpenMemory
+  Call oosqlPrepare db, "SELECT 1;", "stmt"
+  self~assertEquals(.ooSQLite~BUSY, oosqlClose(db), "close with a live statement")
+  self~assertEquals(.ooSQLite~ROW, oosqlStep(stmt), "the statement is still live")
+  self~assertEquals(0, oosqlExec(db, "SELECT 1;"), "the connection is still live")
+  self~assertEquals(0, oosqlFinalize(stmt))
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicRegistryFunctionCallEnded
+  -- The SQLite context and the values of a user defined function live only
+  -- while the function runs
+  db = self~classicOpenMemory
+  self~assertEquals(0, oosqlCreateFunction(db, "stash", 1, "classicStashCB"))
+  rows = oosqlExec(db, "SELECT stash(41) AS v;", .true, .ooSQLite~OO_ARRAY_OF_DIRECTORIES)
+  self~assertEquals(42, rows[1]["V"], "the function works while it runs")
+  ctx = .local~classicStashCtx
+  val = .local~classicStashVal
+  self~assertEquals(self~notLive(1, "SQLite context"), -
+    self~nullHandleError("oosqlResultInt", .array~of(ctx, 1)), "oosqlResultInt after the call")
+  self~assertEquals(self~notLive(1, "value"), -
+    self~nullHandleError("oosqlValueInt", .array~of(val)), "oosqlValueInt after the call")
+  self~assertEquals(self~notLive(1, "SQLite context"), -
+    self~sendError(.ooSQLResult, "int", .array~of(ctx, 1)), ".ooSQLResult~int after the call")
+  self~assertEquals(self~notLive(1, "value"), -
+    self~sendError(.ooSQLValue, "int", .array~of(val)), ".ooSQLValue~int after the call")
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicRegistryNotAContext
+  -- .ooSQLResult~int with a connection handle: SIGSEGV before
+  db = self~classicOpenMemory
+  self~assertEquals(self~notLive(1, "SQLite context"), -
+    self~sendError(.ooSQLResult, "int", .array~of(db, 1)), ".ooSQLResult~int with a connection handle")
+  self~assertEquals(self~notLive(1, "value"), -
+    self~nullHandleError("oosqlValueText", .array~of(db)), "oosqlValueText with a connection handle")
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicRegistryNullValue
+  db = self~classicOpenMemory
+  Call oosqlPrepare db, "", "null"
+  self~assertEquals("88.900 Argument 1, the value handle, must not be null.", -
+    self~nullHandleError("oosqlValueInt", .array~of(null)), "oosqlValueInt with a null handle")
+  self~assertEquals("88.900 Argument 1, the SQLite context handle, must not be null.", -
+    self~nullHandleError("oosqlResultNull", .array~of(null)), "oosqlResultNull with a null handle")
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicRegistryColumnValue
+  -- A value of oosqlColumnValue lives as long as its statement
+  db = self~classicOpenMemory
+  Call oosqlPrepare db, "SELECT 7;", "stmt"
+  Call oosqlPrepare db, "SELECT ?;", "stmt2"
+  self~assertEquals(.ooSQLite~ROW, oosqlStep(stmt))
+  val = oosqlColumnValue(stmt, 1)
+  self~assertEquals(7, oosqlValueInt(val), "the value while its statement is live")
+  self~assertEquals(0, oosqlBindValue(stmt2, 1, val), "bind the value while its statement is live")
+  self~assertEquals(0, oosqlFinalize(stmt))
+  self~assertEquals(self~notLive(1, "value"), -
+    self~nullHandleError("oosqlValueInt", .array~of(val)), "oosqlValueInt after finalize")
+  self~assertEquals(self~notLive(3, "value"), -
+    self~nullHandleError("oosqlBindValue", .array~of(stmt2, 1, val)), "oosqlBindValue after finalize")
+  self~assertEquals(0, oosqlFinalize(stmt2))
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicRegistryOOColumnValue
+  -- The same for the values of ooSQLiteStmt~columnValue
+  conn = .ooSQLiteConnection~new(":memory:")
+  stmt = .ooSQLiteStmt~new(conn, "SELECT 7;")
+  stmt2 = .ooSQLiteStmt~new(conn, "SELECT ?;")
+  self~assertEquals(.ooSQLite~ROW, stmt~step)
+  val = stmt~columnValue(1)
+  self~assertEquals(7, .ooSQLValue~int(val), "the value while its statement is live")
+  self~assertEquals(0, stmt2~bindValue(1, val), "bind the value while its statement is live")
+  self~assertEquals(0, stmt~finalize)
+  self~assertEquals(self~notLive(1, "value"), -
+    self~sendError(.ooSQLValue, "int", .array~of(val)), ".ooSQLValue~int after finalize")
+  self~assertEquals(self~notLive(2, "value"), -
+    self~sendError(stmt2, "bindValue", .array~of(1, val)), "bindValue after finalize")
+  self~assertEquals(0, stmt2~finalize)
+  self~assertEquals(0, conn~close)
+
+/******************************************************************************/
+/*                                                                            */
 /* Callback routines for Section C6                                           */
 /*                                                                            */
 /* These ::Routine definitions implement the callbacks for classic callback   */
@@ -8817,6 +9018,14 @@ Syntax:
 ::Routine classicResultErrorTooBigCB Public
   Use Arg db, ctx, userData
   Call oosqlResultErrorTooBig ctx
+  Return 0
+
+::Routine classicStashCB Public
+  -- Section C10: keeps the SQLite context and the value after the call
+  Use Arg db, ctx, userData, val
+  .local~classicStashCtx = ctx
+  .local~classicStashVal = val
+  Call oosqlResultInt ctx, oosqlValueInt(val) + 1
   Return 0
 
 /******************************************************************************/
