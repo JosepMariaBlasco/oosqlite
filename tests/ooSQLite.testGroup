@@ -8439,11 +8439,13 @@ Syntax:
     "oosqlMutexTry on unlocked mutex should return OK (0)")
   -- Leave after successful try
   Call oosqlMutexLeave mtx
-  -- Enter, then try again (FAST mutex is not recursive)
+  -- Enter, then try from another thread.  (Trying a fast mutex that the same
+  -- thread holds is undefined, as the manual says: a Windows critical section
+  -- enters it again.)
   Call oosqlMutexEnter mtx
-  ret = oosqlMutexTry(mtx)
+  ret = .Message~new(.MutexTryer~new, "TRY", "I", mtx)~~start~result
   self~assertEquals(.ooSQLite~BUSY, ret, -
-    "oosqlMutexTry on already-entered FAST mutex should return BUSY")
+    "oosqlMutexTry from another thread on an entered FAST mutex should return BUSY")
   Call oosqlMutexLeave mtx
   Call oosqlMutexFree mtx
 
@@ -11401,6 +11403,14 @@ Trapped:
   Expose done answer
   Guard On When done
   Return answer
+
+-- Section C5: oosqlMutexTry from another thread (a mutex it gets is left)
+::Class MutexTryer
+::Method try
+  Use Strict Arg mtx
+  rc = oosqlMutexTry(mtx)
+  If rc == 0 Then Call oosqlMutexLeave mtx
+  Return rc
 
 -- Section C13: a user function that closes the connection running it
 ::Routine classicPinSelfCloseCB Public

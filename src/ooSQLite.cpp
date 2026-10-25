@@ -220,11 +220,24 @@ static char testPauseToken[128] = "";
 
 static void testPinPause()
 {
+#ifdef _WIN32
+    // The tests set the variable with VALUE(..., 'ENVIRONMENT'), which on
+    // Windows changes the environment of the process: getenv() reads the copy
+    // the C runtime made at startup, and would not see the change.
+    char buf[sizeof(testPauseToken)];
+    DWORD len = GetEnvironmentVariableA("OOSQLITE_TEST_PIN_PAUSE", buf, sizeof(buf));
+    if ( len == 0 || len >= sizeof(buf) )
+    {
+        return;
+    }
+    const char *v = buf;
+#else
     const char *v = getenv("OOSQLITE_TEST_PIN_PAUSE");
     if ( v == NULL || *v == '\0' )
     {
         return;
     }
+#endif
 
     int ms = 0;
     bool fresh = false;
