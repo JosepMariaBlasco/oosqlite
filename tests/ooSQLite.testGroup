@@ -1363,10 +1363,11 @@ TestDbFileNameCleanup:
 
 ::Method testInterrupt
   db = self~openMemoryDB
-  -- interrupt on an idle connection is a harmless nop
-  db~interrupt
-  -- If we get here without error, the test passes
-  self~assertTrue(.true, "interrupt on idle connection should not raise error")
+  -- interrupt on an idle connection is a harmless nop, and returns OK
+  self~assertEquals(.ooSQLite~OK, db~interrupt, -
+    "interrupt on an idle connection should return OK")
+  self~assertEquals(1, self~queryValue(db, "SELECT 1 AS v;"), -
+    "a statement after interrupt on an idle connection should run")
   db~close
 
 --------------------------------------------------------------------------------
