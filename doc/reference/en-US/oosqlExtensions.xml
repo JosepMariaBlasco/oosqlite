@@ -140,7 +140,7 @@
 </row>
 <row>
 <entry><link linkend="mthListBuiltins">listBuiltins</link></entry>
-<entry>Lists the builtin extensions.</entry>
+<entry>&changed11;Lists the builtin extensions.</entry>
 </row>
 <row>
 <entry><link linkend="mthLoadLibrary">loadLibrary</link></entry>
@@ -289,7 +289,7 @@
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
-  <para>
+  <para revisionflag="changed">
     The only argument is:
     <variablelist>
       <varlistentry><term>name [optional]</term>
@@ -297,11 +297,11 @@
       <para>
         The name of a builtin extension, an Array of names, or the keyword <computeroutput>ALL</computeroutput>, with
         case not significant. If it is omitted, or <computeroutput>ALL</computeroutput>, all the builtin extensions are
-        made automatic. The names are <computeroutput>base64</computeroutput>, <computeroutput>csv</computeroutput>,
+        made automatic. The names are <computeroutput>base64</computeroutput>, <computeroutput>compress</computeroutput>, <computeroutput>csv</computeroutput>,
         <computeroutput>ieee754</computeroutput>, <computeroutput>nextChar</computeroutput>,
         <computeroutput>percentile</computeroutput>, <computeroutput>regExp</computeroutput>,
         <computeroutput>rot13</computeroutput>, <computeroutput>spellFix</computeroutput>,
-        <computeroutput>toType</computeroutput>, and <computeroutput>wholeNumber</computeroutput>; <link
+        <computeroutput>toType</computeroutput>, <computeroutput>wholeNumber</computeroutput>, and <computeroutput>zipFile</computeroutput>; <link
         linkend="mthListBuiltins">listBuiltins</link> lists them with a description. The case of the letters is not
         significant.
       </para>
@@ -773,7 +773,7 @@
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
-  <para>
+  <para revisionflag="changed">
     The only argument is:
     <variablelist>
       <varlistentry><term>name [optional]</term>
@@ -781,11 +781,11 @@
       <para>
         The name of a builtin extension, an Array of names, or the keyword <computeroutput>ALL</computeroutput>, with
         case not significant. If it is omitted, or <computeroutput>ALL</computeroutput>, no builtin extension is
-        automatic any more. The names are <computeroutput>base64</computeroutput>, <computeroutput>csv</computeroutput>,
+        automatic any more. The names are <computeroutput>base64</computeroutput>, <computeroutput>compress</computeroutput>, <computeroutput>csv</computeroutput>,
         <computeroutput>ieee754</computeroutput>, <computeroutput>nextChar</computeroutput>,
         <computeroutput>percentile</computeroutput>, <computeroutput>regExp</computeroutput>,
         <computeroutput>rot13</computeroutput>, <computeroutput>spellFix</computeroutput>,
-        <computeroutput>toType</computeroutput>, and <computeroutput>wholeNumber</computeroutput>; <link
+        <computeroutput>toType</computeroutput>, <computeroutput>wholeNumber</computeroutput>, and <computeroutput>zipFile</computeroutput>; <link
         linkend="mthListBuiltins">listBuiltins</link> lists them with a description. The case of the letters is not
         significant.
       </para>
@@ -957,7 +957,7 @@
 </variablelist>
 </section>  <!-- End ooSQLExtensions::getPackage() -->
 
-<section id="mthListBuiltins"><title>listBuiltins (Class method)</title>
+<section id="mthListBuiltins" revisionflag="changed"><title>&changed11;listBuiltins (Class method)</title>
 <indexterm><primary>listBuiltins</primary><secondary>ooSQLExtensions class</secondary></indexterm>
 <indexterm><primary>ooSQLExtensions class</primary><secondary>listBuiltins</secondary></indexterm>
 <mediaobject>
@@ -996,9 +996,38 @@
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
-  <para>
+  <para revisionflag="changed">
     The builtin extensions come from the SQLite source tree, and are compiled into the ooSQLite library: they are always
-    available, nothing has to be loaded. ooSQLite 1.1 has ten builtin extensions.
+    available, nothing has to be loaded. ooSQLite 1.1 has twelve builtin extensions: <computeroutput>compress</computeroutput>
+    and <computeroutput>zipFile</computeroutput> are new in this release. Both use zlib, which is compiled into the
+    ooSQLite library as well, so nothing else has to be installed.
+  </para>
+  <para revisionflag="added">
+    <computeroutput>compress</computeroutput> adds two SQL functions. <computeroutput>compress(X)</computeroutput> returns
+    a blob: the size of <computeroutput>X</computeroutput> in bytes, as a variable-length integer of one to five bytes
+    (seven bits in each, the most significant first, with the bit 0x80 set in the last one), followed by
+    <computeroutput>X</computeroutput> compressed in the zlib format. <computeroutput>uncompress(Y)</computeroutput>
+    returns the bytes that were compressed, always as a blob: <computeroutput>CAST(uncompress(Y) AS TEXT)</computeroutput>
+    gives text back. <emphasis role="italic">uncompress</emphasis> returns NULL, not an error, when
+    <computeroutput>Y</computeroutput> was not made by <emphasis role="italic">compress</emphasis>, and
+    <computeroutput>compress(NULL)</computeroutput> is the compressed form of no bytes, which uncompresses to an empty
+    blob.
+  </para>
+  <para revisionflag="added">
+    <computeroutput>zipFile</computeroutput> reads and writes ZIP archives. <computeroutput>zipfile(F)</computeroutput>,
+    used as a table, reads the archive <computeroutput>F</computeroutput>, a file name or a blob, with a row for each
+    entry and the columns <computeroutput>name</computeroutput>, <computeroutput>mode</computeroutput> (the POSIX mode),
+    <computeroutput>mtime</computeroutput> (seconds since 1970), <computeroutput>sz</computeroutput> (the uncompressed
+    size), <computeroutput>rawdata</computeroutput> and <computeroutput>data</computeroutput> (the data as stored and
+    uncompressed, as blobs), and <computeroutput>method</computeroutput> (0, stored, or 8, deflated). A virtual table
+    created with <computeroutput>CREATE VIRTUAL TABLE t USING zipfile(F)</computeroutput> also writes the file
+    <computeroutput>F</computeroutput> when rows are inserted, updated, or deleted; an entry whose name ends with a slash
+    is a directory, and a name that is already in the archive is refused with SQLITE_CONSTRAINT. The aggregate function
+    <computeroutput>zipfile(name, data)</computeroutput>, or <computeroutput>zipfile(name, mode, mtime, data
+    [, method])</computeroutput>, returns a new archive as a blob. Encrypted archives, archives in several files, and
+    the zip64 extensions are not supported. SQL that uses <emphasis role="italic">zipfile</emphasis> can read and write
+    any file the process can: register <computeroutput>zipFile</computeroutput> only on connections that run SQL you
+    trust.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Details</emphasis></term>
@@ -1019,6 +1048,7 @@
   end
   /* Output:
   base64       Implements a base64() SQL function to convert betw
+  compress     Implements compress() and uncompress() SQL functio
   csv          Implements a virtual table for reading CSV files.
   ieee754      Implements SQL functions for IEEE 754 binary64 flo
   nextChar     Implements the next_char(A, T, F, W, C) SQL functi
@@ -1028,6 +1058,31 @@
   spellFix     Implements the spellfix1 virtual table that can se
   toType       Implements tointeger() and toreal() SQL functions.
   wholeNumber  Implements the wholenumber virtual table that retu
+  zipFile      Implements the zipfile virtual table and functions
+  */
+</programlisting>
+  </para>
+  <para revisionflag="added">
+    This example registers <computeroutput>compress</computeroutput> and <computeroutput>zipFile</computeroutput>,
+    compresses a text, and reads back an archive built in memory:
+<programlisting language="rexx">
+  db = .ooSQLiteConnection~new(':memory:')
+  .ooSQLExtensions~registerBuiltin(db, .array~of('compress', 'zipFile'))
+  text = 'ooSQLite '~copies(100)
+  rows = db~exec("SELECT length(compress('"text"')) AS packed;", .true)
+  say text~length 'bytes, compressed:' rows[1]['PACKED']
+  -- An archive built in memory, read back as a table
+  rows = db~exec("SELECT name, sz, method FROM zipfile((SELECT" -
+    "zipfile(column1, column2) FROM (VALUES('a.txt', 'Hello')," -
+    "('b.txt', '"text"'))));", .true)
+  do row over rows
+    say row['NAME'] row['SZ'] row['METHOD']
+  end
+  db~close
+  /* Output:
+  900 bytes, compressed: 28
+  a.txt 5 0
+  b.txt 900 8
   */
 </programlisting>
   </para>
@@ -1296,14 +1351,14 @@
       </listitem></varlistentry>
       <varlistentry><term>name [optional]</term>
       <listitem>
-      <para>
+      <para revisionflag="changed">
         The name of a builtin extension, an Array of names, or the keyword <computeroutput>ALL</computeroutput>, with
         case not significant. If it is omitted, or <computeroutput>ALL</computeroutput>, all the builtin extensions are
-        registered. The names are <computeroutput>base64</computeroutput>, <computeroutput>csv</computeroutput>,
+        registered. The names are <computeroutput>base64</computeroutput>, <computeroutput>compress</computeroutput>, <computeroutput>csv</computeroutput>,
         <computeroutput>ieee754</computeroutput>, <computeroutput>nextChar</computeroutput>,
         <computeroutput>percentile</computeroutput>, <computeroutput>regExp</computeroutput>,
         <computeroutput>rot13</computeroutput>, <computeroutput>spellFix</computeroutput>,
-        <computeroutput>toType</computeroutput>, and <computeroutput>wholeNumber</computeroutput>; <link
+        <computeroutput>toType</computeroutput>, <computeroutput>wholeNumber</computeroutput>, and <computeroutput>zipFile</computeroutput>; <link
         linkend="mthListBuiltins">listBuiltins</link> lists them with a description. The case of the letters is not
         significant.
       </para>

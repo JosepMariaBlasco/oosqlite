@@ -61,18 +61,18 @@
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
-  <para>
+  <para revisionflag="changed">
     The only argument is:
     <variablelist>
       <varlistentry><term>extensionName [required]</term>
       <listitem>
       <para>
-        The name of one of the extensions built into ooSQLite: <computeroutput>base64</computeroutput>,
+        The name of one of the extensions built into ooSQLite: <computeroutput>base64</computeroutput>, <computeroutput>compress</computeroutput>,
         <computeroutput>csv</computeroutput>, <computeroutput>ieee754</computeroutput>,
         <computeroutput>nextChar</computeroutput>, <computeroutput>percentile</computeroutput>,
         <computeroutput>regExp</computeroutput>, <computeroutput>rot13</computeroutput>,
-        <computeroutput>spellFix</computeroutput>, <computeroutput>toType</computeroutput>, or
-        <computeroutput>wholeNumber</computeroutput>. Case is not significant.
+        <computeroutput>spellFix</computeroutput>, <computeroutput>toType</computeroutput>, <computeroutput>wholeNumber</computeroutput>,
+        or <computeroutput>zipFile</computeroutput>. Case is not significant.
       </para>
       </listitem></varlistentry>
     </variablelist>
@@ -1664,18 +1664,18 @@
 <variablelist>
   <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
   <listitem>
-  <para>
+  <para revisionflag="changed">
     The only argument is:
     <variablelist>
       <varlistentry><term>extensionName [required]</term>
       <listitem>
       <para>
-        The name of one of the extensions built into ooSQLite: <computeroutput>base64</computeroutput>,
+        The name of one of the extensions built into ooSQLite: <computeroutput>base64</computeroutput>, <computeroutput>compress</computeroutput>,
         <computeroutput>csv</computeroutput>, <computeroutput>ieee754</computeroutput>,
         <computeroutput>nextChar</computeroutput>, <computeroutput>percentile</computeroutput>,
         <computeroutput>regExp</computeroutput>, <computeroutput>rot13</computeroutput>,
-        <computeroutput>spellFix</computeroutput>, <computeroutput>toType</computeroutput>, or
-        <computeroutput>wholeNumber</computeroutput>. Case is not significant.
+        <computeroutput>spellFix</computeroutput>, <computeroutput>toType</computeroutput>, <computeroutput>wholeNumber</computeroutput>,
+        or <computeroutput>zipFile</computeroutput>. Case is not significant.
       </para>
       </listitem></varlistentry>
     </variablelist>

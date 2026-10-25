@@ -334,12 +334,12 @@ say ooSQLiteEnquote(str)
       </listitem></varlistentry>
       <varlistentry><term>name [required]</term>
       <listitem>
-      <para>
-        The name of the extension: <computeroutput>base64</computeroutput>, <computeroutput>csv</computeroutput>,
+      <para revisionflag="changed">
+        The name of the extension: <computeroutput>base64</computeroutput>, <computeroutput>compress</computeroutput>, <computeroutput>csv</computeroutput>,
         <computeroutput>ieee754</computeroutput>, <computeroutput>nextChar</computeroutput>,
         <computeroutput>percentile</computeroutput>, <computeroutput>regExp</computeroutput>,
         <computeroutput>rot13</computeroutput>, <computeroutput>spellFix</computeroutput>,
-        <computeroutput>toType</computeroutput>, or <computeroutput>wholeNumber</computeroutput>. Case is not
+        <computeroutput>toType</computeroutput>, <computeroutput>wholeNumber</computeroutput>, or <computeroutput>zipFile</computeroutput>. Case is not
         significant.
       </para>
       </listitem></varlistentry>

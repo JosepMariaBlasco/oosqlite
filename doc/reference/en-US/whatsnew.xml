@@ -315,6 +315,31 @@
 
 <section id="sctWhatsChangedExtended"><title>New and Extended Methods and Routines</title>
 <variablelist>
+  <varlistentry><term><emphasis role="bold">New builtin extensions compress and zipFile</emphasis></term>
+  <listitem>
+  <para>
+    Two extensions of the SQLite source tree are now builtin extensions, so there are twelve (see <link
+    linkend="mthListBuiltins">listBuiltins</link>). <computeroutput>compress</computeroutput> adds the
+    <computeroutput>compress()</computeroutput> and <computeroutput>uncompress()</computeroutput> SQL functions, which
+    compress a value with zlib and give it back. <computeroutput>zipFile</computeroutput> reads and writes ZIP archives:
+    the <computeroutput>zipfile</computeroutput> table-valued function reads an archive, from a file or a blob, a
+    <computeroutput>zipfile</computeroutput> virtual table also writes the file, and the
+    <computeroutput>zipfile()</computeroutput> aggregate function builds an archive as a blob. Like the other builtins,
+    they are registered with <link linkend="mthRegisterBuiltin">registerBuiltin</link>, <link
+    linkend="mthAutoBuiltin">autoBuiltin</link>, or the classic <link
+    linkend="rtn-ooSQLiteRegisterBuiltin">ooSQLiteRegisterBuiltin</link>, and are not available until then. Both use
+    zlib, which is now compiled into the ooSQLite library (see <link linkend="sctWhatsChangedBuild">Building and
+    Testing</link>).
+  </para>
+  <para>
+    The error that <emphasis role="italic">autoBuiltin</emphasis>, <link
+    linkend="mthCancelAutoBuiltin">cancelAutoBuiltin</link>, and the classic routines raise for a name that is not the
+    name of a builtin lists the two new names, and <emphasis role="italic">listBuiltins</emphasis> returns twelve
+    records instead of ten. A program that counts on ten builtins, or registers all of them and then defines its own
+    <computeroutput>compress</computeroutput>, <computeroutput>uncompress</computeroutput>, or
+    <computeroutput>zipfile</computeroutput> functions, should be checked.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">The constants of SQLite 3.52.0</emphasis></term>
   <listitem>
   <para>
@@ -853,8 +878,16 @@
     Subversion repository (<computeroutput>incubator/APICommon</computeroutput>), now included in the source tree.
   </para></listitem>
   <listitem><para>
-    The repository contains a test suite of more than 550 tests, written with ooRexxUnit, the framework of the ooRexx test
-    suite. It covers the object orientated and the classic interfaces, the callbacks, the builtin extensions, the SQLite
+    zlib 1.3.2, used by the new <computeroutput>compress</computeroutput> and <computeroutput>zipFile</computeroutput>
+    builtin extensions, is included in the source tree (<computeroutput>src/zlib</computeroutput>, unchanged) and
+    compiled into the ooSQLite library, on Linux and on Windows: ooSQLite does not depend on a zlib installed on the
+    system, and there is no other library to ship with it. It is compiled with <computeroutput>Z_PREFIX</computeroutput>,
+    so its functions have names that can not clash with those of another zlib loaded in the same process. Its license
+    is in <computeroutput>src/zlib/LICENSE</computeroutput>, and <computeroutput>NOTICE</computeroutput> mentions it.
+  </para></listitem>
+  <listitem><para>
+    The repository contains a test suite of more than 580 tests, written with ooRexxUnit, the framework of the ooRexx test
+    suite. It covers the object orientated and the classic interfaces, the callbacks, the builtin extensions (compress and zipFile among them), the SQLite
     features compiled into the library (the math functions, the csv virtual table, R-Tree and Geopoly), and the
     loading of extension libraries and packages, with the test libraries in
     <computeroutput>examples/user.extensions</computeroutput>.
