@@ -3200,6 +3200,7 @@ static int execCallBackArray(void *data, int ncols, char **values, char **header
 
     RexxArrayObject record = c->NewArray(ncols);
 
+    // Every column is filled in order, so appending puts a value at its index.
     for ( int i = 0; i < ncols; i++ )
     {
         if ( values[i] == NULL )
@@ -3236,6 +3237,9 @@ static int execCallBackArray(void *data, int ncols, char **values, char **header
     }
     else
     {
+        // The row sent to the callback: index 1, the column names; index 2, the
+        // values.  The names were never filled in, and the values were appended
+        // to the record a second time here.  See technical note #65.
         RexxObjectPtr   reply    = NULLOBJECT;
         RexxArrayObject rows     = c->NewArray(2);
         RexxArrayObject header   = c->NewArray(ncols);
@@ -3243,14 +3247,7 @@ static int execCallBackArray(void *data, int ncols, char **values, char **header
 
         for ( int i = 0; i < ncols; i++ )
         {
-            if ( values[i] == NULL )
-            {
-                c->ArrayPut(record, d->nullObj, i + 1);
-            }
-            else
-            {
-                c->ArrayAppendString(record, values[i], strlen(values[i]));
-            }
+            c->ArrayAppendString(header, headers[i], strlen(headers[i]));
         }
 
         c->ArrayPut(rows, header, 1);
@@ -3335,7 +3332,7 @@ static int execCallBackDirectory(void *data, int ncols, char **values, char **he
 
         c->DirectoryPut(record, value, idx);
 
-        if ( value != TheNilObj )
+        if ( values[i] != NULL )
         {
             c->ReleaseLocalReference(value);
         }
@@ -3391,22 +3388,18 @@ static int execCallBackStem(void *data, int ncols, char **values, char **headers
     {
         CSTRING idx = d->indexes[i];
 
-        RexxObjectPtr value;
         if ( values[i] == NULL )
         {
-            value = d->nullObj;
-        }
-        else
-        {
-            value = c->String(values[i]);
+            if ( ! d->nullUnset )
+            {
+                c->SetStemElement(record, idx, d->nullObj);
+            }
+            continue;
         }
 
+        RexxObjectPtr value = c->String(values[i]);
         c->SetStemElement(record, idx, value);
-
-        if ( value != TheNilObj )
-        {
-            c->ReleaseLocalReference(value);
-        }
+        c->ReleaseLocalReference(value);
     }
 
     wholenumber_t rc = SQLITE_OK;
@@ -3472,22 +3465,18 @@ static int execCallBackClassicStem(void *data, int ncols, char **values, char **
 
             snprintf(buf, sizeof(buf) - 1, "%d.%s", d->count, idx);
 
-            RexxObjectPtr value;
             if ( values[i] == NULL )
             {
-                value = d->nullObj;
-            }
-            else
-            {
-                value = c->String(values[i]);
+                if ( ! d->nullUnset )
+                {
+                    c->SetStemElement(d->rsStem, buf, d->nullObj);
+                }
+                continue;
             }
 
+            RexxObjectPtr value = c->String(values[i]);
             c->SetStemElement(d->rsStem, buf, value);
-
-            if ( value != TheNilObj )
-            {
-                c->ReleaseLocalReference(value);
-            }
+            c->ReleaseLocalReference(value);
         }
 
         RexxObjectPtr num = c->UnsignedInt32(d->count);
@@ -3503,22 +3492,19 @@ static int execCallBackClassicStem(void *data, int ncols, char **values, char **
         {
             CSTRING idx = d->indexes[i];
 
-            RexxObjectPtr value;
+            // SQL NULL as in the result set (it was always .nil here, note #65)
             if ( values[i] == NULL )
             {
-                value = TheNilObj;
-            }
-            else
-            {
-                value = c->String(values[i]);
+                if ( ! d->nullUnset )
+                {
+                    c->SetStemElement(record, idx, d->nullObj);
+                }
+                continue;
             }
 
+            RexxObjectPtr value = c->String(values[i]);
             c->SetStemElement(record, idx, value);
-
-            if ( value != TheNilObj )
-            {
-                c->ReleaseLocalReference(value);
-            }
+            c->ReleaseLocalReference(value);
         }
 
         rc = genExecCall2Rexx(d, record);
@@ -15887,6 +15873,12 @@ RexxRoutine5(RexxObjectPtr, oosqlExec_rtn, POINTER, _db, CSTRING, sql, OPTIONAL_
 
         cbc.callbackContext = context->threadContext;
 
+        // The classic interface has no null attribute: SQL NULL is .nil in an
+        // array or a directory, and leaves the tail of a stem unassigned.  The
+        // rows were given a null pointer before.  See technical note #65.
+        cbc.nullObj         = TheNilObj;
+        cbc.nullUnset       = true;
+
         if ( argumentExists(5) )
         {
             cbc.callbackRtn = getCallerRoutine(context, rtnName);
@@ -15930,6 +15922,17 @@ RexxRoutine5(RexxObjectPtr, oosqlExec_rtn, POINTER, _db, CSTRING, sql, OPTIONAL_
             default :
                 rc = sqlite3_exec(db, sql, execCallBackStem, (void *)&cbc, &errMsg);
                 break;
+        }
+
+        // The names of the columns, made by genCreateIndexes() (they were never
+        // freed here).
+        if ( cbc.indexes != NULL )
+        {
+            for ( uint32_t i = 0; i < cbc.countIndexes; i++ )
+            {
+                sqlite3_free(cbc.indexes[i]);
+            }
+            sqlite3_free(cbc.indexes);
         }
     }
     else

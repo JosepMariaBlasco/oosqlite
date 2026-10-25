@@ -426,6 +426,7 @@ typedef struct _genericCallback {
     uint32_t             countIndexes;    // This is the count of allocated strings in the indexes array.
     thread_id_t          initialThreadID;
     bool                 createRS;        // Determines if we are creating a record set or invoking a Rexx callback.
+    bool                 nullUnset;       // exec: SQL NULL leaves the tail of a stem unassigned (oosqlExec)
 } CGenericCallback;
 typedef CGenericCallback *pCGenericCallback;
 
