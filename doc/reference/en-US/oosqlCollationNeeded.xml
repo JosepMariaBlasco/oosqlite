@@ -45,13 +45,48 @@
 <section id="clsOOSQLCollationNeeded"><title>The ooSQLCollationNeeded Class</title>
 <indexterm><primary>ooSQLCollationNeeded class</primary></indexterm>
 <para>
-  text
+  An ooSQLCollationNeeded object represents the collation needed callback of an ooSQLite package: a function, written in
+  C or C++, that SQLite invokes when a statement uses a collation that the connection does not have, so that it can
+  register it. A <link linkend="clsOOSQLPackage">package</link> has at most one. The C code stays in the shared library
+  of the package; the object holds what ooSQLite needs to register it: its name and its entry points. Programs do not
+  create ooSQLCollationNeeded objects: ooSQLite creates them.
 </para>
 
 <para>
-  text
+  The object is obtained with the <link linkend="mthGetCollationNeeded">getCollationNeeded</link> method of an
+  ooSQLPackage object, and its only use is as the argument of the <link
+  linkend="mthCollationNeeded">collationNeeded</link> method of the ooSQLiteConnection class, which also accepts the
+  package itself. The same object can be registered on any number of connections. <link
+  linkend="mthAutoCollationNeeded">autoCollationNeeded</link> makes it automatic.
 </para>
 
+<section id="sctMethodsOOSQLCollationNeeded"><title>Method Table</title>
+<para>
+  The following table provides links to the documentation of the methods of the ooSQLCollationNeeded class.
+</para>
+<table id="tblOOSQLCollationNeededMethods" frame="all">
+<title>ooSQLCollationNeeded Methods</title>
+<tgroup cols="2">
+<colspec colwidth="1*" />
+<colspec colwidth="3*" />
+<thead>
+<row>
+<entry>Method</entry>
+<entry>Documentation</entry>
+</row>
+</thead>
+<tbody>
+<row>
+<entry align="center"><emphasis role="bold">Class Methods</emphasis></entry>
+<entry align="center"><emphasis role="bold"></emphasis></entry>
+</row>
+<row>
+<entry><link linkend="mthNewClsOOSQLCollationNeeded">new</link></entry>
+<entry>Creates the object. Used internally by ooSQLite.</entry>
+</row>
+</tbody></tgroup>
+</table>
+</section>
 
 <section id="mthNewClsOOSQLCollationNeeded"><title>new (Class method)</title>
 <indexterm><primary>new</primary><secondary>ooSQLCollationNeeded class</secondary></indexterm>
@@ -63,29 +98,63 @@
 </mediaobject>
 
 <para>
-  xx
+  Creates an ooSQLCollationNeeded object. ooSQLite uses it internally; programs obtain the object with the <link
+  linkend="mthGetCollationNeeded">getCollationNeeded</link> method of an ooSQLPackage object.
 </para>
 <variablelist>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
+  <listitem>
+  <para>
+    The only argument is:
+    <variablelist>
+      <varlistentry><term>entry [required]</term>
+      <listitem>
+      <para>
+        A Buffer object with a copy of the description that the package gives in C. Only ooSQLite can create it.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
+  <listitem>
+  <para>
+    A new ooSQLCollationNeeded object.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A Rexx program can not create the Buffer object that <emphasis role="italic">new</emphasis> needs, so <emphasis
+    role="italic">new</emphasis> invoked from a program raises a syntax error: 88.901 without an argument, and 88.900
+    with any other argument.
   </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Details</emphasis></term>
-  <listitem>
-  <para>
-    Raises syntax errors when incorrect arguments are detected.
+  <para revisionflag="changed">
+    &changed11;A subclass of ooSQLCollationNeeded whose init method does not forward to the init method of
+    ooSQLCollationNeeded creates objects that are not initialized. <link
+    linkend="mthCollationNeeded">collationNeeded</link> raises an execution error, 98.900, when it is given one. Before
+    ooSQLite 1.1 it crashed the interpreter.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    The testPackage package, which is built with the examples, has a collation needed callback that registers its
+    collations when SQLite asks for them:
+<programlisting language="rexx">
+  .ooSQLExtensions~loadPackage('testpackage')
+  package = .ooSQLExtensions~getPackage('testPackage')
+  needed = package~getCollationNeeded
+  say needed
+  say db~collationNeeded(needed)
+  sql = "WITH t(x) AS (VALUES ('a'), ('c'), ('b'))" -
+        "SELECT group_concat(x, ' ') AS v FROM (SELECT x FROM t ORDER BY x COLLATE reverseOrder);"
+  say db~exec(sql, .true)[1]['V']
+  /* Output:
+  an ooSQLCollationNeeded
+  0
+  c b a
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>

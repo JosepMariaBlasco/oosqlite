@@ -2954,7 +2954,8 @@ Bytes of page memory used by all caches on this database connection:
   <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
   <listitem>
   <para>
-    xx
+    Returns <computeroutput>OK</computeroutput>. Whether a running operation was interrupted is told by the result code
+    of that operation, <computeroutput>INTERRUPT</computeroutput>.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>

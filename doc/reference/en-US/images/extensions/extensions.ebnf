@@ -1,8 +1,8 @@
 /* oosqlCollation.xml */
-collation_new ::= 'new'
+collation_new ::= 'new(' entry ')'
 
 /* oosqlCollationNeeded.xml */
-collationneeded_new ::= 'new'
+collationneeded_new ::= 'new(' entry ')'
 
 /* oosqlExtensions.xml */
 extensions_lasterrcode_get ::= 'lastErrCode'
@@ -22,7 +22,7 @@ extensions_resetautobuiltin ::= 'resetAutoBuiltin'
 extensions_registerbuiltin ::= 'registerBuiltin(' dbConn ( ',' name )? ')'
 
 /* oosqlFunction.xml */
-function_new ::= 'new'
+function_new ::= 'new(' entry ')'
 
 /* oosqlLibrary.xml */
 library_new ::= 'new(' libName ')'

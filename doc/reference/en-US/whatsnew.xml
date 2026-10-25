@@ -716,7 +716,11 @@
     linkend="mthBusyHandler">busyHandler</link>.
   </para></listitem>
   <listitem><para>
-    Many sections are still templates. They are being written; meanwhile, their syntax diagrams are correct.
+    The chapters of the <link linkend="clsOOSQLCollation">ooSQLCollation</link>, <link
+    linkend="clsOOSQLCollationNeeded">ooSQLCollationNeeded</link>, and <link linkend="clsOOSQLFunction">ooSQLFunction</link>
+    classes, which were templates, are written: what the objects represent, where they come from, where they are used,
+    and why programs do not create them, with tested examples. The return value of <link
+    linkend="mthInterrupt">interrupt</link> is documented. No section of the book is a template any more.
   </para></listitem>
 </itemizedlist>
 </section>

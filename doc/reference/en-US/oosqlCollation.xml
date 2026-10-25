@@ -45,13 +45,48 @@
 <section id="clsOOSQLCollation"><title>The ooSQLCollation Class</title>
 <indexterm><primary>ooSQLCollation class</primary></indexterm>
 <para>
-  text
+  An ooSQLCollation object represents a collation of an ooSQLite package: a comparison function, written in C or C++,
+  that a <link linkend="clsOOSQLPackage">package</link> describes in its collation table. The C code stays in the shared
+  library of the package; the object holds what ooSQLite needs to register it: its name and its entry points. Programs
+  do not create ooSQLCollation objects: ooSQLite creates them.
 </para>
 
 <para>
-  text
+  The object is obtained with the <link linkend="mthGetCollation">getCollation</link> method of an ooSQLPackage object,
+  and its only use is as the argument of the <link linkend="mthCreateCollation">createCollation</link> method of the
+  ooSQLiteConnection class, which registers the collation on the connection under the name given there. The same object
+  can be registered on any number of connections, and under different names. <link linkend="mthRegister">register</link>
+  registers all the collations of a package at once, and <link linkend="mthAutoCollation">autoCollation</link> makes one
+  automatic.
 </para>
 
+<section id="sctMethodsOOSQLCollation"><title>Method Table</title>
+<para>
+  The following table provides links to the documentation of the methods of the ooSQLCollation class.
+</para>
+<table id="tblOOSQLCollationMethods" frame="all">
+<title>ooSQLCollation Methods</title>
+<tgroup cols="2">
+<colspec colwidth="1*" />
+<colspec colwidth="3*" />
+<thead>
+<row>
+<entry>Method</entry>
+<entry>Documentation</entry>
+</row>
+</thead>
+<tbody>
+<row>
+<entry align="center"><emphasis role="bold">Class Methods</emphasis></entry>
+<entry align="center"><emphasis role="bold"></emphasis></entry>
+</row>
+<row>
+<entry><link linkend="mthNewClsOOSQLCollation">new</link></entry>
+<entry>Creates the object. Used internally by ooSQLite.</entry>
+</row>
+</tbody></tgroup>
+</table>
+</section>
 
 <section id="mthNewClsOOSQLCollation"><title>new (Class method)</title>
 <indexterm><primary>new</primary><secondary>ooSQLCollation class</secondary></indexterm>
@@ -63,38 +98,79 @@
 </mediaobject>
 
 <para>
-  xx
+  Creates an ooSQLCollation object. ooSQLite uses it internally; programs obtain the object with the <link
+  linkend="mthGetCollation">getCollation</link> method of an ooSQLPackage object.
 </para>
 <variablelist>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
+  <listitem>
+  <para>
+    The only argument is:
+    <variablelist>
+      <varlistentry><term>entry [required]</term>
+      <listitem>
+      <para>
+        A Buffer object with a copy of the description that the package gives in C. Only ooSQLite can create it.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
+  <listitem>
+  <para>
+    A new ooSQLCollation object.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
   <listitem>
   <para>
-    Additional comments.
+    A Rexx program can not create the Buffer object that <emphasis role="italic">new</emphasis> needs, so <emphasis
+    role="italic">new</emphasis> invoked from a program raises a syntax error: 88.901 without an argument, and 88.900
+    with any other argument.
   </para>
-  </listitem></varlistentry>
-  <varlistentry><term><emphasis role="bold">Details</emphasis></term>
-  <listitem>
-  <para>
-    Raises syntax errors when incorrect arguments are detected.
+  <para revisionflag="changed">
+    &changed11;A subclass of ooSQLCollation whose init method does not forward to the init method of ooSQLCollation
+    creates objects that are not initialized. <link linkend="mthCreateCollation">createCollation</link> raises an
+    execution error, 98.900, when it is given one. Before ooSQLite 1.1 it crashed the interpreter.
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
   <listitem>
   <para>
-    This example ...
-<programlisting>
-<![CDATA[
-
-]]>
+    This example registers the ebcdic collation of the examplePackage package, which sorts as EBCDIC does: lowercase
+    letters, then uppercase letters, then digits:
+<programlisting language="rexx">
+  .ooSQLExtensions~loadPackage('examplepackage')
+  package = .ooSQLExtensions~getPackage('examplePackage')
+  collation = package~getCollation('ebcdic')
+  say collation
+  say db~createCollation('ebcdic', collation)
+  sql = "WITH t(x) AS (VALUES ('1'), ('A'), ('a'))" -
+        "SELECT group_concat(x, ' ') AS v FROM (SELECT x FROM t ORDER BY x COLLATE ebcdic);"
+  say db~exec(sql, .true)[1]['V']
+  /* Output:
+  an ooSQLCollation
+  0
+  a A 1
+  */
+</programlisting>
+  </para>
+  <para>
+    Invoking <emphasis role="italic">new</emphasis> from a program raises a syntax error:
+<programlisting language="rexx">
+  signal on syntax
+  collation = .ooSQLCollation~new
+  say 'not reached'
+  syntax:
+    say condition('O')~code condition('O')~message
+  /* Output:
+  88.901 Missing argument; argument 1 is required.
+  */
 </programlisting>
   </para>
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLCollation::new() -->
-
-
-
-
-
 
 </section>
