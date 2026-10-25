@@ -5179,6 +5179,51 @@ TestCancelAllCleanup:
   End
   db~close
 
+::Method testNextStmtUninitializedStmt
+  -- nextStmt with an ooSQLiteStmt of a subclass whose init does not forward
+  -- to ooSQLiteStmt's crashed (SIGSEGV)
+  db = self~openMemoryDB
+  err = self~syntaxErrorOf(db, "NEXTSTMT", .StmtWithoutSuperInit~new)
+  self~assertEquals("98.900", err~word(1), "nextStmt should raise error 98.900:" err)
+  self~assertTrue(err~pos("ooSQLiteStmt") > 0, "the message should name ooSQLiteStmt:" err)
+  db~close
+
+::Method testCollationNeededUninitializedPackage
+  -- collationNeeded with an ooSQLPackage of a subclass whose init does not
+  -- forward to ooSQLPackage's crashed (SIGSEGV)
+  db = self~openMemoryDB
+  err = self~syntaxErrorOf(db, "COLLATIONNEEDED", .PackageWithoutSuperInit~new)
+  self~assertEquals("98.900", err~word(1), "collationNeeded should raise error 98.900:" err)
+  self~assertTrue(err~pos("this ooSQLPackage object was not initialized") > 0, -
+    "the message should say the package was not initialized:" err)
+  db~close
+
+::Method testPutStmtRejectsOtherObjects
+  -- putStmt, used internally to keep the statements of a connection, took
+  -- any object: a string, a statement not initialized, or a statement of
+  -- another connection made nextStmt, close and the garbage collector crash
+  db = self~openMemoryDB
+  other = self~openMemoryDB
+  stmt = .ooSQLiteStmt~new(db, "SELECT 1;")
+  otherStmt = .ooSQLiteStmt~new(other, "SELECT 2;")
+  Do bad Over .array~of("abc", .StmtWithoutSuperInit~new, otherStmt)
+    err = self~syntaxErrorOf(db, "PUTSTMT", bad)
+    self~assertEquals("88.900", err~word(1), "putStmt should reject" bad":" err)
+  End
+  self~assertSame(stmt, db~nextStmt, "nextStmt should still find the statement")
+  self~assertEquals(0, db~close, "close should work")
+  self~assertEquals(0, other~close, "close of the other connection should work")
+
+::Method testInternalTestMethodsRemoved
+  -- test, pragmaGetTest and pragmaSetTest were debugging aids of the
+  -- original author, public but undocumented; test registered any Pointer
+  -- as a collation function
+  db = self~openMemoryDB
+  Do name Over .array~of("TEST", "PRAGMAGETTEST", "PRAGMASETTEST")
+    self~assertFalse(db~hasMethod(name), name "should not exist")
+  End
+  db~close
+
 ::Method testLoadPackageTwiceKeepsThePackage
   -- loading a package that was already loaded made a second package object
   -- and dropped the first, which could still be automatic (SIGSEGV)
@@ -8800,5 +8845,9 @@ Syntax:
   Nop
 
 ::Class FunctionWithoutSuperInit Subclass ooSQLFunction
+::Method init
+  Nop
+
+::Class StmtWithoutSuperInit Subclass ooSQLiteStmt
 ::Method init
   Nop
