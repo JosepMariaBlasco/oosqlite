@@ -7047,6 +7047,65 @@ WrongClass:
   self~assertEquals("Argument 1 must be of the ooSQLiteConnection class; found an Object.", -
     Condition("O")~message)
 
+/******************************************************************************/
+/*                                                                            */
+/* Section 41: Callback names that are not literals                           */
+/*                                                                            */
+/* The name of a callback method was kept as a pointer into the String given  */
+/* as argument.  A name built at run time ('cb' || 'Method') is garbage       */
+/* collected once the program drops it, and the callback then sent whatever   */
+/* the memory held: NOMETHOD for a name like "199885", or worse.  A literal  */
+/* stays alive with the program, so the bug did not show.  Now the names are */
+/* copied into the callback's own data.  See technical note #63.              */
+/*                                                                            */
+/******************************************************************************/
+
+::Method testCallbackNameComputedFunction
+  db = self~openMemoryDB
+  h = .NamedHandler~new
+  name = "cb" || "Method"
+  self~assertEquals(0, db~createFunction("f", h, 0, name))
+  Drop name
+  Call churnMemory
+  self~assertEquals(42, self~queryValue(db, "SELECT f() AS v;"), "the method is still cbMethod")
+  db~close
+
+::Method testCallbackNameComputedAggregate
+  db = self~openMemoryDB
+  h = .NamedHandler~new
+  step = "st" || "ep"
+  final = "fi" || "nal"
+  self~assertEquals(0, db~createFunction("g", h, 0, , step, final))
+  Drop step final
+  Call churnMemory
+  self~assertEquals(7, self~queryValue(db, "SELECT g() AS v;"), "step and final are still step and final")
+  db~close
+
+::Method testCallbackNameComputedHook
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE t(a);")
+  h = .NamedHandler~new
+  name = "hook" || "Method"
+  db~commitHook(h, name)
+  Drop name
+  Call churnMemory
+  self~assertEquals(0, db~exec("INSERT INTO t VALUES(1);"), db~errMsg)
+  self~assertEquals(1, h~hooks, "the commit hook ran hookMethod")
+  db~commitHook(.nil)
+  db~close
+
+::Method testCallbackNameComputedCollation
+  db = self~openMemoryDB
+  h = .NamedHandler~new
+  name = "com" || "pare"
+  collation = "my" || "coll"
+  self~assertEquals(0, db~createCollation(collation, h, name))
+  Drop name collation
+  Call churnMemory
+  rows = db~exec("SELECT 'a' < 'b' COLLATE mycoll AS v;", .true)
+  self~assertEquals(0, rows[1]["V"], "compare (reversed) ran")
+  db~close
+
 ::Class "ooSQLiteClassic.testGroup" Subclass ooTestCase Public
 
 --------------------------------------------------------------------------------
@@ -10432,6 +10491,50 @@ Done:
   v~stem = s.
   self~assertEquals("SYNTAX 88.900", noStringTrap("x = ooSQLiteEnquote(v~stem)", v), "a stem item")
 
+/******************************************************************************/
+/*                                                                            */
+/* Section C16: Classic — callback names that are not literals               */
+/*                                                                            */
+/* Section 41 for the routines: the routine itself was resolved when it was  */
+/* registered, but its name, used in messages, and the SQL name were kept as */
+/* pointers into the Strings given as arguments.                             */
+/*                                                                            */
+/******************************************************************************/
+
+::Method testClassicCallbackNameComputed
+  .local~classicRaiseAction = "USER"
+  .local~classicRaiseCalls = 0
+  db = self~classicOpenMemory
+  rtn = "classicRaising" || "CB"
+  sqlName = "f" || "f"
+  self~assertEquals(0, oosqlCreateFunction(db, sqlName, 0, rtn))
+  Drop rtn sqlName
+  Call churnMemory
+  Signal On Syntax Name Trapped
+  Call oosqlExec db, "SELECT ff();"
+  self~fail("the condition should reach the caller")
+Trapped:
+  self~assertEquals('The USER BOOM condition was raised in the callback "classicRaisingCB": boom-user.', -
+    Condition("O")~message, "the name of the routine")
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicCallbackNameComputedHook
+  .local~classicRaiseAction = "USER"
+  db = self~classicOpenMemory
+  Call oosqlExec db, "CREATE TABLE t(a);"
+  rtn = "classicRaising" || "CB"
+  Call oosqlCommitHook db, rtn
+  Drop rtn
+  Call churnMemory
+  Signal On Syntax Name Trapped
+  Call oosqlExec db, "INSERT INTO t VALUES(1);"
+  self~fail("the condition should reach the caller")
+Trapped:
+  self~assertEquals('The USER BOOM condition was raised in the callback "classicRaisingCB": boom-user.', -
+    Condition("O")~message, "the name of the routine")
+  Call oosqlCommitHook db, ""
+  self~assertEquals(0, oosqlClose(db))
+
 ::Routine classicCommitHookCB Public
   Use Arg userData
   .environment~classicCommitHookCallCount = -
@@ -10800,6 +10903,13 @@ OO1:
   End
   Return 0
 
+::Routine churnMemory Public
+  -- Sections 41 and C16: allocates enough to make the garbage collector run
+  Do i = 1 To 200000
+    a = .Array~new(10)
+    s = "garbage" i
+  End
+
 ::Routine noStringTrap Public
   -- Sections 40 and C15: runs code with SIGNAL ON NOSTRING and SIGNAL ON
   -- SYNTAX; returns "none", "NOSTRING", or "SYNTAX" and the code
@@ -10863,6 +10973,35 @@ TrapSyntax:
 ::Class StmtWithoutSuperInit Subclass ooSQLiteStmt
 ::Method init
   Nop
+
+-- Section 41: a handler whose methods are named at run time
+::Class NamedHandler
+::Attribute hooks
+::Method init
+  Expose hooks
+  hooks = 0
+::Method cbMethod
+  Use Arg db, ctx
+  .ooSQLResult~int(ctx, 42)
+  Return 0
+::Method step
+  Use Arg db, ctx, agg
+  If agg == .nil Then Return .Directory~new
+  Return agg
+::Method final
+  Use Arg db, ctx
+  .ooSQLResult~int(ctx, 7)
+  Return 0
+::Method hookMethod
+  Expose hooks
+  hooks += 1
+  Return 0
+::Method compare
+  -- Reversed
+  Use Arg a, b, userData
+  If a < b Then Return 1
+  If a > b Then Return -1
+  Return 0
 
 -- Section 38: a callback handler that raises a condition
 ::Class RaisingHandler
