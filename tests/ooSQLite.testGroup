@@ -4515,6 +4515,22 @@ AggregateErrorTrapped:
     "loadExtension should fail again after enableLoadExtension(.false)")
   db~close
 
+::Method testLoadExtensionResetsLastErr
+  -- A successful loadExtension clears the error left by a failed one,
+  -- as exec does
+  db = self~openMemoryDB
+  db~enableLoadExtension(.true)
+  rc = db~loadExtension(userExtLib("nosuchextension"))
+  self~assertEquals(.ooSQLite~ERROR, db~lastErrCode, -
+    "a failed loadExtension should set lastErrCode")
+  self~assertEquals(0, db~loadExtension(userExtLib("simpleextension")), -
+    "loadExtension should return OK")
+  self~assertEquals(.ooSQLite~OK, db~lastErrCode, -
+    "a successful loadExtension should reset lastErrCode")
+  self~assertEquals("No error", db~lastErrMsg, -
+    "a successful loadExtension should reset lastErrMsg")
+  db~close
+
 --------------------------------------------------------------------------------
 -- loadLibrary / getLibrary / ooSQLLibrary~getHandle                          --
 --------------------------------------------------------------------------------
