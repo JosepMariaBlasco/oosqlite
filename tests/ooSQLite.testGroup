@@ -3805,9 +3805,14 @@ AggregateErrorTrapped:
 /* Tests for features enabled in the new build:                               */
 /*   - SQLITE_ENABLE_MATH_FUNCTIONS (sqrt, pi, ceil, floor, etc.)            */
 /*   - base64 builtin extension                                              */
-/*   - csv builtin extension (virtual table)                                 */
-/*   - SQLITE_ENABLE_RTREE (spatial indexing)                                */
-/*   - SQLITE_ENABLE_GEOPOLY (polygon geometry)                              */
+/*   - csv builtin extension (virtual table): header, data=, schema=,        */
+/*     columns=, quoting, empty and missing fields, errors, read-only        */
+/*   - SQLITE_ENABLE_RTREE (spatial indexing): 2 to 5 dimensions,            */
+/*     rtree_i32, auxiliary columns, UPDATE/DELETE, rtreecheck               */
+/*   - SQLITE_ENABLE_GEOPOLY (polygon geometry): every SQL function, blobs   */
+/*     through columnBlob/bindBlob, queries on a table, invalid input        */
+/*   Section C12 has the classic counterparts of the blob, integer and NULL  */
+/*   values.                                                                 */
 /*                                                                            */
 /******************************************************************************/
 
@@ -4209,6 +4214,219 @@ AggregateErrorTrapped:
   -- Cleanup
   Call SysFileDelete csvFile
 
+--------------------------------------------------------------------------------
+-- Helper: the rows of a query, as an array of arrays of columnText values    --
+--------------------------------------------------------------------------------
+
+::Method tier5Rows
+  -- A NULL column is .nil.  Fails the test if the statement does not
+  -- prepare or does not run to the end.
+  Use Strict Arg db, sql
+  stmt = .ooSQLiteStmt~new(db, sql)
+  self~assertEquals(0, stmt~initCode, "prepare:" sql "-" db~errMsg)
+  rows = .Array~new
+  Do Forever
+    rc = stmt~step
+    If rc \= stmt~ROW Then Leave
+    row = .Array~new
+    Do i = 1 To stmt~columnCount
+      row~append(stmt~columnText(i))
+    End
+    rows~append(row)
+  End
+  self~assertEquals(stmt~DONE, rc, "step:" sql "-" db~errMsg)
+  stmt~finalize
+  Return rows
+
+--------------------------------------------------------------------------------
+-- Helper: run a statement that should fail when it is stepped                --
+--------------------------------------------------------------------------------
+
+::Method tier5StepError
+  -- Returns the error message
+  Use Strict Arg db, sql, expectedCode = 1
+  stmt = .ooSQLiteStmt~new(db, sql)
+  self~assertEquals(0, stmt~initCode, "prepare:" sql "-" db~errMsg)
+  self~assertEquals(expectedCode, stmt~step, "step should fail:" sql)
+  errMsg = db~errMsg
+  stmt~finalize
+  Return errMsg
+
+--------------------------------------------------------------------------------
+-- csv: header=no names the columns c0, c1, ...                               --
+--------------------------------------------------------------------------------
+
+::Method testCsvNoHeader
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "csv")
+  self~assertEquals(0, db~exec("CREATE VIRTUAL TABLE t USING csv(" -
+    || "data='name,age" || "0a"x || "Alice,30', header=no);"), db~errMsg)
+  stmt = .ooSQLiteStmt~new(db, "SELECT * FROM t;")
+  self~assertEquals(2, stmt~columnCount, "two columns")
+  self~assertEquals("c0", stmt~columnName(1), "first column is c0")
+  self~assertEquals("c1", stmt~columnName(2), "second column is c1")
+  stmt~finalize
+  rows = self~tier5Rows(db, "SELECT c0, c1 FROM t;")
+  self~assertEquals(2, rows~items, "the first line is data, not a header")
+  self~assertEquals("name", rows[1][1], "row 1, c0")
+  self~assertEquals("Alice", rows[2][1], "row 2, c0")
+  self~assertEquals("30", rows[2][2], "row 2, c1")
+  db~close
+
+--------------------------------------------------------------------------------
+-- csv: data= takes the CSV text itself, with header=yes                      --
+--------------------------------------------------------------------------------
+
+::Method testCsvDataHeader
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "csv")
+  csvText = "x,y" || "0a"x || "1,2" || "0a"x || "3,4"
+  self~assertEquals(0, db~exec("CREATE VIRTUAL TABLE t USING csv(" -
+    || "data='" || csvText || "', header=yes);"), db~errMsg)
+  rows = self~tier5Rows(db, "SELECT x, y FROM t;")
+  self~assertEquals(2, rows~items, "two data rows")
+  self~assertEquals("1", rows[1][1], "row 1, x")
+  self~assertEquals("4", rows[2][2], "row 2, y")
+  rows = self~tier5Rows(db, "SELECT sum(x), sum(y) FROM t;")
+  self~assertEquals(4, rows[1][1], "the text values add up as numbers")
+  self~assertEquals(6, rows[1][2], "the text values add up as numbers")
+  db~close
+
+--------------------------------------------------------------------------------
+-- csv: schema= gives the column names; every value is TEXT                   --
+--------------------------------------------------------------------------------
+
+::Method testCsvSchema
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "csv")
+  self~assertEquals(0, db~exec("CREATE VIRTUAL TABLE t USING csv(" -
+    || "data='1,2,3" || "0a"x || "4,5,6', " -
+    || "schema='CREATE TABLE x(p, q, r)');"), db~errMsg)
+  rows = self~tier5Rows(db, "SELECT r, q, p FROM t WHERE p = '4';")
+  self~assertEquals(1, rows~items, "one row with p = '4'")
+  self~assertEquals("6", rows[1][1], "r")
+  self~assertEquals("5", rows[1][2], "q")
+  stmt = .ooSQLiteStmt~new(db, "SELECT p FROM t;")
+  stmt~step
+  self~assertEquals(.ooSQLite~TEXT, stmt~columnType(1), "csv values are TEXT")
+  stmt~finalize
+  db~close
+
+--------------------------------------------------------------------------------
+-- csv: columns=N, fewer or more columns than the data has                    --
+--------------------------------------------------------------------------------
+
+::Method testCsvColumns
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "csv")
+  csvText = "1,2,3" || "0a"x || "4,5,6"
+  self~assertEquals(0, db~exec("CREATE VIRTUAL TABLE narrow USING csv(" -
+    || "data='" || csvText || "', columns=2);"), db~errMsg)
+  self~assertEquals(0, db~exec("CREATE VIRTUAL TABLE wide USING csv(" -
+    || "data='" || csvText || "', columns=4);"), db~errMsg)
+  -- Fewer: the extra fields are dropped
+  stmt = .ooSQLiteStmt~new(db, "SELECT * FROM narrow;")
+  self~assertEquals(2, stmt~columnCount, "columns=2 gives two columns")
+  stmt~step
+  self~assertEquals("2", stmt~columnText(2), "row 1, c1")
+  stmt~finalize
+  -- More: the missing fields are NULL
+  stmt = .ooSQLiteStmt~new(db, "SELECT * FROM wide;")
+  self~assertEquals(4, stmt~columnCount, "columns=4 gives four columns")
+  stmt~step
+  self~assertEquals("3", stmt~columnText(3), "row 1, c2")
+  self~assertEquals(5, stmt~columnType(4), "row 1, c3 is NULL")
+  self~assertEquals(.nil, stmt~columnText(4), "a NULL column is .nil")
+  stmt~finalize
+  db~close
+
+--------------------------------------------------------------------------------
+-- csv: quoted fields with commas, doubled quotes and line ends               --
+--------------------------------------------------------------------------------
+
+::Method testCsvQuotedFields
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "csv")
+  -- The CSV text is: "a,b","say ""hi""","l1<LF>l2"<LF>plain,2,3
+  -- (inside the SQL literal every ' would have to be doubled; there is none)
+  csvText = '"a,b","say ""hi""","l1' || "0a"x || 'l2"' || "0a"x || "plain,2,3"
+  self~assertEquals(0, db~exec("CREATE VIRTUAL TABLE t USING csv(" -
+    || "data='" || csvText || "');"), db~errMsg)
+  rows = self~tier5Rows(db, "SELECT c0, c1, c2 FROM t;")
+  self~assertEquals(2, rows~items, "a line end inside quotes does not end the row")
+  self~assertEquals("a,b", rows[1][1], "a comma inside quotes")
+  self~assertEquals('say "hi"', rows[1][2], "a doubled quote is one quote")
+  self~assertEquals("l1" || "0a"x || "l2", rows[1][3], "a line end inside quotes")
+  self~assertEquals("plain", rows[2][1], "the next row")
+  db~close
+
+--------------------------------------------------------------------------------
+-- csv: an empty field is an empty string, a missing one is NULL              --
+--------------------------------------------------------------------------------
+
+::Method testCsvEmptyAndShortRows
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "csv")
+  csvText = "1,,3" || "0a"x || "4" || "0a"x || "7,8,9"
+  self~assertEquals(0, db~exec("CREATE VIRTUAL TABLE t USING csv(" -
+    || "data='" || csvText || "', columns=3);"), db~errMsg)
+  rows = self~tier5Rows(db, "SELECT typeof(c1), typeof(c2), c1 FROM t;")
+  self~assertEquals(3, rows~items, "three rows")
+  self~assertEquals("text", rows[1][1], "an empty field is TEXT")
+  self~assertEquals("", rows[1][3], "an empty field is ''")
+  self~assertEquals("null", rows[2][1], "a missing field is NULL")
+  self~assertEquals("null", rows[2][2], "a missing field is NULL")
+  self~assertEquals(.nil, rows[2][3], "a missing field is .nil")
+  self~assertEquals("text", rows[3][2], "a full row")
+  db~close
+
+--------------------------------------------------------------------------------
+-- csv: errors when the table is created                                      --
+--------------------------------------------------------------------------------
+
+::Method testCsvCreateErrors
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "csv")
+  -- A file that does not exist
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite-test-missing.csv")
+  missing = tempFile~fullName
+  Call SysFileDelete missing
+  errMsg = self~tier5StepError(db, "CREATE VIRTUAL TABLE e1 USING csv(" -
+    || "filename='" || missing || "');")
+  self~assertTrue(errMsg~pos("cannot open") > 0, "missing file:" errMsg)
+  -- An unknown parameter
+  errMsg = self~tier5StepError(db, -
+    "CREATE VIRTUAL TABLE e2 USING csv(data='1', bogus=1);")
+  self~assertTrue(errMsg~pos("bad parameter") > 0, "unknown parameter:" errMsg)
+  -- Both filename= and data=, and neither
+  errMsg = self~tier5StepError(db, -
+    "CREATE VIRTUAL TABLE e3 USING csv(data='1', filename='x.csv');")
+  self~assertTrue(errMsg~pos("filename= or data=") > 0, "both:" errMsg)
+  errMsg = self~tier5StepError(db, "CREATE VIRTUAL TABLE e4 USING csv();")
+  self~assertTrue(errMsg~pos("filename= or data=") > 0, "neither:" errMsg)
+  -- None of them was created
+  rows = self~tier5Rows(db, "SELECT count(*) FROM sqlite_schema;")
+  self~assertEquals(0, rows[1][1], "no table was created")
+  db~close
+
+--------------------------------------------------------------------------------
+-- csv: the table is read-only                                                --
+--------------------------------------------------------------------------------
+
+::Method testCsvReadOnly
+  db = self~openMemoryDB
+  .ooSQLExtensions~registerBuiltin(db, "csv")
+  self~assertEquals(0, db~exec("CREATE VIRTUAL TABLE t USING csv(" -
+    || "data='1,2');"), db~errMsg)
+  self~assertEquals(db~ERROR, db~exec("INSERT INTO t VALUES('3', '4');"), -
+    "INSERT into a csv table should fail")
+  self~assertTrue(db~errMsg~pos("may not be modified") > 0, db~errMsg)
+  self~assertEquals(db~ERROR, db~exec("DELETE FROM t;"), -
+    "DELETE from a csv table should fail")
+  rows = self~tier5Rows(db, "SELECT count(*) FROM t;")
+  self~assertEquals(1, rows[1][1], "the table still has its row")
+  db~close
+
 /******************************************************************************/
 /*                                                                            */
 /* Tier 5D — R-Tree extension (spatial indexing)                              */
@@ -4289,6 +4507,173 @@ AggregateErrorTrapped:
   self~assertTrue(stmt~columnDouble(3) > 3.49, "maxX should be ~3.5")
   self~assertTrue(stmt~columnDouble(3) < 3.51, "maxX should be ~3.5")
   stmt~finalize
+  db~close
+
+--------------------------------------------------------------------------------
+-- R-Tree: three dimensions                                                   --
+--------------------------------------------------------------------------------
+
+::Method testRtree3D
+  db = self~openMemoryDB
+  self~assertEquals(0, db~exec("CREATE VIRTUAL TABLE cubes USING" -
+    || " rtree(id, minX, maxX, minY, maxY, minZ, maxZ);"), db~errMsg)
+  -- Boxes 1 and 2 have the same X and Y extent; only Z tells them apart
+  db~exec("INSERT INTO cubes VALUES(1, 0, 10, 0, 10, 0, 10);")
+  db~exec("INSERT INTO cubes VALUES(2, 0, 10, 0, 10, 20, 30);")
+  db~exec("INSERT INTO cubes VALUES(3, 4, 6, 4, 6, 4, 26);")
+  -- Which boxes contain the point (5, 5, 5)?
+  rows = self~tier5Rows(db, "SELECT id FROM cubes WHERE" -
+    "minX <= 5 AND maxX >= 5 AND minY <= 5 AND maxY >= 5" -
+    "AND minZ <= 5 AND maxZ >= 5 ORDER BY id;")
+  self~assertEquals(2, rows~items, "two boxes contain (5, 5, 5)")
+  self~assertEquals(1, rows[1][1], "box 1")
+  self~assertEquals(3, rows[2][1], "box 3")
+  -- And the point (5, 5, 25)?
+  rows = self~tier5Rows(db, "SELECT id FROM cubes WHERE" -
+    "minX <= 5 AND maxX >= 5 AND minY <= 5 AND maxY >= 5" -
+    "AND minZ <= 25 AND maxZ >= 25 ORDER BY id;")
+  self~assertEquals(2, rows~items, "two boxes contain (5, 5, 25)")
+  self~assertEquals(2, rows[1][1], "box 2")
+  self~assertEquals(3, rows[2][1], "box 3")
+  db~close
+
+--------------------------------------------------------------------------------
+-- R-Tree: five dimensions is the maximum                                     --
+--------------------------------------------------------------------------------
+
+::Method testRtreeDimensions
+  db = self~openMemoryDB
+  self~assertEquals(0, db~exec("CREATE VIRTUAL TABLE r5 USING rtree(id," -
+    "a0, a1, b0, b1, c0, c1, d0, d1, e0, e1);"), db~errMsg)
+  self~assertEquals(0, db~exec("INSERT INTO r5 VALUES(1," -
+    "0, 1, 0, 1, 0, 1, 0, 1, 0, 1);"), db~errMsg)
+  rows = self~tier5Rows(db, "SELECT id, e1 FROM r5 WHERE e0 <= 0.5;")
+  self~assertEquals(1, rows~items, "the five-dimensional box is found")
+  self~assertEquals(1, rows[1][1], "its id")
+  -- Six dimensions
+  errMsg = self~tier5StepError(db, "CREATE VIRTUAL TABLE r6 USING rtree(id," -
+    "a0, a1, b0, b1, c0, c1, d0, d1, e0, e1, f0, f1);")
+  self~assertTrue(errMsg~pos("Too many columns") > 0, "six dimensions:" errMsg)
+  -- An odd number of coordinates
+  errMsg = self~tier5StepError(db, -
+    "CREATE VIRTUAL TABLE r7 USING rtree(id, a0, a1, b0);")
+  self~assertTrue(errMsg~pos("Wrong number of columns") > 0, "odd:" errMsg)
+  db~close
+
+--------------------------------------------------------------------------------
+-- R-Tree: rtree_i32 keeps integer coordinates                                --
+--------------------------------------------------------------------------------
+
+::Method testRtreeInt32
+  db = self~openMemoryDB
+  self~assertEquals(0, db~exec("CREATE VIRTUAL TABLE grid USING" -
+    || " rtree_i32(id, minX, maxX, minY, maxY);"), db~errMsg)
+  db~exec("INSERT INTO grid VALUES(1, -2000000000, 2000000000, -5, 5);")
+  db~exec("INSERT INTO grid VALUES(2, 10, 20, 10, 20);")
+  stmt = .ooSQLiteStmt~new(db, "SELECT minX, maxX, minY FROM grid WHERE id = 1;")
+  stmt~step
+  self~assertEquals(.ooSQLite~INTEGER, stmt~columnType(1), "an INTEGER coordinate")
+  self~assertEquals(-2000000000, stmt~columnInt(1), "minX")
+  self~assertEquals(2000000000, stmt~columnInt64(2), "maxX")
+  self~assertEquals(-5, stmt~columnInt(3), "minY")
+  stmt~finalize
+  -- The float rtree gives REAL coordinates
+  db~exec("CREATE VIRTUAL TABLE fgrid USING rtree(id, minX, maxX);")
+  db~exec("INSERT INTO fgrid VALUES(1, 10, 20);")
+  stmt = .ooSQLiteStmt~new(db, "SELECT minX FROM fgrid;")
+  stmt~step
+  self~assertEquals(.ooSQLite~FLOAT, stmt~columnType(1), "a REAL coordinate")
+  stmt~finalize
+  rows = self~tier5Rows(db, "SELECT id FROM grid WHERE minX <= 15 AND maxX >= 15" -
+    "AND minY <= 15 AND maxY >= 15 ORDER BY id;")
+  self~assertEquals(1, rows~items, "only box 2 contains (15, 15)")
+  self~assertEquals(2, rows[1][1], "box 2")
+  db~close
+
+--------------------------------------------------------------------------------
+-- R-Tree: auxiliary columns                                                  --
+--------------------------------------------------------------------------------
+
+::Method testRtreeAuxiliaryColumns
+  db = self~openMemoryDB
+  self~assertEquals(0, db~exec("CREATE VIRTUAL TABLE places USING" -
+    || " rtree(id, minX, maxX, minY, maxY, +name, +kind);"), db~errMsg)
+  db~exec("INSERT INTO places VALUES(1, 0, 2, 0, 2, 'park', 7);")
+  db~exec("INSERT INTO places VALUES(2, 1, 3, 1, 3, 'lake', 8);")
+  db~exec("INSERT INTO places VALUES(3, 1, 3, 1, 3, 'park', 9);")
+  rows = self~tier5Rows(db, "SELECT id, name, kind FROM places" -
+    "WHERE minX <= 1.5 AND maxX >= 1.5 AND name = 'park' ORDER BY id;")
+  self~assertEquals(2, rows~items, "two parks contain x = 1.5")
+  self~assertEquals(1, rows[1][1], "park 1")
+  self~assertEquals(9, rows[2][3], "park 3, kind")
+  stmt = .ooSQLiteStmt~new(db, "SELECT name, kind FROM places WHERE id = 2;")
+  stmt~step
+  self~assertEquals(.ooSQLite~TEXT, stmt~columnType(1), "an auxiliary TEXT column")
+  self~assertEquals(.ooSQLite~INTEGER, stmt~columnType(2), "an auxiliary INTEGER column")
+  stmt~finalize
+  -- An auxiliary column can be updated alone
+  self~assertEquals(0, db~exec("UPDATE places SET name = 'pond' WHERE id = 2;"), db~errMsg)
+  rows = self~tier5Rows(db, "SELECT name, minX FROM places WHERE id = 2;")
+  self~assertEquals("pond", rows[1][1], "the new name")
+  self~assertEquals(1, rows[1][2], "the box is unchanged")
+  db~close
+
+--------------------------------------------------------------------------------
+-- R-Tree: UPDATE, DELETE and the min <= max constraint                       --
+--------------------------------------------------------------------------------
+
+::Method testRtreeUpdateDelete
+  db = self~openMemoryDB
+  db~exec("CREATE VIRTUAL TABLE boxes USING rtree(id, minX, maxX, minY, maxY);")
+  db~exec("INSERT INTO boxes VALUES(1, 0, 1, 0, 1);")
+  db~exec("INSERT INTO boxes VALUES(2, 5, 6, 5, 6);")
+  -- Move box 1 next to box 2
+  self~assertEquals(0, db~exec("UPDATE boxes SET minX = 5, maxX = 7" -
+    "WHERE id = 1;"), db~errMsg)
+  self~assertEquals(1, db~changes, "one row updated")
+  rows = self~tier5Rows(db, "SELECT id FROM boxes WHERE minX <= 6.5 AND" -
+    "maxX >= 6.5 ORDER BY id;")
+  self~assertEquals(1, rows~items, "only the moved box reaches x = 6.5")
+  self~assertEquals(1, rows[1][1], "box 1")
+  -- A box with minX > maxX
+  self~assertEquals(db~CONSTRAINT, -
+    db~exec("INSERT INTO boxes VALUES(3, 9, 8, 0, 1);"), "minX > maxX")
+  self~assertTrue(db~errMsg~pos("rtree constraint failed") > 0, db~errMsg)
+  self~assertEquals(db~CONSTRAINT, -
+    db~exec("UPDATE boxes SET maxY = -1 WHERE id = 2;"), "maxY < minY")
+  -- DELETE
+  self~assertEquals(0, db~exec("DELETE FROM boxes WHERE id = 2;"), db~errMsg)
+  rows = self~tier5Rows(db, "SELECT count(*), max(id) FROM boxes;")
+  self~assertEquals(1, rows[1][1], "one box left")
+  self~assertEquals(1, rows[1][2], "box 1 is left")
+  db~close
+
+--------------------------------------------------------------------------------
+-- R-Tree: rtreecheck on a tree with internal nodes                           --
+--------------------------------------------------------------------------------
+
+::Method testRtreeCheck
+  db = self~openMemoryDB
+  db~exec("CREATE VIRTUAL TABLE cubes USING" -
+    || " rtree(id, minX, maxX, minY, maxY, minZ, maxZ);")
+  self~assertEquals(0, db~exec("WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL" -
+    "SELECT i + 1 FROM n WHERE i < 500) INSERT INTO cubes" -
+    "SELECT i, i, i + 1, i, i + 1, i, i + 1 FROM n;"), db~errMsg)
+  rows = self~tier5Rows(db, "SELECT count(*) FROM cubes_node;")
+  self~assertTrue(rows[1][1] > 1, "500 boxes need more than one node:" rows[1][1])
+  rows = self~tier5Rows(db, "SELECT rtreecheck('cubes');")
+  self~assertEquals("ok", rows[1][1], "rtreecheck")
+  -- Delete every other box and check again
+  db~exec("DELETE FROM cubes WHERE id % 2 = 0;")
+  rows = self~tier5Rows(db, "SELECT rtreecheck('cubes'), count(*) FROM cubes;")
+  self~assertEquals("ok", rows[1][1], "rtreecheck after DELETE")
+  self~assertEquals(250, rows[1][2], "250 boxes left")
+  rows = self~tier5Rows(db, "SELECT id FROM cubes WHERE minX <= 250.5 AND" -
+    "maxX >= 250.5 AND minZ <= 250.5 AND maxZ >= 250.5;")
+  self~assertEquals(0, rows~items, "box 250 was deleted")
+  rows = self~tier5Rows(db, "SELECT id FROM cubes WHERE minX <= 251.5 AND" -
+    "maxX >= 251.5 AND minZ <= 251.5 AND maxZ >= 251.5;")
+  self~assertEquals(1, rows~items, "box 251 is still there")
   db~close
 
 /******************************************************************************/
@@ -4419,6 +4804,218 @@ AggregateErrorTrapped:
   -- First polygon contains the second: overlap = 3
   self~assertEquals(3, stmt~columnInt(1), -
     "Containment should return overlap 3")
+  stmt~finalize
+  db~close
+
+--------------------------------------------------------------------------------
+-- Helper: the polygons of the Geopoly tests                                  --
+--------------------------------------------------------------------------------
+
+::Method geoSquare     -- 4 x 4, counter-clockwise
+  Return "'[[0,0],[4,0],[4,4],[0,4],[0,0]]'"
+
+::Method geoInner      -- 1 x 1, inside the square
+  Return "'[[1,1],[2,1],[2,2],[1,2],[1,1]]'"
+
+::Method geoFar        -- 1 x 1, far from the square
+  Return "'[[10,10],[11,10],[11,11],[10,11],[10,10]]'"
+
+--------------------------------------------------------------------------------
+-- Geopoly: geopoly_within                                                    --
+--------------------------------------------------------------------------------
+
+::Method testGeopolyWithin
+  db = self~openMemoryDB
+  sq = self~geoSquare; in = self~geoInner; far = self~geoFar
+  rows = self~tier5Rows(db, "SELECT geopoly_within("in","sq")," -
+    "geopoly_within("sq","sq"), geopoly_within("sq","in")," -
+    "geopoly_within("far","sq");")
+  self~assertEquals(1, rows[1][1], "the inner square is within the square")
+  self~assertEquals(2, rows[1][2], "a polygon is within itself: 2")
+  self~assertEquals(0, rows[1][3], "the square is not within the inner one")
+  self~assertEquals(0, rows[1][4], "a far polygon is not within the square")
+  db~close
+
+--------------------------------------------------------------------------------
+-- Geopoly: geopoly_bbox and the aggregate geopoly_group_bbox                 --
+--------------------------------------------------------------------------------
+
+::Method testGeopolyBbox
+  db = self~openMemoryDB
+  rows = self~tier5Rows(db, "SELECT geopoly_json(geopoly_bbox(" -
+    "'[[0,0],[4,1],[2,5],[0,0]]'));")
+  self~assertEquals("[[0.0,0.0],[4.0,0.0],[4.0,5.0],[0.0,5.0],[0.0,0.0]]", -
+    rows[1][1], "the bounding box of a triangle")
+  db~exec("CREATE VIRTUAL TABLE geo USING geopoly(name);")
+  db~exec("INSERT INTO geo(_shape, name) VALUES("self~geoSquare", 'sq')," -
+    "("self~geoInner", 'in'), ("self~geoFar", 'far');")
+  rows = self~tier5Rows(db, "SELECT geopoly_json(geopoly_group_bbox(_shape))" -
+    "FROM geo;")
+  self~assertEquals("[[0.0,0.0],[11.0,0.0],[11.0,11.0],[0.0,11.0],[0.0,0.0]]", -
+    rows[1][1], "the bounding box of every shape")
+  rows = self~tier5Rows(db, "SELECT geopoly_area(geopoly_group_bbox(_shape))" -
+    "FROM geo WHERE name <> 'far';")
+  self~assertEquals(16, rows[1][1], "the bounding box of the near shapes")
+  db~close
+
+--------------------------------------------------------------------------------
+-- Geopoly: geopoly_blob, read with columnBlob and bound back with bindBlob   --
+--------------------------------------------------------------------------------
+
+::Method testGeopolyBlob
+  db = self~openMemoryDB
+  stmt = .ooSQLiteStmt~new(db, "SELECT geopoly_blob("self~geoSquare");")
+  stmt~step
+  self~assertEquals(.ooSQLite~BLOB, stmt~columnType(1), "geopoly_blob gives a BLOB")
+  blob = stmt~columnBlob(1)
+  stmt~finalize
+  -- A 4-byte header (little-endian flag, 3-byte vertex count) and 4 vertices
+  -- of two 32-bit floats; the closing vertex is not stored
+  self~assertEquals(36, blob~length, "4 + 4 * 8 bytes")
+  self~assertEquals("01000004", blob~left(4)~c2x, "the header")
+  self~assertEquals("0000804000000000", blob~substr(13, 8)~c2x, -
+    "the second vertex, (4.0, 0.0), as little-endian floats")
+  db~close
+
+::Method testGeopolyBlobRoundTrip
+  db = self~openMemoryDB
+  stmt = .ooSQLiteStmt~new(db, "SELECT geopoly_blob("self~geoSquare");")
+  stmt~step
+  blob = stmt~columnBlob(1)
+  stmt~finalize
+  self~assertEquals("01000004" || -
+    "00000000" || "00000000" || "00008040" || "00000000" || -
+    "00008040" || "00008040" || "00000000" || "00008040", blob~c2x, -
+    "the bytes of the square")
+  -- Bound back as a BLOB, the bytes are the same polygon
+  stmt = .ooSQLiteStmt~new(db, "SELECT geopoly_json(?), geopoly_area(?);")
+  stmt~bindBlob(1, blob)
+  stmt~bindBlob(2, blob)
+  self~assertEquals(stmt~ROW, stmt~step, "step")
+  self~assertEquals("[[0.0,0.0],[4.0,0.0],[4.0,4.0],[0.0,4.0],[0.0,0.0]]", -
+    stmt~columnText(1), "the JSON of the bound blob")
+  self~assertEquals(16, stmt~columnDouble(2), "the area of the bound blob")
+  stmt~finalize
+  -- The _shape column of a geopoly table holds the same blob
+  db~exec("CREATE VIRTUAL TABLE geo USING geopoly();")
+  stmt = .ooSQLiteStmt~new(db, "INSERT INTO geo(_shape) VALUES(?);")
+  stmt~bindBlob(1, blob)
+  self~assertEquals(stmt~DONE, stmt~step, "INSERT a bound blob")
+  stmt~finalize
+  stmt = .ooSQLiteStmt~new(db, "SELECT _shape FROM geo;")
+  stmt~step
+  self~assertEquals(blob, stmt~columnBlob(1), "_shape is the same blob")
+  stmt~finalize
+  db~close
+
+--------------------------------------------------------------------------------
+-- Geopoly: geopoly_xform and geopoly_regular                                 --
+--------------------------------------------------------------------------------
+
+::Method testGeopolyXformRegular
+  db = self~openMemoryDB
+  sq = self~geoSquare
+  -- x' = A*x + B*y + E, y' = C*x + D*y + F
+  rows = self~tier5Rows(db, "SELECT geopoly_json(geopoly_xform("sq"," -
+    "1, 0, 0, 1, 10, 20)), geopoly_area(geopoly_xform("sq", 2, 0, 0, 3, 0, 0));")
+  self~assertEquals("[[10.0,20.0],[14.0,20.0],[14.0,24.0],[10.0,24.0],[10.0,20.0]]", -
+    rows[1][1], "a translation")
+  self~assertEquals(96, rows[1][2], "scaled by 2 and 3, the area is 16 * 6")
+  -- A regular polygon: the vertices lie (almost) on the circle
+  rows = self~tier5Rows(db, "SELECT geopoly_area(geopoly_regular(0, 0, 1, 4))," -
+    "geopoly_area(geopoly_regular(0, 0, 1, 1000)), geopoly_regular(0, 0, 1, 2)," -
+    "length(geopoly_regular(0, 0, 1, 1001));")
+  self~assertTrue((rows[1][1] - 2)~abs < 0.001, "a square inscribed in r = 1:" rows[1][1])
+  self~assertTrue((rows[1][2] - 3.14159)~abs < 0.001, "1000 sides is almost pi:" rows[1][2])
+  self~assertEquals(.nil, rows[1][3], "fewer than 3 sides is NULL")
+  self~assertEquals(4 + 1000 * 8, rows[1][4], "more than 1000 sides is 1000")
+  db~close
+
+--------------------------------------------------------------------------------
+-- Geopoly: orientation and geopoly_ccw                                       --
+--------------------------------------------------------------------------------
+
+::Method testGeopolyCcw
+  db = self~openMemoryDB
+  clockwise = "'[[0,0],[0,4],[4,4],[4,0],[0,0]]'"
+  rows = self~tier5Rows(db, "SELECT geopoly_area("clockwise")," -
+    "geopoly_area(geopoly_ccw("clockwise")), geopoly_json(geopoly_ccw("clockwise"))," -
+    "geopoly_json(geopoly_ccw("self~geoSquare"));")
+  self~assertEquals(-16, rows[1][1], "a clockwise polygon has a negative area")
+  self~assertEquals(16, rows[1][2], "geopoly_ccw makes it counter-clockwise")
+  self~assertEquals("[[0.0,0.0],[4.0,0.0],[4.0,4.0],[0.0,4.0],[0.0,0.0]]", -
+    rows[1][3], "the vertices of the reversed polygon")
+  self~assertEquals(rows[1][3], rows[1][4], -
+    "a counter-clockwise polygon is unchanged")
+  db~close
+
+--------------------------------------------------------------------------------
+-- Geopoly: geopoly_svg                                                       --
+--------------------------------------------------------------------------------
+
+::Method testGeopolySvg
+  db = self~openMemoryDB
+  triangle = "'[[0,0],[1,0],[0,1],[0,0]]'"
+  rows = self~tier5Rows(db, "SELECT geopoly_svg("triangle")," -
+    "geopoly_svg("triangle", 'fill=""red""', 'stroke=""blue""');")
+  self~assertEquals("<polyline points='0,0 1,0 0,1 0,0'></polyline>", -
+    rows[1][1], "an SVG polyline")
+  self~assertEquals("<polyline points='0,0 1,0 0,1 0,0'" -
+    'fill="red" stroke="blue"></polyline>', rows[1][2], "with attributes")
+  db~close
+
+--------------------------------------------------------------------------------
+-- Geopoly: queries on a table, auxiliary columns, UPDATE of _shape           --
+--------------------------------------------------------------------------------
+
+::Method testGeopolyTableQueries
+  db = self~openMemoryDB
+  self~assertEquals(0, db~exec("CREATE VIRTUAL TABLE geo USING" -
+    "geopoly(name, color);"), db~errMsg)
+  self~assertEquals(0, db~exec("INSERT INTO geo(_shape, name, color) VALUES" -
+    "("self~geoSquare", 'sq', 'red'), ("self~geoInner", 'in', 'green')," -
+    "("self~geoFar", 'far', 'blue');"), db~errMsg)
+  window = "'[[0.5,0.5],[3,0.5],[3,3],[0.5,3],[0.5,0.5]]'"
+  rows = self~tier5Rows(db, "SELECT name FROM geo WHERE" -
+    "geopoly_overlap(_shape, "window") ORDER BY name;")
+  self~assertEquals(2, rows~items, "two shapes overlap the window")
+  self~assertEquals("in", rows[1][1], "the inner square")
+  self~assertEquals("sq", rows[2][1], "the square")
+  rows = self~tier5Rows(db, "SELECT color FROM geo WHERE" -
+    "geopoly_within(_shape, '[[-1,-1],[5,-1],[5,5],[-1,5],[-1,-1]]')" -
+    "AND name <> 'sq';")
+  self~assertEquals(1, rows~items, "one other shape within (-1,-1)-(5,5)")
+  self~assertEquals("green", rows[1][1], "its color")
+  -- Move the inner square next to the far one
+  self~assertEquals(0, db~exec("UPDATE geo SET _shape = geopoly_xform(_shape," -
+    "1, 0, 0, 1, 9.2, 9.2) WHERE name = 'in';"), db~errMsg)
+  rows = self~tier5Rows(db, "SELECT name FROM geo WHERE" -
+    "geopoly_contains_point(_shape, 10.5, 10.5) ORDER BY name;")
+  self~assertEquals(2, rows~items, "two shapes contain (10.5, 10.5)")
+  self~assertEquals("far", rows[1][1], "the far square")
+  self~assertEquals("in", rows[2][1], "the moved square")
+  -- An auxiliary column alone
+  db~exec("UPDATE geo SET color = 'black' WHERE name = 'far';")
+  rows = self~tier5Rows(db, "SELECT color, geopoly_area(_shape) FROM geo" -
+    "WHERE name = 'far';")
+  self~assertEquals("black", rows[1][1], "the new color")
+  self~assertEquals(1, rows[1][2], "the shape is unchanged")
+  db~close
+
+--------------------------------------------------------------------------------
+-- Geopoly: invalid input gives NULL                                          --
+--------------------------------------------------------------------------------
+
+::Method testGeopolyInvalid
+  db = self~openMemoryDB
+  stmt = .ooSQLiteStmt~new(db, "SELECT geopoly_area('not json')," -
+    "geopoly_area('[[0,0],[1,0]]'), geopoly_json('[[0,0],[1,1]]')," -
+    "geopoly_area(NULL), geopoly_blob(x'0102');")
+  self~assertEquals(stmt~ROW, stmt~step, "invalid input is not an error")
+  Do i = 1 To stmt~columnCount
+    self~assertEquals(5, stmt~columnType(i), "column" i "is NULL")
+    self~assertEquals(.nil, stmt~columnText(i), "column" i "is .nil")
+  End
   stmt~finalize
   db~close
 
@@ -9032,6 +9629,82 @@ Done:
   w~start("run", db, "SELECT f(1);", "classic")
   self~assertEquals('SYNTAX 98.900 The USER BOOM condition was raised in the callback "classicRaisingCB": boom-user.', w~wait)
   self~assertEquals(1, .local~classicRaiseCalls)
+  self~assertEquals(0, oosqlClose(db))
+
+/******************************************************************************/
+/*                                                                            */
+/* Section C12: Classic — Tier 5 values (Geopoly blobs, rtree_i32, csv)       */
+/*                                                                            */
+/******************************************************************************/
+
+--------------------------------------------------------------------------------
+-- Geopoly blob through oosqlColumnBlob and oosqlBindBlob                     --
+--------------------------------------------------------------------------------
+
+::Method testClassicGeopolyBlob
+  db = self~classicOpenMemory
+  self~assertEquals(0, oosqlPrepare(db, -
+    "SELECT geopoly_blob('[[0,0],[4,0],[4,4],[0,4],[0,0]]');", "stmt"))
+  self~assertEquals(.ooSQLite~ROW, oosqlStep(stmt))
+  self~assertEquals(.ooSQLite~BLOB, oosqlColumnType(stmt, 1), "a BLOB")
+  self~assertEquals(36, oosqlColumnBytes(stmt, 1), "36 bytes")
+  blob = oosqlColumnBlob(stmt, 1)
+  Call oosqlFinalize stmt
+  self~assertEquals("01000004" || -
+    "00000000" || "00000000" || "00008040" || "00000000" || -
+    "00008040" || "00008040" || "00000000" || "00008040", blob~c2x, -
+    "the bytes of the square")
+  -- Bound back, the bytes are the same polygon
+  Call oosqlPrepare db, "SELECT geopoly_area(?);", "stmt"
+  self~assertEquals(0, oosqlBindBlob(stmt, 1, blob))
+  self~assertEquals(.ooSQLite~ROW, oosqlStep(stmt))
+  self~assertEquals(16, oosqlColumnDouble(stmt, 1), "the area of the bound blob")
+  Call oosqlFinalize stmt
+  self~assertEquals(0, oosqlClose(db))
+
+--------------------------------------------------------------------------------
+-- rtree_i32 coordinates through oosqlColumnInt / oosqlColumnInt64            --
+--------------------------------------------------------------------------------
+
+::Method testClassicRtreeInt32
+  db = self~classicOpenMemory
+  Call oosqlExec db, "CREATE VIRTUAL TABLE grid USING" -
+    "rtree_i32(id, minX, maxX, minY, maxY, minZ, maxZ);"
+  self~assertEquals(0, oosqlErrCode(db), oosqlErrMsg(db))
+  Call oosqlExec db, "INSERT INTO grid VALUES(7, -2000000000, 2000000000," -
+    "1, 2, 3, 4);"
+  self~assertEquals(0, oosqlErrCode(db), oosqlErrMsg(db))
+  Call oosqlPrepare db, "SELECT id, minX, maxX, maxZ FROM grid WHERE" -
+    "minZ <= 3.5 AND maxZ >= 3.5;", "stmt"
+  self~assertEquals(.ooSQLite~ROW, oosqlStep(stmt))
+  self~assertEquals(7, oosqlColumnInt(stmt, 1), "id")
+  self~assertEquals(.ooSQLite~INTEGER, oosqlColumnType(stmt, 2), "INTEGER")
+  self~assertEquals(-2000000000, oosqlColumnInt(stmt, 2), "minX")
+  self~assertEquals(2000000000, oosqlColumnInt64(stmt, 3), "maxX")
+  self~assertEquals(4, oosqlColumnInt(stmt, 4), "maxZ")
+  self~assertEquals(.ooSQLite~DONE, oosqlStep(stmt), "one row")
+  Call oosqlFinalize stmt
+  self~assertEquals(0, oosqlClose(db))
+
+--------------------------------------------------------------------------------
+-- csv missing fields through oosqlColumnType / oosqlColumnText               --
+--------------------------------------------------------------------------------
+
+::Method testClassicCsvNull
+  db = self~classicOpenMemory
+  self~assertEquals(0, ooSQLiteRegisterBuiltin(db, "csv"), "register csv")
+  Call oosqlExec db, "CREATE VIRTUAL TABLE t USING csv(data='a,," || "0a"x || -
+    "b', columns=3);"
+  self~assertEquals(0, oosqlErrCode(db), oosqlErrMsg(db))
+  Call oosqlPrepare db, "SELECT c0, c1, c2 FROM t;", "stmt"
+  self~assertEquals(.ooSQLite~ROW, oosqlStep(stmt))
+  self~assertEquals(.ooSQLite~TEXT, oosqlColumnType(stmt, 2), "an empty field")
+  self~assertEquals("", oosqlColumnText(stmt, 2), "an empty field is ''")
+  self~assertEquals(.ooSQLite~ROW, oosqlStep(stmt))
+  self~assertEquals("b", oosqlColumnText(stmt, 1), "row 2, c0")
+  self~assertEquals(5, oosqlColumnType(stmt, 2), "a missing field is NULL")
+  self~assertEquals(5, oosqlColumnType(stmt, 3), "a missing field is NULL")
+  Call oosqlFinalize stmt
   self~assertEquals(0, oosqlClose(db))
 
 /******************************************************************************/
