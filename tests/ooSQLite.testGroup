@@ -7110,14 +7110,14 @@ WrongClass:
 /*                                                                            */
 /* Section 42: Strings and objects kept past the call that gave them          */
 /*                                                                            */
-/* Like the callback names of section 41, other values were kept by the      */
-/* native code without anything keeping them alive: the string value of the  */
-/* null attribute (a pointer into the String given), the file name of a      */
-/* connection opened with a File object (a pointer into a temporary), and    */
-/* the lastErrMsg and lastErrCode of ooSQLExtensions, ooSQLPackage and       */
-/* ooSQLLibrary (objects held only by an object variable that was set to     */
-/* something else, or on another object).  After a garbage collection they   */
-/* showed garbage, or the program died with SIGSEGV.  See technical note     */
+/* Like the callback names of section 41, other values were kept by the       */
+/* native code without anything keeping them alive: the string value of the   */
+/* null attribute (a pointer into the String given), the file name of a       */
+/* connection opened with a File object (a pointer into a temporary), and     */
+/* the lastErrMsg and lastErrCode of ooSQLExtensions, ooSQLPackage and        */
+/* ooSQLLibrary (objects held only by an object variable that was set to      */
+/* something else, or on another object).  After a garbage collection they    */
+/* showed garbage, or the program died with SIGSEGV.  See technical note      */
 /* #64.                                                                       */
 /*                                                                            */
 /******************************************************************************/
@@ -7229,6 +7229,53 @@ NotOpen:
   self~assertTrue(lib~lastErrMsg~pos("noSuchFunc") > 0, -
     "the library's lastErrMsg names the function:" lib~lastErrMsg)
   self~assertTrue(lib~lastErrCode \= 0, "the library's lastErrCode is set")
+
+/******************************************************************************/
+/*                                                                            */
+/* Section 43: The rows exec sends to a callback method                       */
+/*                                                                            */
+/* With OO_ARRAY_OF_ARRAYS, the row is an array whose index 1 is an array of  */
+/* the column names and whose index 2 is an array of the values.  The names   */
+/* were never filled in, and the values were appended twice ("a b a b").      */
+/* With OO_CLASSIC_STEM, SQL NULL was always .nil in the row, whatever the    */
+/* null attribute of the connection.  See technical note #65.                 */
+/*                                                                            */
+/******************************************************************************/
+
+::Method testExecRowArrayOfArrays
+  db = self~openMemoryDB
+  h = .RowKeeper~new
+  rc = db~exec("SELECT 'a' AS x, 'b' AS y;", .true, .ooSQLite~OO_ARRAY_OF_ARRAYS, h, "keep")
+  self~assertEquals(0, rc, db~errMsg)
+  row = h~rows[1]
+  self~assertEquals(2, row~items, "the row has the names and the values")
+  self~assertEquals("x y", row[1]~makeString("L", " "), "index 1: the column names")
+  self~assertEquals(2, row[2]~items, "index 2: one value for each column")
+  self~assertEquals("a b", row[2]~makeString("L", " "), "index 2: the values")
+  db~close
+
+::Method testExecRowArrayOfArraysNull
+  db = self~openMemoryDB
+  h = .RowKeeper~new
+  rc = db~exec("SELECT NULL AS x, 'b' AS y;", .true, .ooSQLite~OO_ARRAY_OF_ARRAYS, h, "keep")
+  self~assertEquals(0, rc, db~errMsg)
+  values = h~rows[1][2]
+  self~assertEquals(2, values~items, "one value for each column")
+  self~assertTrue(values~hasIndex(1), "SQL NULL is an item")
+  self~assertSame(.nil, values[1], "SQL NULL is the connection's null, .nil")
+  self~assertEquals("b", values[2])
+  db~close
+
+::Method testExecRowClassicStemNull
+  db = self~openMemoryDB
+  db~null = "NUL"
+  h = .RowKeeper~new
+  rc = db~exec("SELECT NULL AS x, 'b' AS y;", .true, .ooSQLite~OO_CLASSIC_STEM, h, "keep")
+  self~assertEquals(0, rc, db~errMsg)
+  row = h~rows[1]
+  self~assertEquals("NUL", row["X"], "SQL NULL is the connection's null")
+  self~assertEquals("b", row["Y"])
+  db~close
 
 ::Class "ooSQLiteClassic.testGroup" Subclass ooTestCase Public
 
@@ -10659,6 +10706,78 @@ Trapped:
   Call oosqlCommitHook db, ""
   self~assertEquals(0, oosqlClose(db))
 
+/******************************************************************************/
+/*                                                                            */
+/* Section C17: Classic — SQL NULL in the rows of oosqlExec                   */
+/*                                                                            */
+/* oosqlExec gave the rows a null pointer for SQL NULL.  An array then held   */
+/* a null item: reading it gave .nil, but hasIndex said there was none and    */
+/* the counts disagreed (2 columns: items 2, allItems 1).  Now SQL NULL is    */
+/* .nil in the arrays and the directories, and the tail of a stem is not      */
+/* assigned, as documented, in a callback too (it was .nil there with         */
+/* OO_CLASSIC_STEM).  The directory and result set stem tests passed before:  */
+/* they guard what was right.  Section 43 of the OO tests has the array rows  */
+/* sent to a callback.  See technical note #65.                               */
+/*                                                                            */
+/******************************************************************************/
+
+::Method testClassicExecNullArrayOfArrays
+  db = self~classicOpenMemory
+  rs = oosqlExec(db, "SELECT NULL AS v, 1 AS w;", .true, 1)
+  rec = rs[2]
+  self~assertTrue(rec~hasIndex(1), "SQL NULL is an item")
+  self~assertSame(.nil, rec[1], "SQL NULL is .nil")
+  self~assertEquals(2, rec~items)
+  self~assertEquals(2, rec~allItems~items, "items and allItems agree")
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicExecNullArrayOfDirectories
+  db = self~classicOpenMemory
+  rs = oosqlExec(db, "SELECT NULL AS v, 1 AS w;", .true, 2)
+  rec = rs[1]
+  self~assertSame(.nil, rec["V"], "SQL NULL is .nil")
+  n = 0
+  Do i Over rec
+    n += 1
+  End
+  self~assertEquals(2, n, "DO OVER sees both columns")
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicExecNullStems
+  db = self~classicOpenMemory
+  rs = oosqlExec(db, "SELECT NULL AS v, 1 AS w;", .true, 3)
+  self~assertFalse(rs[1]~hasIndex("V"), "OO_STEM_OF_STEMS: the tail is not assigned")
+  self~assertEquals(1, rs[1]["W"])
+  rs = oosqlExec(db, "SELECT NULL AS v, 1 AS w;", .true, 4)
+  self~assertFalse(rs~hasIndex("1.V"), "OO_CLASSIC_STEM: the tail is not assigned")
+  self~assertEquals(1, rs["1.W"])
+  self~assertEquals(0, oosqlClose(db))
+
+::Method testClassicExecNullCallbackRows
+  db = self~classicOpenMemory
+  sql = "SELECT NULL AS v, 1 AS w;"
+  .local~classicExecRows = .Array~new
+  Do format = 1 To 4
+    self~assertEquals(0, oosqlExec(db, sql, .true, format, "classicExecRowCB"), "format" format)
+  End
+  rows = .local~classicExecRows
+  self~assertEquals(4, rows~items, "one row for each format")
+  self~assertEquals("v w", rows[1][1]~makeString("L", " "), "arrays: index 1, the column names")
+  self~assertEquals(2, rows[1][2]~items, "arrays: index 2, one value for each column")
+  self~assertSame(.nil, rows[1][2][1], "arrays: SQL NULL is .nil")
+  self~assertTrue(rows[1][2]~hasIndex(1), "arrays: SQL NULL is an item")
+  self~assertSame(.nil, rows[2]["V"], "directories: SQL NULL is .nil")
+  self~assertEquals(2, rows[2]~allItems~items, "directories: both columns")
+  self~assertFalse(rows[3]~hasIndex("V"), "OO_STEM_OF_STEMS: the tail is not assigned")
+  self~assertFalse(rows[4]~hasIndex("V"), "OO_CLASSIC_STEM: the tail is not assigned")
+  self~assertEquals(1, rows[4]["W"])
+  self~assertEquals(0, oosqlClose(db))
+
+::Routine classicExecRowCB Public
+  Use Arg row, count
+  .local~classicExecRows~append(row)
+  Return 0
+
 ::Routine classicCommitHookCB Public
   Use Arg userData
   .environment~classicCommitHookCallCount = -
@@ -11097,6 +11216,18 @@ TrapSyntax:
 ::Class StmtWithoutSuperInit Subclass ooSQLiteStmt
 ::Method init
   Nop
+
+-- Section 43: an exec callback that keeps every row it is sent
+::Class RowKeeper
+::Attribute rows
+::Method init
+  Expose rows
+  rows = .Array~new
+::Method keep
+  Expose rows
+  Use Arg row, count
+  rows~append(row)
+  Return 0
 
 -- Section 42: an exec callback that changes the connection's null on the
 -- first row, and keeps the null value of every row it sees
