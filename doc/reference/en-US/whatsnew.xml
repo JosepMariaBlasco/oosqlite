@@ -664,6 +664,20 @@
     now returns NULL, like the group_concat function of SQLite.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Callback names built at run time</emphasis></term>
+  <listitem>
+  <para>
+    The name of a callback method given to <link linkend="mthCreateFunction">createFunction</link>, <link
+    linkend="mthCreateCollation">createCollation</link>, <link linkend="mthCommitHook">commitHook</link> and the other
+    methods that register a callback, the name of a callback routine given to the classic routines, and the SQL name of
+    a classic function, were kept as pointers into the strings given as arguments. A literal lives as long as the
+    program, so nothing showed; but a name built at run time, such as <computeroutput>'cb' || 'Method'</computeroutput>,
+    could be garbage collected once the program no longer used it, and the callback then invoked a method named by
+    whatever the memory held, for instance <computeroutput>189372</computeroutput>, with a NOMETHOD condition, and the
+    error messages of the classic callbacks named the wrong routine. The names are now copied when the callback is
+    registered.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">enquote and ooSQLiteEnquote: no length limit, and a stem with one value</emphasis></term>
   <listitem>
   <para>
