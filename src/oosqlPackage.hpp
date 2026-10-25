@@ -176,9 +176,10 @@ typedef SQLiteModuleEntry *pSQLiteModuleEntry;
 #define OOSQL_PACKAGE_API_NO 20130501
 
 // The ooSQLite version number uses 2 digits for major, minor, and level.  The
-// svn build number is not used.
+// build level is not used.
 #define OOSQLITE_1_0_0           0x00010000
-#define OOSQLITE_CURRENT_VERSION OOSQLITE_1_0_0
+#define OOSQLITE_1_1_0           0x00010100
+#define OOSQLITE_CURRENT_VERSION OOSQLITE_1_1_0
 
 /**
  * A note on SQLite version numbers.  We use the same format that SQLite defines

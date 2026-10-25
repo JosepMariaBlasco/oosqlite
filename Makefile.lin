@@ -46,21 +46,10 @@
 # ooSQlite3 as it is on Windows.
 #
 
-# We want to get the svn revision number, but if there are modified files,
-# svnversion tacks a 'M' on to the revision.  We want that removed.
-letter := M
-empty :=
-SVN_REV := $(shell svnversion)
-SVN_REV := $(subst $(letter),$(empty),$(SVN_REV))
-
-# Include the ooSQLite version numbers, etc., then fix them up with the svn
-# revision.  Outside an SVN checkout (e.g. a git clone) svnversion does not
-# produce a number, so the build level from src/ooSQLite.ver is kept.
+# Include the ooSQLite version numbers.  Since 1.1 the build level is fixed
+# in src/ooSQLite.ver; until 1.0.2.13107 it was the SVN revision.
 include src/ooSQLite.ver
 
-ifneq ($(shell echo '$(SVN_REV)' | grep -E '^[0-9]+$$'),)
-OOSQLITE_BLD_LVL:= $(SVN_REV)
-endif
 OOSQLITE_VER_STR:= "$(OOSQLITE_MAJOR).$(OOSQLITE_MINOR).$(OOSQLITE_MOD_LVL).$(OOSQLITE_BLD_LVL)"
 
 # APICommon (from the ooRexx SVN, incubator/APICommon) is kept in the tree and
