@@ -10622,6 +10622,30 @@ Done:
   self~assertEquals(self~notLive(1, "mutex"), -
     self~nullHandleError("oosqlMutexEnter", .array~of(mtx)), "the mutex is freed")
 
+::Method testClassicPinValueOutlivesCall
+  -- Another thread has checked an argument of a user function, and is still
+  -- in its call when the function returns: the value stops being live for
+  -- everyone, and the other thread's pin is dropped later, when its call
+  -- returns.  Twice: the second call gets values at the same addresses.
+  -- Without the hook the race is left to chance, and the worker could check a
+  -- value that is not live any more: the test needs it.
+  If \self~pinHooks Then Return
+  db = self~classicOpenMemory
+  Call oosqlCreateFunction db, "pinvalue", 1, "classicPinValueCB"
+  Do text Over "abc", "def"
+    Call oosqlPrepare db, "SELECT pinvalue('"text"');", "stmt"
+    self~assertEquals(.ooSQLite~ROW, oosqlStep(stmt))
+    self~assertEquals("ok", oosqlColumnText(stmt, 1))
+    -- The statement stays live until the worker is done: it owns the text
+    self~assertEquals(text, .local~classicPinWorker~wait, -
+      "the worker read the value it had checked")
+    self~assertEquals(self~notLive(1, "value"), -
+      self~nullHandleError("oosqlValueText", .array~of(.local~classicPinValue)), -
+      "the value is not live after the call")
+    self~assertEquals(0, oosqlFinalize(stmt))
+  End
+  self~assertEquals(0, oosqlClose(db))
+
 ::Method testClassicPinOwnThread
   -- A thread does not wait for itself: a user function closes the
   -- connection whose oosqlExec is running it (BUSY, as before)
@@ -11455,6 +11479,18 @@ Trapped:
   rc = oosqlMutexTry(mtx)
   If rc == 0 Then Call oosqlMutexLeave mtx
   Return rc
+
+-- Section C13: a user function whose argument another thread checks, and
+-- is still using, when the function returns
+::Routine classicPinValueCB Public
+  Use Arg db, ctx, userData, val
+  .local~classicPinValue = val
+  w = .PinWorker~new
+  w~startWith("value", .array~of(val))
+  .local~classicPinWorker = w
+  Call SysSleep 0.1                 -- the worker is in its pause now
+  Call oosqlResultText ctx, "ok"
+  Return 0
 
 -- Section C13: a user function that closes the connection running it
 ::Routine classicPinSelfCloseCB Public
