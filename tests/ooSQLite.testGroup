@@ -8182,7 +8182,7 @@ Syntax:
   Call oosqlClose db
 
 --------------------------------------------------------------------------------
--- oosqlResultBlob: binary data via Pointer and length                       --
+-- oosqlResultBlob: binary data via oosqlValueBlob and a length             --
 --------------------------------------------------------------------------------
 
 ::Method testClassicResultBlob
@@ -8203,6 +8203,26 @@ Syntax:
     "oosqlResultBlob should preserve content CAFEBABE")
   Call oosqlFinalize stmt
   Call oosqlClose db
+
+::Method testClassicResultBlobPointerRefused
+  -- A Pointer and a size made SQLite copy that many bytes from any address:
+  -- memory of the process in the result, or SIGSEGV for a large size.  No
+  -- routine or method of 1.1 returns a pointer to data, so a Pointer is
+  -- refused, by oosqlResultBlob and by .ooSQLResult~blob
+  db = self~classicOpenMemory
+  .local~classicBlobPtr = db
+  .local~classicBlobErrors = .array~new
+  self~assertEquals(0, oosqlCreateFunction(db, "cl_ptrblob", 0, "classicPointerBlobCB"))
+  rows = oosqlExec(db, "SELECT typeof(cl_ptrblob()) AS t;", .true, .ooSQLite~OO_ARRAY_OF_DIRECTORIES)
+  self~assertEquals("null", rows[1]["T"], "no result was set")
+  errs = .local~classicBlobErrors
+  self~assertEquals(2, errs~items, "both calls raise a syntax error")
+  Do e Over errs
+    self~assertEquals("88.900", e~word(1), "the code:" e)
+    self~assertEquals("Argument 2 must be of the String, Buffer, or MutableBuffer class; found", -
+      e~subWord(2)~left(73), "the message:" e)
+  End
+  self~assertEquals(0, oosqlClose(db))
 
 --------------------------------------------------------------------------------
 -- oosqlResultNull: produces SQL NULL                                        --
@@ -9216,6 +9236,26 @@ Done:
   blob    = oosqlValueBlob(val)
   blobLen = oosqlValueBytes(val)
   Call oosqlResultBlob ctx, blob, blobLen
+  Return 0
+
+::Routine classicPointerBlobCB Public
+  -- testClassicResultBlobPointerRefused: a connection handle as the blob
+  Use Arg db, ctx, userData
+  Signal On Syntax Name Classic1
+  Call oosqlResultBlob ctx, .local~classicBlobPtr, 16
+  .local~classicBlobErrors~append("no error")
+  Signal Next1
+Classic1:
+  co = Condition("O")
+  .local~classicBlobErrors~append(co~code co~message)
+Next1:
+  Signal On Syntax Name OO1
+  .ooSQLResult~blob(ctx, .local~classicBlobPtr, 16)
+  .local~classicBlobErrors~append("no error")
+  Return 0
+OO1:
+  co = Condition("O")
+  .local~classicBlobErrors~append(co~code co~message)
   Return 0
 
 ::Routine classicResultBlobStringCB Public
