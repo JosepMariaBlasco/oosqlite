@@ -290,6 +290,26 @@
     gave a correct result.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Conditions raised in callbacks arrive as SYNTAX errors</emphasis></term>
+  <listitem>
+  <para>
+    A condition other than SYNTAX raised in a callback method, such as HALT, USER, or ERROR, reached a <computeroutput>SIGNAL
+    ON</computeroutput> trap in the caller as itself, but ooRexx got there by leaving SQLite in the middle of its work: the
+    statement SQLite was running was never finalized, so <link linkend="mthClose">close</link> returned BUSY for ever,
+    and the mutex of the connection stayed held, so another thread that used the connection hung the process. With
+    <computeroutput>CALL ON</computeroutput>, or with no trap, the condition was lost, and so it was in a callback
+    routine of the classic interface, whatever the trap.
+  </para>
+  <para>
+    Now SYNTAX is raised as before, HALT as SYNTAX error 4.1, and any other condition as SYNTAX error 98.900, "The USER
+    BOOM condition was raised in the callback "cb": ...", with the original condition object as the second item of
+    <emphasis role="italic">additional</emphasis>; the condition is raised once SQLite has returned. A program that
+    trapped USER or HALT around the SQL must trap SYNTAX instead. SQLite is also told to stop where it can: a user defined
+    function that raises a condition, also SYNTAX, now makes its statement fail at once, where before it was invoked for
+    every remaining row. And the condition is no longer printed to the standard output: it reaches the caller. See <link
+    linkend="sctOOCallbacks">Callback Methods</link>.
+  </para>
+  </listitem></varlistentry>
 </variablelist>
 </section>
 
@@ -482,6 +502,14 @@
     returned, or any other Pointer, such as a connection handle, given to <link linkend="clsOOSQLResult">ooSQLResult</link>.
     <link linkend="rtn-oosqlMutexFree">oosqlMutexFree</link> called twice aborted the process (a double free). These are
     now syntax errors, 88.900, as described above and in <link linkend="sctClassicHandles">Handles</link>.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">The callback routine of oosqlExec</emphasis></term>
+  <listitem>
+  <para>
+    <link linkend="rtn-oosqlExec">oosqlExec</link> did not record the name of its callback routine, which the error
+    messages use: a routine that returned nothing, or raised a USER or ERROR condition, crashed the interpreter, and one
+    that returned something that is not a whole number gave a message naming the routine "(null)".
   </para>
   </listitem></varlistentry>
 </variablelist>

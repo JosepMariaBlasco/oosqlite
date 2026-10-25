@@ -100,4 +100,42 @@
 </tbody></tgroup>
 </table>
 
+<section id="sctOOCallbacks" revisionflag="added"><title>&added11;Callback Methods</title>
+<indexterm><primary>callback</primary><secondary>Object Orientated Interface</secondary></indexterm>
+<para>
+  Several methods of the <link linkend="clsOOSQLiteConnection">ooSQLiteConnection</link> class register a method of a Rexx object that
+  SQLite invokes later, while it executes SQL: a callback method. They are <link linkend="mthBusyHandler">busyHandler</link>, <link linkend="mthCollationNeeded">collationNeeded</link>,
+  <link linkend="mthCommitHook">commitHook</link>, <link linkend="mthCreateCollation">createCollation</link>, <link linkend="mthCreateFunction">createFunction</link>,
+  <link linkend="mthProfile">profile</link>, <link linkend="mthProgressHandler">progressHandler</link>, <link linkend="mthRollbackHook">rollbackHook</link>,
+  <link linkend="mthSetAuthorizer">setAuthorizer</link>, <link linkend="mthTrace">trace</link>, and <link linkend="mthUpdateHook">updateHook</link>;
+  <link linkend="mthExec">exec</link> can also invoke a method for each result row. The arguments of each callback method, and what it
+  must return, are described in the section of each registering method. A callback method must return a whole number,
+  even when its value is ignored, except the step method of an aggregate function; if it returns nothing, a syntax error,
+  91.999, is raised when the method that executes the SQL returns, and if it returns something else, a syntax error,
+  98.900.
+</para>
+<para revisionflag="added">
+  A condition raised in a callback, and not trapped there, ends the callback, but the program does not get it at once.
+  SQLite is first told to stop where it can: a user defined function sets an error result, so its statement fails;
+  <emphasis role="italic">exec</emphasis> stops at that row; the authorizer denies the action; the busy handler gives
+  up; the commit hook turns the commit into a rollback; the progress handler interrupts the operation. The callbacks
+  whose value SQLite ignores can not stop it. The condition is then raised when the method or routine that executes the
+  SQL returns. A SYNTAX condition is raised as itself. Any other condition is raised as a SYNTAX error that keeps the
+  original condition object, as <computeroutput>Condition("O")</computeroutput> returns it, as the second item of its
+  <emphasis role="italic">additional</emphasis> array: HALT as error 4.1, "Program interrupted with HALT condition", as
+  an untrapped HALT is, and any other condition, such as USER or ERROR, as error 98.900, for example
+  <computeroutput>The USER BOOM condition was raised in the callback "cb": description</computeroutput>. A program
+  traps them with <computeroutput>SIGNAL ON SYNTAX</computeroutput> around the method or routine that executes the
+  SQL, not with <computeroutput>SIGNAL ON USER</computeroutput>.
+</para>
+<para revisionflag="added">
+  The reason is that a SIGNAL to a trap in the caller would have to leave SQLite in the middle of its work. Before
+  ooSQLite 1.1, a condition other than SYNTAX raised in a callback method did reach a <computeroutput>SIGNAL ON</computeroutput> trap in the caller
+  as itself, but it left the statement SQLite was running unfinalized, so that the connection could not be closed, and
+  the mutex of the connection held, so that another thread that used the connection hung the process; in a callback
+  routine it was lost. The condition of a callback was also printed to the standard output, even when the program trapped
+  it; it is not printed any more.
+</para>
+</section>
+
 </chapter>
