@@ -112,7 +112,11 @@
   must return, are described in the section of each registering method. A callback method must return a whole number,
   even when its value is ignored, except the step method of an aggregate function; if it returns nothing, a syntax error,
   91.999, is raised when the method that executes the SQL returns, and if it returns something else, a syntax error,
-  98.900.
+  98.900. A whole number may be any object with a string value, a String or an object with a MAKESTRING method, like a
+  MutableBuffer; an object with no string value, like <computeroutput>.Object~new</computeroutput>, is something else,
+  error 98.900 too, and never raises NOSTRING. Before ooSQLite 1.1, its conversion raised NOSTRING inside SQLite when
+  the caller trapped it with <computeroutput>SIGNAL ON NOSTRING</computeroutput>, with the consequences described
+  below for the other conditions.
 </para>
 <para revisionflag="added">
   A condition raised in a callback, and not trapped there, ends the callback, but the program does not get it at once.

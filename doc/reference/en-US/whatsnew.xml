@@ -310,6 +310,41 @@
     linkend="sctOOCallbacks">Callback Methods</link>.
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Objects with no string value: an error, not NOSTRING</emphasis></term>
+  <listitem>
+  <para>
+    An object with no string value is one with no MAKESTRING method, like <computeroutput>.Object~new</computeroutput>
+    or an object of a class of the program's own; when one is used as a string, ooRexx takes what its STRING method
+    returns, "an Object", and raises NOSTRING, which a program can trap with <computeroutput>SIGNAL ON
+    NOSTRING</computeroutput>. Most string arguments of ooSQLite, those of <link linkend="mthExec">exec</link> or <link
+    linkend="rtn-oosqlPrepare">oosqlPrepare</link> for instance, are checked by the interpreter, which refuses such an
+    object with error 88.909, "Argument 1 must have a string value". The arguments that accept other kinds of objects
+    too were converted in the native code, and raised NOSTRING there: the database file name of <link
+    linkend="mthNewClsOOSQLiteConnection">new</link> and of <link linkend="clsOOSQLiteBackup">ooSQLiteBackup</link>, the
+    value of <link linkend="mthPragma">pragma</link>, the <emphasis role="italic">null</emphasis> attributes, the method
+    names of <link linkend="mthCreateFunction">createFunction</link> and <link
+    linkend="mthCreateCollation">createCollation</link>, the names given to <link
+    linkend="mthRegisterBuiltin">registerBuiltin</link>, <link linkend="mthAutoBuiltin">autoBuiltin</link>, <link
+    linkend="mthCancelAutoBuiltin">cancelAutoBuiltin</link>, <link linkend="mthGetLibrary">getLibrary</link>, <link
+    linkend="mthGetPackage">getPackage</link>, getHandle of ooSQLLibrary and getFunction and getCollation of
+    ooSQLPackage, and the values of <link linkend="mthEnquote">enquote</link> and <link
+    linkend="rtn-ooSQLiteEnquote">ooSQLiteEnquote</link>. With the trap, the method stopped where the conversion was, half
+    done; without it, "an Object" was used: <computeroutput>.ooSQLiteConnection~new(.Object~new)</computeroutput> opened
+    a database file named <computeroutput>an Object</computeroutput>.
+  </para>
+  <para>
+    These arguments now raise error 88.909, as the others do, or 88.900 for an item of an Array or a stem, before
+    anything is done; a String, or an object with a MAKESTRING method, such as a MutableBuffer, is accepted as before. A
+    program that passed one of them an object with no string value, on purpose, must pass its string instead. The value
+    returned by a callback method or routine is converted in the same way (see <link
+    linkend="sctOOCallbacks">Callback Methods</link>), and the text of an object in an error message, such as
+    "found an Object", is taken without raising NOSTRING.
+  </para>
+  <para>
+    The numeric and logical arguments are converted by the interpreter, which raises NOSTRING for such an object before
+    the method or routine runs, so nothing is left half done; that is the behaviour of ooRexx, and it is unchanged.
+  </para>
+  </listitem></varlistentry>
 </variablelist>
 </section>
 
