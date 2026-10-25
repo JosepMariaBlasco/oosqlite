@@ -355,6 +355,29 @@ static const char *callbackTrampolineSource =
 
 static RexxRoutineObject TheCallbackTrampoline = NULLOBJECT;
 
+/**
+ * The thread context of the ooSQLite method or routine that is running SQLite
+ * on this thread, if any.
+ *
+ * A callback runs on the thread that executes the SQL.  When that is not the
+ * thread that registered the callback, the callback used to attach to the
+ * interpreter with a context of its own, and a condition raised in it was
+ * discarded when it detached.  Every method and routine that can make SQLite
+ * invoke a callback sets this, with a CallerContext object, so that the
+ * callback uses the context of the caller, and a condition raised in it is
+ * pending there, as it is when the callback runs on the registering thread.
+ */
+static thread_local RexxThreadContext *tlsCallerContext = NULL;
+
+class CallerContext
+{
+public:
+    CallerContext(RexxThreadContext *c) : prev(tlsCallerContext) { tlsCallerContext = c; }
+    ~CallerContext() { tlsCallerContext = prev; }
+private:
+    RexxThreadContext *prev;
+};
+
 // The SQLite error of a statement stopped by a condition in a user function.
 #define CALLBACK_CONDITION_MSG "a Rexx condition was raised in the user defined function"
 
@@ -1665,13 +1688,19 @@ static int authorizerCallback(void *data, int op, const char *str1, const char *
 
     bool isMethod = (d->callbackObj == NULLOBJECT) ? false : true;
 
-    if ( d->initialThreadID != oosqlGetCurrentThreadId() )
+    bool attached = false;
+    if ( tlsCallerContext != NULL )
+    {
+        c = tlsCallerContext;
+    }
+    else if ( d->initialThreadID != oosqlGetCurrentThreadId() )
     {
         if ( ! d->interpreter->AttachThread(&c) )
         {
             // There is nothing to be done about this, need to just quit.
             return SQLITE_OK;
         }
+        attached = true;
     }
 
     // SQLite passes NULL for the strings that do not apply to an action; the
@@ -1713,7 +1742,7 @@ static int authorizerCallback(void *data, int op, const char *str1, const char *
     c->ReleaseLocalReference(reply);
     c->ReleaseLocalReference(args);
 
-    if ( c != d->callbackContext )
+    if ( attached )
     {
         c->DetachThread();
     }
@@ -1735,13 +1764,19 @@ static int busyCallBack(void *data, int countInvoked)
     pCGenericCallback  d = (pCGenericCallback)data;
     RexxThreadContext *c = d->callbackContext;
 
-    if ( d->initialThreadID != oosqlGetCurrentThreadId() )
+    bool attached = false;
+    if ( tlsCallerContext != NULL )
+    {
+        c = tlsCallerContext;
+    }
+    else if ( d->initialThreadID != oosqlGetCurrentThreadId() )
     {
         if ( ! d->interpreter->AttachThread(&c) )
         {
             // There is nothing to be done about this, need to just quit.
             return SQLITE_OK;
         }
+        attached = true;
     }
 
     RexxArrayObject args;
@@ -1771,7 +1806,7 @@ static int busyCallBack(void *data, int countInvoked)
     c->ReleaseLocalReference(reply);
     c->ReleaseLocalReference(args);
 
-    if ( c != d->callbackContext )
+    if ( attached )
     {
         c->DetachThread();
     }
@@ -1784,7 +1819,12 @@ static int collationCallback(void* data, int len1, const void* str1, int len2, c
     pCGenericCallback  d = (pCGenericCallback)data;
     RexxThreadContext *c = d->callbackContext;
 
-    if ( d->initialThreadID != oosqlGetCurrentThreadId() )
+    bool attached = false;
+    if ( tlsCallerContext != NULL )
+    {
+        c = tlsCallerContext;
+    }
+    else if ( d->initialThreadID != oosqlGetCurrentThreadId() )
     {
         if ( ! d->interpreter->AttachThread(&c) )
         {
@@ -1794,6 +1834,7 @@ static int collationCallback(void* data, int len1, const void* str1, int len2, c
 
             return sqlite3_strnicmp((char *)str1, (char *)str2, len1 < len2 ? len1 : len2);
         }
+        attached = true;
     }
 
     RexxArrayObject   args;
@@ -1820,7 +1861,7 @@ static int collationCallback(void* data, int len1, const void* str1, int len2, c
         cmp = 0;
     }
 
-    if ( c == d->callbackContext )
+    if ( ! attached )
     {
         c->ReleaseLocalReference(rxStr1);
         c->ReleaseLocalReference(rxStr2);
@@ -1851,7 +1892,12 @@ static void collationNeededCallback(void *data, sqlite3* db, int eTextRep, const
     pCGenericCallback  d = (pCGenericCallback)data;
     RexxThreadContext *c = d->callbackContext;
 
-    if ( d->initialThreadID != oosqlGetCurrentThreadId() )
+    bool attached = false;
+    if ( tlsCallerContext != NULL )
+    {
+        c = tlsCallerContext;
+    }
+    else if ( d->initialThreadID != oosqlGetCurrentThreadId() )
     {
         if ( ! d->interpreter->AttachThread(&c) )
         {
@@ -1859,6 +1905,7 @@ static void collationNeededCallback(void *data, sqlite3* db, int eTextRep, const
             // I doubt it ever happens.
             return;
         }
+        attached = true;
     }
 
     RexxArrayObject   args;
@@ -1902,7 +1949,7 @@ static void collationNeededCallback(void *data, sqlite3* db, int eTextRep, const
     // We just check for errors, we do not actually use rc.
     replyIsGood(c, reply, &rc, d->callbackMethod, d->routineName, isMethod);
 
-    if ( c == d->callbackContext )
+    if ( ! attached )
     {
         if ( rxP != NULLOBJECT )
         {
@@ -1938,13 +1985,19 @@ static int commitHookCallback(void *data)
 
     bool isMethod = (d->callbackObj == NULLOBJECT) ? false : true;
 
-    if ( d->initialThreadID != oosqlGetCurrentThreadId() )
+    bool attached = false;
+    if ( tlsCallerContext != NULL )
+    {
+        c = tlsCallerContext;
+    }
+    else if ( d->initialThreadID != oosqlGetCurrentThreadId() )
     {
         if ( ! d->interpreter->AttachThread(&c) )
         {
             // There is nothing to be done about this, need to just quit.
             return SQLITE_OK;
         }
+        attached = true;
     }
 
     RexxArrayObject args;
@@ -1970,7 +2023,7 @@ static int commitHookCallback(void *data)
     c->ReleaseLocalReference(reply);
     c->ReleaseLocalReference(args);
 
-    if ( c != d->callbackContext )
+    if ( attached )
     {
         c->DetachThread();
     }
@@ -2003,13 +2056,19 @@ static void profileHookCallback(void *data, const char *statement, sqlite3_uint6
 
     bool isMethod = (d->callbackObj == NULLOBJECT) ? false : true;
 
-    if ( d->initialThreadID != oosqlGetCurrentThreadId() )
+    bool attached = false;
+    if ( tlsCallerContext != NULL )
+    {
+        c = tlsCallerContext;
+    }
+    else if ( d->initialThreadID != oosqlGetCurrentThreadId() )
     {
         if ( ! d->interpreter->AttachThread(&c) )
         {
             // There is nothing to be done about this, need to just quit.
             return;
         }
+        attached = true;
     }
 
     RexxObjectPtr rxStmt = c->String(statement);
@@ -2035,7 +2094,7 @@ static void profileHookCallback(void *data, const char *statement, sqlite3_uint6
     c->ReleaseLocalReference(reply);
     c->ReleaseLocalReference(args);
 
-    if ( c != d->callbackContext )
+    if ( attached )
     {
         c->DetachThread();
     }
@@ -2060,13 +2119,19 @@ static int progressCallback(void *data)
 
     bool isMethod = (d->callbackObj == NULLOBJECT) ? false : true;
 
-    if ( d->initialThreadID != oosqlGetCurrentThreadId() )
+    bool attached = false;
+    if ( tlsCallerContext != NULL )
+    {
+        c = tlsCallerContext;
+    }
+    else if ( d->initialThreadID != oosqlGetCurrentThreadId() )
     {
         if ( ! d->interpreter->AttachThread(&c) )
         {
             // There is nothing to be done about this, need to just quit.
             return SQLITE_OK;
         }
+        attached = true;
     }
 
     if ( d->userData == NULL )
@@ -2090,7 +2155,7 @@ static int progressCallback(void *data)
     c->ReleaseLocalReference(reply);
     c->ReleaseLocalReference(args);
 
-    if ( c != d->callbackContext )
+    if ( attached )
     {
         c->DetachThread();
     }
@@ -2120,13 +2185,19 @@ static void rollbackHookCallback(void *data)
 
     bool isMethod = (d->callbackObj == NULLOBJECT) ? false : true;
 
-    if ( d->initialThreadID != oosqlGetCurrentThreadId() )
+    bool attached = false;
+    if ( tlsCallerContext != NULL )
+    {
+        c = tlsCallerContext;
+    }
+    else if ( d->initialThreadID != oosqlGetCurrentThreadId() )
     {
         if ( ! d->interpreter->AttachThread(&c) )
         {
             // There is nothing to be done about this, need to just quit.
             return;
         }
+        attached = true;
     }
 
     if ( d->userData == NULL )
@@ -2147,7 +2218,7 @@ static void rollbackHookCallback(void *data)
     c->ReleaseLocalReference(reply);
     c->ReleaseLocalReference(args);
 
-    if ( c != d->callbackContext )
+    if ( attached )
     {
         c->DetachThread();
     }
@@ -2180,13 +2251,19 @@ static void traceHookCallback(void *data, const char *statement)
 
     bool isMethod = (d->callbackObj == NULLOBJECT) ? false : true;
 
-    if ( d->initialThreadID != oosqlGetCurrentThreadId() )
+    bool attached = false;
+    if ( tlsCallerContext != NULL )
+    {
+        c = tlsCallerContext;
+    }
+    else if ( d->initialThreadID != oosqlGetCurrentThreadId() )
     {
         if ( ! d->interpreter->AttachThread(&c) )
         {
             // There is nothing to be done about this, need to just quit.
             return;
         }
+        attached = true;
     }
 
     RexxObjectPtr rxStmt = c->String(statement);
@@ -2210,7 +2287,7 @@ static void traceHookCallback(void *data, const char *statement)
     c->ReleaseLocalReference(reply);
     c->ReleaseLocalReference(args);
 
-    if ( c != d->callbackContext )
+    if ( attached )
     {
         c->DetachThread();
     }
@@ -2243,13 +2320,19 @@ static void updateHookCallback(void *data, int op, const char *dbName, const cha
 
     bool isMethod = (d->callbackObj == NULLOBJECT) ? false : true;
 
-    if ( d->initialThreadID != oosqlGetCurrentThreadId() )
+    bool attached = false;
+    if ( tlsCallerContext != NULL )
+    {
+        c = tlsCallerContext;
+    }
+    else if ( d->initialThreadID != oosqlGetCurrentThreadId() )
     {
         if ( ! d->interpreter->AttachThread(&c) )
         {
             // There is nothing to be done about this, need to just quit.
             return;
         }
+        attached = true;
     }
 
     RexxObjectPtr rxOp        = c->WholeNumber(op);
@@ -2274,7 +2357,7 @@ static void updateHookCallback(void *data, int op, const char *dbName, const cha
     // routine has problems, but don't do anything else.
     replyIsGood(c, reply, &rc, d->callbackMethod, d->routineName, isMethod);
 
-    if ( c == d->callbackContext )
+    if ( ! attached )
     {
         c->ReleaseLocalReference(rxOp);
         c->ReleaseLocalReference(rxDbName);
@@ -2310,7 +2393,12 @@ static void functionCallback(sqlite3_context *sqlContext, int argc, sqlite3_valu
 
     bool isMethod = (pcf->callbackObj == NULLOBJECT) ? false : true;
 
-    if ( pcf->initialThreadID != oosqlGetCurrentThreadId() )
+    bool attached = false;
+    if ( tlsCallerContext != NULL )
+    {
+        c = tlsCallerContext;
+    }
+    else if ( pcf->initialThreadID != oosqlGetCurrentThreadId() )
     {
         if ( ! pcf->interpreter->AttachThread(&c) )
         {
@@ -2318,6 +2406,7 @@ static void functionCallback(sqlite3_context *sqlContext, int argc, sqlite3_valu
             // quit.
             return;
         }
+        attached = true;
     }
 
     RexxPointerObject sqlCntx  = c->NewPointer(sqlContext);
@@ -2360,7 +2449,7 @@ static void functionCallback(sqlite3_context *sqlContext, int argc, sqlite3_valu
     }
 
 
-    if ( c == pcf->callbackContext )
+    if ( ! attached )
     {
         c->ReleaseLocalReference(reply);
         c->ReleaseLocalReference(sqlCntx);
@@ -2430,7 +2519,12 @@ static void stepCallback(sqlite3_context *sqlContext, int argc, sqlite3_value **
     RexxThreadContext  *c        = pcf->callbackContext;
     bool                isMethod = (pcf->callbackObj == NULLOBJECT) ? false : true;
 
-    if ( pcf->initialThreadID != oosqlGetCurrentThreadId() )
+    bool attached = false;
+    if ( tlsCallerContext != NULL )
+    {
+        c = tlsCallerContext;
+    }
+    else if ( pcf->initialThreadID != oosqlGetCurrentThreadId() )
     {
         if ( ! pcf->interpreter->AttachThread(&c) )
         {
@@ -2439,6 +2533,7 @@ static void stepCallback(sqlite3_context *sqlContext, int argc, sqlite3_value **
             sqlite3_result_error(sqlContext, "failed to attach to ooRexx interpreter thread", -1);
             return;
         }
+        attached = true;
     }
 
     RexxPointerObject sqlCntx  = c->NewPointer(sqlContext);
@@ -2478,6 +2573,10 @@ static void stepCallback(sqlite3_context *sqlContext, int argc, sqlite3_value **
     if ( c->CheckCondition() )
     {
         sqlite3_result_error(sqlContext, CALLBACK_CONDITION_MSG, -1);
+        if ( attached )
+        {
+            c->DetachThread();
+        }
         return;
     }
     else if ( reply == NULLOBJECT )
@@ -2492,6 +2591,10 @@ static void stepCallback(sqlite3_context *sqlContext, int argc, sqlite3_value **
         }
 
         sqlite3_result_error(sqlContext, CALLBACK_CONDITION_MSG, -1);
+        if ( attached )
+        {
+            c->DetachThread();
+        }
         return;
     }
 
@@ -2501,7 +2604,7 @@ static void stepCallback(sqlite3_context *sqlContext, int argc, sqlite3_value **
         pcacb->aggregateObj = c->RequestGlobalReference(reply);
     }
 
-    if ( c == pcf->callbackContext )
+    if ( ! attached )
     {
         // We can release the local reference to reply because we have a global
         // reference now.
@@ -2544,7 +2647,12 @@ static void finalCallback(sqlite3_context *sqlContext)
     RexxThreadContext  *c        = pcf->callbackContext;
     bool                isMethod = (pcf->callbackObj == NULLOBJECT) ? false : true;
 
-    if ( pcf->initialThreadID != oosqlGetCurrentThreadId() )
+    bool attached = false;
+    if ( tlsCallerContext != NULL )
+    {
+        c = tlsCallerContext;
+    }
+    else if ( pcf->initialThreadID != oosqlGetCurrentThreadId() )
     {
         if ( ! pcf->interpreter->AttachThread(&c) )
         {
@@ -2553,6 +2661,7 @@ static void finalCallback(sqlite3_context *sqlContext)
             sqlite3_result_error(sqlContext, "failed to attach to ooRexx interpreter thread", -1);
             return;
         }
+        attached = true;
     }
 
     RexxPointerObject sqlCntx  = c->NewPointer(sqlContext);
@@ -2591,7 +2700,7 @@ static void finalCallback(sqlite3_context *sqlContext)
         c->ReleaseGlobalReference(pcacb->aggregateObj);
     }
 
-    if ( c == pcf->callbackContext )
+    if ( ! attached )
     {
         c->ReleaseLocalReference(reply);
         c->ReleaseLocalReference(sqlCntx);
@@ -5680,6 +5789,8 @@ RexxMethod2(RexxObjectPtr, oosqlconn_setNull_atr, RexxObjectPtr, nullObj, CSELF,
 RexxMethod5(RexxObjectPtr, oosqlconn_init, RexxObjectPtr, rxFile, OPTIONAL_int32_t, _flags, OPTIONAL_uint32_t, defFormat,
             OPTIONAL_CSTRING, vfsName, OSELF, self)
 {
+    CallerContext callerContext(context->threadContext);
+
     // Get a buffer for the ooSQLiteConnection CSelf.
     RexxBufferObject cselfBuffer = context->NewBuffer(sizeof(CooSQLiteConn));
     if ( cselfBuffer == NULLOBJECT )
@@ -5781,6 +5892,8 @@ static void invalidateDbMutexes(RexxMethodContext *c)
 
 RexxMethod1(RexxObjectPtr, oosqlconn_uninit, CSELF, pCSelf)
 {
+    CallerContext callerContext(context->threadContext);
+
     if ( pCSelf != NULLOBJECT )
     {
         pCooSQLiteConn pConn = (pCooSQLiteConn)pCSelf;
@@ -5966,6 +6079,8 @@ RexxMethod1(int, oosqlconn_changes, CSELF, pCSelf)
  */
 RexxMethod1(int, oosqlconn_close, CSELF, pCSelf)
 {
+    CallerContext callerContext(context->threadContext);
+
     int rc = SQLITE_MISUSE;
 
     pCooSQLiteConn pConn = requiredDBCSelf(context, pCSelf);
@@ -6954,6 +7069,8 @@ RexxMethod7(RexxObjectPtr, oosqlconn_exec, CSTRING, sql, OPTIONAL_logical_t, doC
             OPTIONAL_uint32_t, format, OPTIONAL_RexxObjectPtr, callbackObj, OPTIONAL_CSTRING, mthName,
             OPTIONAL_RexxObjectPtr, userData, CSELF, pCSelf)
 {
+    CallerContext callerContext(context->threadContext);
+
     int rc = SQLITE_ERROR;
 
     pCooSQLiteConn pConn = requiredDB(context, pCSelf);
@@ -7316,6 +7433,8 @@ RexxMethod2(RexxObjectPtr, oosqlconn_nextStmt, OPTIONAL_RexxObjectPtr, _stmt, CS
  */
 RexxMethod3(RexxObjectPtr, oosqlconn_pragma, RexxStringObject, _name, OPTIONAL_RexxObjectPtr, value, CSELF, pCSelf)
 {
+    CallerContext callerContext(context->threadContext);
+
     RexxObjectPtr result = TheNilObj;
 
     pCooSQLiteConn pConn = requiredDB(context, pCSelf);
@@ -7695,6 +7814,8 @@ RexxMethod4(RexxObjectPtr, oosqlconn_rollbackHook, RexxObjectPtr, callbackObj, O
 RexxMethod4(RexxObjectPtr, oosqlconn_setAuthorizer, RexxObjectPtr, callbackObj,
             OPTIONAL_CSTRING, mthName, OPTIONAL_RexxObjectPtr, userData, CSELF, pCSelf)
 {
+    CallerContext callerContext(context->threadContext);
+
     pCooSQLiteConn pConn = requiredDB(context, pCSelf);
     if ( pConn == NULL )
     {
@@ -7715,6 +7836,8 @@ RexxMethod4(RexxObjectPtr, oosqlconn_setAuthorizer, RexxObjectPtr, callbackObj,
 RexxMethod5(int, oosqlconn_tableColumnMetadata, CSTRING, tableName, CSTRING, colName,
             RexxObjectPtr, results, OPTIONAL_CSTRING, dbName, CSELF, pCSelf)
 {
+    CallerContext callerContext(context->threadContext);
+
     pCooSQLiteConn pConn = requiredDB(context, pCSelf);
     if ( pConn == NULL )
     {
@@ -8547,6 +8670,8 @@ RexxMethod2(RexxObjectPtr, oosqlstmt_setRecordFormat_atr, uint32_t, format, CSEL
  */
 RexxMethod4(RexxObjectPtr, oosqlstmt_init, RexxObjectPtr, db, CSTRING, sql, OPTIONAL_uint32_t, defFormat, OSELF, self)
 {
+    CallerContext callerContext(context->threadContext);
+
     // Get a buffer for the ooSQLiteStmt CSelf.
     RexxBufferObject cselfBuffer = context->NewBuffer(sizeof(CooSQLiteStmt));
     if ( cselfBuffer == NULLOBJECT )
@@ -9390,6 +9515,8 @@ RexxMethod1(RexxObjectPtr, oosqlstmt_dbHandle, CSELF, pCSelf)
  */
 RexxMethod1(int, oosqlstmt_finalize, CSELF, pCSelf)
 {
+    CallerContext callerContext(context->threadContext);
+
     pCooSQLiteStmt pCstmt = requiredStmtCSelf(context, pCSelf);
     if ( pCstmt == NULL )
     {
@@ -9424,6 +9551,8 @@ RexxMethod1(int, oosqlstmt_finalize, CSELF, pCSelf)
  */
 RexxMethod1(int, oosqlstmt_reset, CSELF, pCSelf)
 {
+    CallerContext callerContext(context->threadContext);
+
     pCooSQLiteStmt pCstmt = requiredStmt(context, pCSelf);
     if ( pCstmt == NULL )
     {
@@ -9456,6 +9585,8 @@ RexxMethod1(RexxObjectPtr, oosqlstmt_sql, CSELF, pCSelf)
  */
 RexxMethod1(int, oosqlstmt_step, CSELF, pCSelf)
 {
+    CallerContext callerContext(context->threadContext);
+
     pCooSQLiteStmt pCstmt = requiredStmt(context, pCSelf);
     if ( pCstmt == NULL )
     {
@@ -9983,6 +10114,8 @@ RexxMethod2(RexxObjectPtr, oosqlbu_setSaveDestConn_atr, logical_t, save, CSELF, 
 RexxMethod6(RexxObjectPtr, oosqlbu_init, RexxObjectPtr, srcDB, RexxObjectPtr, dstDB,
             OPTIONAL_logical_t, save, OPTIONAL_CSTRING, srcName, OPTIONAL_CSTRING, dstName, OSELF, self)
 {
+    CallerContext callerContext(context->threadContext);
+
     // Get a buffer for the ooSQLiteBackup CSelf.
     RexxBufferObject cselfBuffer = context->NewBuffer(sizeof(CooSQLiteBackup));
     if ( cselfBuffer == NULLOBJECT )
@@ -10216,6 +10349,8 @@ RexxMethod1(RexxObjectPtr, oosqlbu_getDestConn, CSELF, pCSelf)
  */
 RexxMethod2(int, oosqlbu_step, OPTIONAL_int, pages, CSELF, pCSelf)
 {
+    CallerContext callerContext(context->threadContext);
+
     pCooSQLiteBackup pCbu = requiredBackup(context, pCSelf);
     if ( pCbu == NULL )
     {
@@ -13635,6 +13770,8 @@ RexxRoutine1(int, oosqlBackupRemaining_rtn, POINTER, _bu)
  */
 RexxRoutine2(int, oosqlBackupStep_rtn, POINTER, _bu, OPTIONAL_int, pageCount)
 {
+    CallerContext callerContext(context->threadContext);
+
     sqlite3_backup *bu = routineBu(context, _bu, 1);
     if ( bu == NULL )
     {
@@ -13895,6 +14032,8 @@ RexxRoutine3(int, oosqlBindZeroBlob_rtn, POINTER, _stmt, int32_t, index, int, le
  */
 RexxRoutine3(RexxObjectPtr, oosqlBusyHandler_rtn, POINTER, _db, CSTRING, rtnName, OPTIONAL_RexxObjectPtr, userData)
 {
+    CallerContext callerContext(context->threadContext);
+
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -13996,6 +14135,8 @@ RexxRoutine1(int, oosqlClearBindings_rtn, POINTER, _stmt)
  */
 RexxRoutine1(int, oosqlClose_rtn, POINTER, _db)
 {
+    CallerContext callerContext(context->threadContext);
+
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15057,6 +15198,8 @@ RexxRoutine1(RexxObjectPtr, oosqlErrStr_rtn, int, resultCode)
 RexxRoutine5(RexxObjectPtr, oosqlExec_rtn, POINTER, _db, CSTRING, sql, OPTIONAL_logical_t, doCallback,
              OPTIONAL_uint32_t, format, OPTIONAL_CSTRING, rtnName)
 {
+    CallerContext callerContext(context->threadContext);
+
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
@@ -15199,6 +15342,8 @@ RexxRoutine2(int, oosqlExtendedResultCodes_rtn, POINTER, _db, logical_t, onOff)
  */
 RexxRoutine1(int, oosqlFinalize_rtn, POINTER, _stmt)
 {
+    CallerContext callerContext(context->threadContext);
+
     if ( _stmt == NULL )
     {
         return SQLITE_OK;
@@ -15623,6 +15768,8 @@ RexxRoutine2(RexxObjectPtr, oosqlNextStmt_rtn, POINTER, _db, OPTIONAL_RexxObject
  */
 RexxRoutine4(int, oosqlOpen_rtn, CSTRING, file, CSTRING, dbConn, OPTIONAL_int32_t, _flags, OPTIONAL_CSTRING, vfsName)
 {
+    CallerContext callerContext(context->threadContext);
+
     sqlite3 *db;
 
     int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
@@ -15708,6 +15855,8 @@ RexxRoutine4(int, oosqlOpen_rtn, CSTRING, file, CSTRING, dbConn, OPTIONAL_int32_
  */
 RexxRoutine4(int, oosqlPrepare_rtn, POINTER, _db, CSTRING, sql, CSTRING, _stmt, OPTIONAL_CSTRING, _tail)
 {
+    CallerContext callerContext(context->threadContext);
+
     sqlite3_stmt *stmt   = NULL;
     const char   *tail   = NULL;
     const char  **ppTail = NULL;
@@ -15911,6 +16060,8 @@ RexxRoutine1(int, oosqlReleaseMemory_rtn, int, nBytes)
  */
 RexxRoutine1(int, oosqlReset_rtn, POINTER, _stmt)
 {
+    CallerContext callerContext(context->threadContext);
+
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -16272,6 +16423,8 @@ RexxRoutine3(int, oosqlStatus_rtn, int, param, RexxObjectPtr, result, OPTIONAL_l
  */
 RexxRoutine1(int, oosqlStep_rtn, POINTER, _stmt)
 {
+    CallerContext callerContext(context->threadContext);
+
     sqlite3_stmt *stmt = routineStmt(context, _stmt);
     if ( stmt == NULL )
     {
@@ -16378,6 +16531,8 @@ RexxRoutine2(int, oosqlStrGlob_rtn, CSTRING, glob, CSTRING, str)
 RexxRoutine5(int, oosqlTableColumnMetadata_rtn, POINTER, _db, CSTRING, tableName, CSTRING, colName, RexxObjectPtr, results,
              OPTIONAL_CSTRING, dbName)
 {
+    CallerContext callerContext(context->threadContext);
+
     sqlite3 *db = routineDB(context, _db, 1);
     if ( db == NULL )
     {
