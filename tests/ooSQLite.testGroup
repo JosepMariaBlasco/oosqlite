@@ -8219,8 +8219,8 @@ Syntax:
   self~assertEquals(2, errs~items, "both calls raise a syntax error")
   Do e Over errs
     self~assertEquals("88.900", e~word(1), "the code:" e)
-    self~assertEquals("Argument 2 must be of the String, Buffer, or MutableBuffer class; found", -
-      e~subWord(2)~left(73), "the message:" e)
+    self~assertEquals(1, e~subWord(2)~pos("Argument 2 must be of the String, Buffer, or MutableBuffer class; found "), -
+      "the message:" e)
   End
   self~assertEquals(0, oosqlClose(db))
 

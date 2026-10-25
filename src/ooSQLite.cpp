@@ -8148,18 +8148,11 @@ static bool getResultBlobArg(RexxThreadContext *c, RexxObjectPtr blob, bool size
 {
     size_t len;
 
-    if ( c->IsPointer(blob) )
-    {
-        if ( ! sizeGiven )
-        {
-            missingArgException(c, sizePos);
-            return false;
-        }
-        *data   = c->PointerValue((RexxPointerObject)blob);
-        *length = size;
-        return true;
-    }
-    else if ( c->IsBuffer(blob) )
+    // A Pointer is not accepted: its size can not be checked, and nothing in
+    // ooSQLite returns a pointer to data any more (oosqlValueBlob and
+    // ooSQLValue~blob return a String), so SQLite would copy any number of
+    // bytes from any address.
+    if ( c->IsBuffer(blob) )
     {
         *data = c->BufferData((RexxBufferObject)blob);
         len   = c->BufferLength((RexxBufferObject)blob);
@@ -8177,7 +8170,7 @@ static bool getResultBlobArg(RexxThreadContext *c, RexxObjectPtr blob, bool size
     }
     else
     {
-        wrongClassListException(c, sizePos - 1, "Pointer, String, Buffer, or MutableBuffer", blob);
+        wrongClassListException(c, sizePos - 1, "String, Buffer, or MutableBuffer", blob);
         return false;
     }
 
@@ -8196,9 +8189,9 @@ static bool getResultBlobArg(RexxThreadContext *c, RexxObjectPtr blob, bool size
 
 /** ooSQLResult::blob
  *
- *  @param  blob  [required]  A Pointer to the data, or a String, Buffer, or
- *                MutableBuffer object with the data.
- *  @param  size  [optional]  The number of bytes; required with a Pointer.
+ *  @param  blob  [required]  A String, Buffer, or MutableBuffer object with
+ *                the data.  A Pointer is not accepted (see getResultBlobArg).
+ *  @param  size  [optional]  The number of bytes, 0 to the length of blob.
  */
 RexxMethod3(int, oosqlrslt_blob, POINTER, sqlCntxt, RexxObjectPtr, blob, OPTIONAL_int, size)
 {
