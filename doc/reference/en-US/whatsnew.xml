@@ -525,6 +525,16 @@
     "requires ooSQLite version: 6488064 current version: 65536". It now shows them as "99.0.0" and "1.0.0".
   </para>
   </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">loadExtension resets the last error</emphasis></term>
+  <listitem>
+  <para>
+    When <link linkend="mthLoadExtension">loadExtension</link> loaded the library, it left in the <link
+    linkend="atrLastErrCodeClsConn">lastErrCode</link> and <link linkend="atrLastErrMsgClsConn">lastErrMsg</link>
+    attributes the error of an earlier call, such as an earlier loadExtension that had failed. It now sets them to
+    <computeroutput>OK</computeroutput> and <computeroutput>No error</computeroutput>, as <link
+    linkend="mthExec">exec</link> does. Only programs that read the attributes after a successful call see a difference.
+  </para>
+  </listitem></varlistentry>
 </variablelist>
 </section>
 
@@ -682,6 +692,13 @@
     name of another method; attributes show a set form only when they can be set. The text of <link
     linkend="mthBusyCallBack">busyCallBack</link> said that the user data argument was omitted when none was given; it
     is the .nil object.
+  </para></listitem>
+  <listitem><para>
+    The <link linkend="mthLoadExtension">loadExtension</link> and <link
+    linkend="mthEnableLoadExtension">enableLoadExtension</link> methods of the ooSQLiteConnection class are documented,
+    with a tested example; they were missing from the book and from its method table. The example of <link
+    linkend="mthExecCallBack">execCallBack</link> named the default record format OO_OO_ARRAY_OF_DIRECTORIES; it is
+    OO_ARRAY_OF_DIRECTORIES.
   </para></listitem>
   <listitem><para>
     The Rexx examples are highlighted, and errors in some of them were fixed, for example in the example of <link

@@ -177,6 +177,10 @@
 <entry>Retrieves runtime status information about this database connection.</entry>
 </row>
 <row>
+<entry><link linkend="mthEnableLoadExtension">enableLoadExtension</link></entry>
+<entry>Allows or forbids loading SQLite extension libraries on this database connection.</entry>
+</row>
+<row>
 <entry><link linkend="mthErrCode">errCode</link></entry>
 <entry>Returns the numeric result <link linkend="sctResultCode">code</link> for the most recent failed SQLite API call associated with this database connection.</entry>
 </row>
@@ -211,6 +215,10 @@
 <row>
 <entry><link linkend="mthLimit">limit</link></entry>
 <entry>Queries or sets the limiting size of various constructs on this database connection.</entry>
+</row>
+<row>
+<entry><link linkend="mthLoadExtension">loadExtension</link></entry>
+<entry>&changed11;Loads an SQLite extension library into this database connection.</entry>
 </row>
 <row>
 <entry><link linkend="mthNextStmt">nextStmt</link></entry>
@@ -2328,6 +2336,71 @@ Bytes of page memory used by all caches on this database connection:
 </section>  <!-- End ooSQLiteConnection::dbStatus() -->
 
 
+<section id="mthEnableLoadExtension"><title>enableLoadExtension</title>
+<indexterm><primary>enableLoadExtension</primary></indexterm>
+<indexterm><primary>ooSQLiteConnection class</primary><secondary>enableLoadExtension</secondary></indexterm>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_enableloadextension.svg" scale="55" />
+</imageobject>
+</mediaobject>
+
+<para>
+  Allows or forbids loading SQLite extension libraries on this database connection.
+</para>
+<variablelist>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
+  <listitem>
+  <para>
+    The only argument is:
+    <variablelist>
+      <varlistentry><term>on [optional]</term>
+      <listitem>
+      <para>
+        True to allow loading extensions with <link linkend="mthLoadExtension">loadExtension</link>, false to forbid
+        it. The default is false.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
+  <listitem>
+  <para>
+    Returns <computeroutput>OK</computeroutput>.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    Loading extensions is forbidden by default, because an extension library can run any code. It is good practice to
+    allow it only while the extensions are loaded. The SQL function <computeroutput>load_extension()</computeroutput> is
+    also allowed or forbidden by this method. Invoking <emphasis role="italic">enableLoadExtension</emphasis> without
+    arguments forbids loading extensions.
+  </para>
+  <para>
+    The equivalent routine of the classic interface is <link
+    linkend="rtn-oosqlEnableLoadExtension">oosqlEnableLoadExtension</link>.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Details:</emphasis></term>
+  <listitem>
+  <para>
+    The functionality of the <emphasis role="italic">enableLoadExtension</emphasis> method is similar to that of the
+    SQLite <ulink url="http://www.sqlite.org/c3ref/enable_load_extension.html">sqlite3_enable_load_extension</ulink>
+    API.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
+  <listitem>
+  <para>
+    See the example of <link linkend="mthLoadExtension">loadExtension</link>.
+  </para>
+  </listitem></varlistentry>
+</variablelist>
+</section>  <!-- End ooSQLiteConnection::enableLoadExtension() -->
+
+
 <section id="mthErrCode"><title>errCode</title>
 <indexterm><primary>errCode</primary></indexterm>
 <indexterm><primary>ooSQLiteConnection class</primary><secondary>errCode</secondary></indexterm>
@@ -2670,7 +2743,7 @@ Bytes of page memory used by all caches on this database connection:
   <para>
     This example is just used to show the principles of a user defined callback. The actual processing has no benefit over
     usin the internal callback. A user class is defined with a callback method. This is passed to the <emphasis
-    role="italic">exec</emphasis> method. The default record format is OO_OO_ARRAY_OF_DIRECTORIES. In the callback method,
+    role="italic">exec</emphasis> method. The default record format is <computeroutput>OO_ARRAY_OF_DIRECTORIES</computeroutput>. In the callback method,
     each record is added to the user data object, which in this case is an array. On return from the <emphasis
     role="italic">exec</emphasis> method, if there were no errors, the <emphasis role="italic">resultObj</emphasis> array
     will contain all the result rows produced by executing the SQL statement:
@@ -3040,6 +3113,117 @@ Bytes of page memory used by all caches on this database connection:
   </listitem></varlistentry>
 </variablelist>
 </section>  <!-- End ooSQLiteConnection::limit() -->
+
+
+<section id="mthLoadExtension" revisionflag="changed"><title>&changed11;loadExtension</title>
+<indexterm><primary>loadExtension</primary></indexterm>
+<indexterm><primary>ooSQLiteConnection class</primary><secondary>loadExtension</secondary></indexterm>
+<mediaobject>
+<imageobject>
+<imagedata fileref="images/primary/connection_loadextension.svg" scale="55" />
+</imageobject>
+</mediaobject>
+
+<para>
+  Loads an SQLite extension library into this database connection.
+</para>
+<variablelist>
+  <varlistentry><term><emphasis role="bold">Arguments:</emphasis></term>
+  <listitem>
+  <para>
+    The arguments are:
+    <variablelist>
+      <varlistentry><term>library [required]</term>
+      <listitem>
+      <para>
+        The file name of the shared library. If SQLite can not load it with the name as given, it tries again adding the
+        extension of the platform, such as <computeroutput>.so</computeroutput> or
+        <computeroutput>.dll</computeroutput>.
+      </para>
+      </listitem></varlistentry>
+      <varlistentry><term>entryPoint [optional]</term>
+      <listitem>
+      <para>
+        The name of the initialization function of the library. If it is omitted, SQLite tries
+        <computeroutput>sqlite3_extension_init</computeroutput>, and then a name derived from the file name of the
+        library.
+      </para>
+      </listitem></varlistentry>
+    </variablelist>
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Return value:</emphasis></term>
+  <listitem>
+  <para>
+    Returns <computeroutput>OK</computeroutput> on success, or <computeroutput>ERROR</computeroutput> on error: also
+    when loading extensions has not been allowed with <link linkend="mthEnableLoadExtension">enableLoadExtension</link>.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Remarks:</emphasis></term>
+  <listitem>
+  <para>
+    Loading extensions must be allowed first with <link linkend="mthEnableLoadExtension">enableLoadExtension</link>.
+    An extension stays loaded until the connection is closed. Loading the same library again returns
+    <computeroutput>OK</computeroutput>.
+  </para>
+  <para revisionflag="changed">
+    The <link linkend="atrLastErrCodeClsConn">lastErrCode</link> and <link
+    linkend="atrLastErrMsgClsConn">lastErrMsg</link> attributes are always set, as <link linkend="mthExec">exec</link>
+    does: to the error of SQLite, such as <computeroutput>not authorized</computeroutput> or the error of the operating
+    system loader, when the library can not be loaded, and to <computeroutput>OK</computeroutput> and
+    <computeroutput>No error</computeroutput> when it is loaded. In ooSQLite 1.0 a successful call left the error of an
+    earlier call in them. The error is not recorded in the connection, so <link linkend="mthErrCode">errCode</link> and
+    <link linkend="mthErrMsg">errMsg</link> do not report it.
+  </para>
+  <para>
+    The equivalent routine of the classic interface is <link linkend="rtn-oosqlLoadExtension">oosqlLoadExtension</link>.
+    The extension libraries written for ooSQLite, with collations and functions in C, are loaded with the <link
+    linkend="clsOOSQLExtensions">ooSQLExtensions</link> class instead.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Details:</emphasis></term>
+  <listitem>
+  <para>
+    The functionality of the <emphasis role="italic">loadExtension</emphasis> method is similar to that of the SQLite
+    <ulink url="http://www.sqlite.org/c3ref/load_extension.html">sqlite3_load_extension</ulink> API.
+  </para>
+  </listitem></varlistentry>
+  <varlistentry><term><emphasis role="bold">Example:</emphasis></term>
+  <listitem>
+  <para>
+    This example loads an extension library that defines the SQL function <computeroutput>half</computeroutput>, and
+    uses it:
+<programlisting language="rexx">
+  library = 'libsimpleextension.so'
+  rc = db~enableLoadExtension(.true)
+  rc = db~loadExtension(library)
+  if rc == .ooSQLite~OK then do
+    rows = db~exec("SELECT half(11) AS h;", .true)
+    say 'half(11) =' rows[1]['H']
+  end
+  else say 'Error' rc':' db~lastErrMsg
+  rc = db~enableLoadExtension(.false)
+  /* Output:
+  half(11) = 5.5
+  */
+</programlisting>
+  </para>
+  <para>
+    Without <emphasis role="italic">enableLoadExtension</emphasis>, the library is not loaded. The error is in <emphasis
+    role="italic">lastErrMsg</emphasis>, not in <emphasis role="italic">errMsg</emphasis>:
+<programlisting language="rexx">
+  rc = db~loadExtension('libsimpleextension.so')
+  say rc db~lastErrCode db~lastErrMsg
+  say db~errCode db~errMsg
+  /* Output:
+  1 1 SQLite Error: rc = 1, not authorized
+  0 not an error
+  */
+</programlisting>
+  </para>
+  </listitem></varlistentry>
+</variablelist>
+</section>  <!-- End ooSQLiteConnection::loadExtension() -->
 
 
 <section id="mthNextStmt"><title>nextStmt</title>
