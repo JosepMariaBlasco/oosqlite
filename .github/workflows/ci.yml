@@ -13,7 +13,7 @@ jobs:
     env:
       # ooRexx revision (SourceForge's 5.3.0 beta builds).  Sessions read it
       # from here too: scripts/setup-oorexx.sh.
-      OOREXX_REV: "13297"
+      OOREXX_REV: "13324"
     steps:
       - uses: actions/checkout@v5
 
