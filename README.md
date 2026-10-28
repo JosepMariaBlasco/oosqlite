@@ -31,9 +31,11 @@ Work on the goals above starts from there.
 
 ## Building
 
-ooSQLite builds on Linux, macOS and Windows. You need an installed ooRexx
-5.x (its headers and the `rexx` and `rexxapi` libraries) or its portable
-build. SQLite (3.52.0) and zlib are compiled into the library. From the top
+ooSQLite builds on Linux, macOS and Windows. It needs **ooRexx 5.3.0 r13324
+or later** (a 5.3.0 beta from SourceForge, for now): `ooSQLite.cls` checks
+the revision when it is loaded, and stops with an error message on an older
+ooRexx. You need it installed (its headers and the `rexx` and `rexxapi`
+libraries) or its portable build. SQLite (3.52.0) and zlib are compiled into the library. From the top
 of the repository:
 
 | Platform | Command | Output folder |

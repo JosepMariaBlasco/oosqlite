@@ -35,6 +35,20 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 
+-- ooSQLite 1.1 needs ooRexx 5.3.0 r13324 or later: the revision the ooRexx
+-- bridges family is based on, with the fixes of #2116, #2123, #2126 and #2128
+-- to the native API.  With an older ooRexx, the program that requires this
+-- package stops here with a clear message, rather than later in a crash.
+minimumRevision = 13324
+revision = 0
+if .RexxInfo~hasMethod("REVISION") then revision = .RexxInfo~revision
+if \datatype(revision, "W") then revision = 0
+if revision < minimumRevision then do
+  if revision > 0 then found = "ooRexx" .RexxInfo~version "r"revision
+  else parse version found
+  raise syntax 98.900 array("ooSQLite needs ooRexx 5.3.0 r"minimumRevision "or later; found" found)
+end
+
 ::requires 'oosqlite' LIBRARY
 
 
