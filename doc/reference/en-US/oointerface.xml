@@ -133,6 +133,13 @@
   SQL, not with <computeroutput>SIGNAL ON USER</computeroutput>.
 </para>
 <para revisionflag="added">
+  The value a callback returns is asked for its string value in the same way, still under the protection of ooSQLite:
+  a condition raised by its MAKESTRING method or, for an object with no string value, by its STRING method, arrives as
+  described above, error 98.900 being then <computeroutput>The USER BOOM condition was raised by the value returned
+  from the callback "cb": description</computeroutput>. The value returned by the step method of an aggregate function,
+  the aggregate object, is kept as it is.
+</para>
+<para revisionflag="added">
   A callback runs on the thread that executes the SQL, which need not be the thread that registered it, and the
   condition reaches that thread. Before ooSQLite 1.1, a condition raised in a callback that ran on a thread other than
   the one that registered it, SYNTAX included, was lost: that thread only got the result code of SQLite.

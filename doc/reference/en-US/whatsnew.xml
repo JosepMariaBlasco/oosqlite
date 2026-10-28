@@ -61,6 +61,14 @@
   are marked &changed11;, as the ooRexx reference does. The embedded SQLite is version 3.52.0, as in ooSQLite 1.0.2.13107.
 </para>
 <para>
+  ooSQLite 1.1 needs ooRexx 5.3.0 revision 13324 or later, and <computeroutput>ooSQLite.cls</computeroutput> checks it
+  when it is loaded: with an older ooRexx, the program that requires it stops with error 98.900, "ooSQLite needs ooRexx
+  5.3.0 r13324 or later; found ...". ooSQLite 1.0.2.13107 stated no minimum. Revision 13324 has fixes to the native API
+  of ooRexx that ooSQLite relies on: errors raised by native code called from native code (#2116, #2128), and
+  conditions raised or returned through the native API (#2123, #2126). See <link
+  linkend="sctGettingStarted">Getting Started</link>.
+</para>
+<para>
   The version of this release is 1.1.0.0, as returned by <link linkend="mthVersion">version</link> and <link
   linkend="rtn-ooSQLiteVersion">ooSQLiteVersion</link>. The fourth number, the build level, was the Subversion revision
   until 1.0.2.13107; it is now part of the version, like the other three, and is not taken from the repository. The
@@ -308,6 +316,13 @@
     function that raises a condition, also SYNTAX, now makes its statement fail at once, where before it was invoked for
     every remaining row. And the condition is no longer printed to the standard output: it reaches the caller. See <link
     linkend="sctOOCallbacks">Callback Methods</link>.
+  </para>
+  <para>
+    The same was true of a condition raised by the value a callback returns, when the native code asked it for its
+    string value, by calling its MAKESTRING method, or its STRING method for the text of an error message: that happened
+    after the callback had returned, but still inside SQLite. Now the value is asked inside the same protection as the
+    callback, and such a condition arrives as SYNTAX too, 98.900 being "The USER BOOM condition was raised by the value
+    returned from the callback "cb": ...".
   </para>
   </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">Objects with no string value: an error, not NOSTRING</emphasis></term>

@@ -80,6 +80,14 @@
   <computeroutput>ooDialog.cls</computeroutput>, <computeroutput>rxftp.cls</computeroutput>,
   <computeroutput>cvsStream.cls</computeroutput>, etc..
 </para>
+<para revisionflag="added">
+  ooSQLite 1.1 needs ooRexx 5.3.0 revision 13324 or later. When <computeroutput>ooSQLite.cls</computeroutput>
+  is loaded, it checks the revision of the interpreter, as <computeroutput>.RexxInfo~revision</computeroutput> returns
+  it; with an older ooRexx, the program that requires it stops with a syntax error, 98.900, for example
+  <computeroutput>ooSQLite needs ooRexx 5.3.0 r13324 or later; found ooRexx 5.3.0 r13297</computeroutput>. That
+  revision has fixes to the native API of ooRexx that ooSQLite relies on, for the conditions raised in callbacks among
+  others.
+</para>
 <para>
   Next, the user should familarize herself with the example programs provided by the ooSQLite package. In the
   installation location of ooSQLite are the <computeroutput>examples</computeroutput> and
