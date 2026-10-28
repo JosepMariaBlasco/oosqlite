@@ -774,22 +774,36 @@ static int bindCheckedValue(RexxThreadContext *c, sqlite3_stmt *stmt, int index,
  * the condition reaches the caller once SQLite has returned.
  *
  * Arguments: the callback object or routine, the name of the method or
- * routine, the array of arguments, and whether it is a method.  It returns
- * what the callback returns, or nothing.
+ * routine, the array of arguments, whether it is a method, and whether its
+ * reply must be a number.  It returns what the callback returns, or nothing.
+ * A reply that must be a number and is not a String is turned here into its
+ * string value or, if it has none, into the text of its STRING method, as
+ * objectText() does: the MAKESTRING or STRING method of an object the callback
+ * returns is Rexx code too, and a condition it raises must be trapped here and
+ * not inside SQLite (technical note #69).  A condition raised there becomes
+ * 98.900 as well, "raised by the value returned from the callback".
  */
 static const char *callbackTrampolineSource =
-    "use arg target, name, args, isMethod\n"
+    "use arg target, name, args, isMethod, isNumber\n"
     "signal on any name trapped\n"
+    "where = 'in'\n"
     "drop result\n"
     "if isMethod then target~sendWith(name, args)\n"
     "else target~callWith(args)\n"
-    "if var('RESULT') then return result\n"
-    "return\n"
+    "if \\var('RESULT') then return\n"
+    "if \\isNumber then return result\n"
+    "reply = result\n"
+    "if reply~isA(.String) then return reply\n"
+    "where = 'by the value returned from'\n"
+    "s = reply~request('STRING')\n"
+    "if \\s~isA(.String) then s = reply~string\n"
+    "if \\s~isA(.String) then s = 'an object'\n"
+    "return s\n"
     "trapped:\n"
     "  co = condition('O')\n"
     "  if co~condition == 'SYNTAX' then raise propagate\n"
     "  if co~condition == 'HALT' then raise syntax 4.1 array('HALT', co)\n"
-    "  m = 'The' co~condition 'condition was raised in the callback \"'name'\"'\n"
+    "  m = 'The' co~condition 'condition was raised' where 'the callback \"'name'\"'\n"
     "  if co~description \\== '' then m = m':' co~description\n"
     "  raise syntax 98.900 array(m, co)\n";
 
@@ -825,11 +839,13 @@ private:
  * Invokes a callback, a method of callbackObj or the routine rtn, through the
  * callback trampoline.
  *
- * @param name  The name of the method, or of the routine (for the messages).
+ * @param isNumber  Whether the reply must be a number (every callback except the
+ *                  step function of an aggregate): the trampoline then gives
+ *                  the String the reply stands for (see the trampoline).
  */
 static RexxObjectPtr callbackDispatch(RexxThreadContext *c, bool isMethod, RexxObjectPtr callbackObj,
                                       CSTRING mthName, RexxRoutineObject rtn, CSTRING rtnName,
-                                      RexxArrayObject args)
+                                      RexxArrayObject args, bool isNumber = true)
 {
     if ( TheCallbackTrampoline == NULLOBJECT )
     {
@@ -840,6 +856,7 @@ static RexxObjectPtr callbackDispatch(RexxThreadContext *c, bool isMethod, RexxO
     RexxStringObject rxName = c->String(name == NULL ? "" : name);
     RexxArrayObject  targs  = c->ArrayOfFour(isMethod ? callbackObj : (RexxObjectPtr)rtn, rxName, args,
                                              isMethod ? TheTrueObj : TheFalseObj);
+    c->ArrayPut(targs, isNumber ? TheTrueObj : TheFalseObj, 5);
 
     RexxObjectPtr reply = c->CallRoutine(TheCallbackTrampoline, targs);
 
@@ -2113,7 +2130,8 @@ static bool replyIsGood(RexxThreadContext *c, RexxObjectPtr reply, wholenumber_t
         // reply.  WholeNumber() would take the value of its STRING method and
         // raise NOSTRING, which, trapped by the caller of SQLite, made ooRexx
         // unwind through the C frames of SQLite: the statement was left
-        // unfinalized (technical note #62).
+        // unfinalized (technical note #62).  The trampoline already gives a
+        // String (note #69); this is for the case it could not be created.
         RexxObjectPtr str = stringObject(c, reply);
         if ( c->CheckCondition() )
         {
@@ -3037,7 +3055,9 @@ static void stepCallback(sqlite3_context *sqlContext, int argc, sqlite3_value **
 
     registerCallHandles(sqlContext, argc, argv);
 
-    reply = callbackDispatch(c, isMethod, pcf->callbackObj, pcf->stepMethod, pcf->stepRtn, pcf->stepName, args);
+    // The reply of the first call is the aggregate object: any object.
+    reply = callbackDispatch(c, isMethod, pcf->callbackObj, pcf->stepMethod, pcf->stepRtn, pcf->stepName, args,
+                             false);
 
     unregisterCallHandles(sqlContext, argc, argv);
 
