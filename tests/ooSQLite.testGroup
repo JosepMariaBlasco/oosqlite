@@ -6889,6 +6889,50 @@ Done:
     self~assertEquals(0, r~close, kind": close")
   End
 
+::Method assertReplyRaised
+  -- The value returned by the callback "cb" of the given kind raised a USER
+  -- condition when it was asked for its string value (action MAKESTRING) or,
+  -- having none, for the text of its STRING method (action STRING): the
+  -- condition arrives as SYNTAX 98.900 and the connection can be closed
+  Use Strict Arg kind, action, r
+  self~assertEquals("SYNTAX", r~condition, kind action": the condition that reaches the caller")
+  self~assertEquals(98.900, r~code, kind action": the code")
+  self~assertSame('The USER BOOM condition was raised by the value returned from the callback "cb":' -
+    'boom-'action~lower'.', r~message, kind action": the message")
+  self~assertSame("USER BOOM", r~additional[2]~condition, kind action": the original condition in ADDITIONAL")
+  self~assertEquals(0, r~close, kind action": close")
+
+::Method testCallbackReplyRaises
+  -- With SIGNAL ON in the caller, a condition raised by the MAKESTRING or
+  -- STRING method of the value a callback returns made ooRexx unwind through
+  -- the C frames of SQLite, as in note #58: the native code asked the reply
+  -- for its string value after the trampoline had returned.  The statement
+  -- was left unfinalized (close returned BUSY).  See technical note #69.
+  kinds = .Array~of("busy", "commit", "rollback", "update", "trace", "profile", -
+    "progress", "auth", "collation", "collneed", "scalar", "final", "exec")
+  Do action Over .Array~of("MAKESTRING", "STRING")
+    Do kind Over kinds
+      self~assertReplyRaised(kind, action, self~conditionInCallback(kind, action))
+    End
+  End
+
+::Method testCallbackReplyHalts
+  -- HALT raised by the value a callback returns arrives as 4.1
+  r = self~conditionInCallback("exec", "HALTSTRING")
+  self~assertEquals("SYNTAX", r~condition)
+  self~assertEquals(4.1, r~code)
+  self~assertSame("HALT", r~additional[2]~condition)
+  self~assertEquals(0, r~close)
+
+::Method testCallbackStepReplyIsNotConverted
+  -- The reply of a step function is the aggregate object, any object: it
+  -- is kept, not asked for a string value
+  Do action Over .Array~of("MAKESTRING", "STRING")
+    r = self~conditionInCallback("step", action)
+    self~assertEquals("", r~condition, action": no condition")
+    self~assertEquals(0, r~close, action": close")
+  End
+
 /******************************************************************************/
 /*                                                                            */
 /* Section 39: Callbacks on another thread                                    */
@@ -10456,6 +10500,20 @@ Done:
     self~assertEquals(0, r~close, kind": close")
   End
 
+::Method testClassicCallbackReplyRaises
+  -- Section 38: a condition raised by the MAKESTRING or STRING method of the
+  -- value a callback returns made ooRexx unwind through SQLite (note #69)
+  Do action Over .Array~of("MAKESTRING", "STRING")
+    Do kind Over .Array~of("commit", "scalar", "exec")
+      r = self~classicConditionInCallback(kind, action)
+      self~assertEquals("SYNTAX", r~condition, kind action": the condition")
+      self~assertEquals(98.900, r~code, kind action": the code")
+      self~assertSame('The USER BOOM condition was raised by the value returned from the callback' -
+        '"classicRaisingCB": boom-'action~lower'.', r~message, kind action": the message")
+      self~assertEquals(0, r~close, kind action": close")
+    End
+  End
+
 ::Method testClassicCallbackOnAnotherThread
   -- Section 39 of the OO tests, for a classic callback routine
   .local~classicRaiseAction = "USER"
@@ -10579,13 +10637,16 @@ Done:
   db = self~classicOpenMemory
   Call oosqlExec db, "CREATE TABLE t(a); INSERT INTO t VALUES('row1');"
   Call oosqlPrepare db, "SELECT a FROM t;", "stmt"
-  w = self~pinRace("step", .array~of(stmt))
+  -- The time is taken from before the worker starts: its pause is 400 ms, so
+  -- finalize cannot return before 0.4 s if it waited, however long the
+  -- SysSleep of pinRace takes on a loaded machine.
   Call Time "R"
+  w = self~pinRace("step", .array~of(stmt))
   self~assertEquals(0, oosqlFinalize(stmt), "finalize")
   waited = Time("E")
   self~assertEquals(.ooSQLite~ROW, w~wait, "the worker stepped a live statement")
   If self~pinHooks Then
-    self~assertTrue(waited > 0.2, "finalize waited for the worker:" waited)
+    self~assertTrue(waited > 0.35, "finalize waited for the worker:" waited)
   self~assertEquals(self~notLive(1, "prepared statement"), -
     self~nullHandleError("oosqlStep", .array~of(stmt)), "the statement is finalized")
   self~assertEquals(0, oosqlClose(db))
@@ -11281,6 +11342,8 @@ OO1:
     When "ERROR" Then Raise Error 7 Description "boom-error"
     When "OBJECT" Then Return .Object~new
     When "MUTABLE" Then Return .MutableBuffer~new("0")
+    When "MAKESTRING" Then Return .RaisingMakeString~new("USER")
+    When "STRING" Then Return .RaisingStringText~new("USER")
   End
   Return 0
 
@@ -11435,6 +11498,9 @@ TrapSyntax:
     When "ERROR" Then Raise Error 7 Description "boom-error"
     When "OBJECT" Then Return .Object~new
     When "MUTABLE" Then Return .MutableBuffer~new("0")
+    When "MAKESTRING" Then Return .RaisingMakeString~new("USER")
+    When "STRING" Then Return .RaisingStringText~new("USER")
+    When "HALTSTRING" Then Return .RaisingMakeString~new("HALT")
     Otherwise Nop
   End
   Return 0
@@ -11446,6 +11512,22 @@ TrapSyntax:
   Use Arg db, ctx
   .ooSQLResult~int(ctx, 1)
   Return 0
+
+-- Sections 38 and C11: a value returned by a callback that raises a condition
+-- (USER BOOM or HALT) when asked for its string value: in its MAKESTRING
+-- method or, if it has none (an object with no string value), in STRING
+::Class RaisingReply
+::Attribute condition
+::Method init
+  Expose condition
+  Use Strict Arg condition
+::Class RaisingMakeString Subclass RaisingReply
+::Method makeString
+  If self~condition == "HALT" Then Raise Halt Description "boom-makestring"
+  Raise User Boom Description "boom-makestring"
+::Class RaisingStringText Subclass RaisingReply
+::Method string
+  Raise User Boom Description "boom-string"
 
 -- Section 39: runs SQL on another thread and keeps what reached it
 ::Class CallbackWorker
