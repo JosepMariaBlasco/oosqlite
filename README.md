@@ -31,7 +31,7 @@ Work on the goals above starts from there.
 
 ## Building
 
-ooSQLite builds on Linux, macOS and Windows. It needs **ooRexx 5.3.0 r13324
+ooSQLite builds on Linux, macOS and Windows. It needs **ooRexx 5.3.0 r13329
 or later** (a 5.3.0 beta from SourceForge, for now): `ooSQLite.cls` checks
 the revision when it is loaded, and stops with an error message on an older
 ooRexx. You need it installed (its headers and the `rexx` and `rexxapi`
