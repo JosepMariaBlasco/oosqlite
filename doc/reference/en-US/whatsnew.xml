@@ -61,11 +61,12 @@
   are marked &changed11;, as the ooRexx reference does. The embedded SQLite is version 3.52.0, as in ooSQLite 1.0.2.13107.
 </para>
 <para>
-  ooSQLite 1.1 needs ooRexx 5.3.0 revision 13329 or later, and <computeroutput>ooSQLite.cls</computeroutput> checks it
+  ooSQLite 1.1 needs ooRexx 5.3.0 revision 13344 or later, and <computeroutput>ooSQLite.cls</computeroutput> checks it
   when it is loaded: with an older ooRexx, the program that requires it stops with error 98.900, "ooSQLite needs ooRexx
-  5.3.0 r13329 or later; found ...". ooSQLite 1.0.2.13107 stated no minimum. Revision 13329 has fixes to the native API
+  5.3.0 r13344 or later; found ...". ooSQLite 1.0.2.13107 stated no minimum. Revision 13344 has fixes to the native API
   of ooRexx that ooSQLite relies on: errors raised by native code called from native code (#2116, #2128, #2129), and
-  conditions raised or returned through the native API (#2123, #2126). See <link
+  conditions raised or returned through the native API (#2123, #2126, #2132; the last one, a SYNTAX error left pending
+  by Rexx code called from native code, is how ooSQLite delivers a condition raised in a callback). See <link
   linkend="sctGettingStarted">Getting Started</link>.
 </para>
 <para>
