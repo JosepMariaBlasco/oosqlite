@@ -1,7 +1,7 @@
 #!/usr/bin/env rexx
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2005-2022 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2026 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -1204,8 +1204,12 @@ return str
   use strict arg error, code, parentPackage = (self~class~package)
 
   self~expectSyntax(error)
-  -- this will translate this code and nothing else.
-  r = .package~new("test", code, parentPackage)
+  -- this will translate this code and nothing else: ::OPTIONS NOPROLOG
+  -- keeps .package~new from running the code
+  if code~isA(.String) then source = .array~of(code)
+  else source = code~copy
+  source~append("::options noprolog")
+  r = .package~new("test", source, parentPackage)
 
 
 -- create a routine and call from an array of lines with the intent of checking
