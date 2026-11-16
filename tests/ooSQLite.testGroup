@@ -6702,8 +6702,9 @@ ConstantMissing:
   -- Registers a callback of the given kind that raises the condition given
   -- by action, runs SQL that invokes it, traps what reaches the caller, and
   -- closes the connection.  Returns a directory with CONDITION, CODE,
-  -- MESSAGE, ADDITIONAL, CALLS and CLOSE.
-  Use Strict Arg kind, action
+  -- MESSAGE, ADDITIONAL, CALLS and CLOSE.  With how CATCH, a CATCH clause
+  -- traps it (section 45) instead of SIGNAL ON.
+  Use Strict Arg kind, action, how = "SIGNAL"
   -- A name for each case: when a TemporaryTestFile object is collected, it
   -- deletes its file, which must not be the file of a later case
   tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_cond_"kind"_"action".db")
@@ -6733,6 +6734,27 @@ ConstantMissing:
     When "step" Then db~createFunction("g", h, 1, , "cb", "fin")
     When "final" Then db~createFunction("g", h, 1, , "st", "cb")
     Otherwise Nop
+  End
+  If how == "CATCH" Then Do
+    -- The same SQL as below, in a block that ends with a CATCH clause
+    Do
+      Select Case kind
+        When "commit", "update" Then db~exec("INSERT INTO t VALUES('q');")
+        When "rollback" Then db~exec("BEGIN; INSERT INTO t VALUES('q'); ROLLBACK;")
+        When "collation" Then db~exec("SELECT a FROM t ORDER BY a COLLATE c;", .true)
+        When "collneed" Then db~exec("SELECT a FROM t ORDER BY a COLLATE nosuch;", .true)
+        When "scalar" Then db~exec("SELECT f(a) FROM t;", .true)
+        When "step", "final" Then db~exec("SELECT g(a) FROM t;", .true)
+        When "exec" Then db~exec("SELECT a FROM t;", .true, , h, "cb")
+        Otherwise db~exec("SELECT a FROM t;")
+      End
+    Catch co = Syntax, Halt, User Boom, Error, NoString
+      r~condition = co~condition
+      r~code = co~code
+      r~message = co~message
+      r~additional = co~additional
+    End
+    Signal Done
   End
   Signal On Syntax Name Trapped
   Signal On Halt Name Trapped
@@ -6946,9 +6968,9 @@ Done:
 
 ::Method onAnotherThread
   -- Runs sql on db in another thread, and returns what reached that thread
-  Use Strict Arg db, sql, iface = "oo"
+  Use Strict Arg db, sql, iface = "oo", how = "SIGNAL"
   w = .CallbackWorker~new
-  w~start("run", db, sql, iface)
+  w~start("run", db, sql, iface, how)
   Return w~wait
 
 ::Method testCallbackOnAnotherThreadCommitHook
@@ -6999,10 +7021,13 @@ Done:
 
 ::Method assertNoStringValue
   -- Runs code with SIGNAL ON NOSTRING and SIGNAL ON SYNTAX, and checks that
-  -- it raises 88.909 (or 88.9xx, for an item of an Array)
+  -- it raises 88.909 (or 88.9xx, for an item of an Array), and the same with
+  -- CATCH clauses
   Use Strict Arg code, v, what, expected = 88.909
   r = noStringTrap(code, v)
   self~assertEquals("SYNTAX" expected, r, what)
+  -- And with a CATCH clause for each condition (section 45)
+  self~assertEquals(r, noStringCatch(code, v), what": with CATCH")
 
 ::Method testNoStringOpen
   v = .Directory~new
@@ -7384,6 +7409,72 @@ NotOpen:
     "the value was not live when the worker got the connection")
   ins~finalize
   db~close
+
+/******************************************************************************/
+/*                                                                            */
+/* Section 45: Conditions from callbacks reach a CATCH clause                 */
+/*                                                                            */
+/* ooRexx r13514 has CATCH clauses (RFE #31): a DO, LOOP or SELECT block can  */
+/* end with "catch [variable =] condition [, condition]...".  Sections 38,   */
+/* 39 and 40 trap what reaches the caller with SIGNAL ON.  Here the same      */
+/* cases run with a CATCH clause in the caller instead, and what it catches   */
+/* must be what SIGNAL ON trapped: the condition, code, message, original     */
+/* condition in ADDITIONAL, number of calls and the result of close.          */
+/*                                                                            */
+/******************************************************************************/
+
+::Method assertCatchLikeSignal
+  -- Runs the case of section 38 both ways and compares them
+  Use Strict Arg kind, action
+  bySignal = catchTrapSummary(self~conditionInCallback(kind, action))
+  byCatch = catchTrapSummary(self~conditionInCallback(kind, action, "CATCH"))
+  self~assertEquals(bySignal, byCatch, kind action": CATCH and SIGNAL ON")
+
+::Method testCatchConditionInCallback
+  -- The cases of sections 38: USER, HALT, ERROR and SYNTAX in the callback
+  kinds = .Array~of("busy", "commit", "rollback", "update", "trace", "profile", -
+    "progress", "auth", "collation", "collneed", "scalar", "step", "final", "exec")
+  Do kind Over kinds
+    self~assertCatchLikeSignal(kind, "USER")
+  End
+  Do kind Over .Array~of("commit", "scalar", "exec")
+    self~assertCatchLikeSignal(kind, "HALT")
+  End
+  self~assertCatchLikeSignal("exec", "ERROR")
+  self~assertCatchLikeSignal("scalar", "SYNTAX")
+
+::Method testCatchCallbackReply
+  -- The cases of section 38: what a callback returns
+  kinds = .Array~of("busy", "commit", "rollback", "update", "trace", "profile", -
+    "progress", "auth", "collation", "collneed", "scalar", "final", "exec")
+  Do kind Over kinds
+    self~assertCatchLikeSignal(kind, "OBJECT")
+    self~assertCatchLikeSignal(kind, "MAKESTRING")
+    self~assertCatchLikeSignal(kind, "STRING")
+  End
+  Do kind Over .Array~of("commit", "progress", "collation", "scalar", "exec")
+    self~assertCatchLikeSignal(kind, "MUTABLE")
+  End
+  self~assertCatchLikeSignal("exec", "HALTSTRING")
+  self~assertCatchLikeSignal("step", "MAKESTRING")
+  self~assertCatchLikeSignal("step", "STRING")
+
+::Method testCatchCallbackOnAnotherThread
+  -- The cases of section 39, with the CATCH clause on the thread that runs
+  -- the SQL
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE t(a TEXT);")
+  h = .RaisingHandler~new("USER")
+  db~commitHook(h, "cb")
+  r = self~onAnotherThread(db, "INSERT INTO t VALUES('q');", "oo", "CATCH")
+  self~assertEquals('SYNTAX 98.900 The USER BOOM condition was raised in the callback "cb": boom-user.', r)
+  db~commitHook(.nil)
+  h = .RaisingHandler~new("SYNTAX")
+  db~createFunction("f", h, 1, "cb")
+  r = self~onAnotherThread(db, "SELECT f(1);", "oo", "CATCH")
+  self~assertEquals("SYNTAX 93.900 boom-syntax.", r)
+  self~assertEquals(1, h~calls)
+  self~assertEquals(0, db~close)
 
 ::Class "ooSQLiteClassic.testGroup" Subclass ooTestCase Public
 
@@ -10403,8 +10494,8 @@ Syntax:
 
 ::Method classicConditionInCallback
   -- As conditionInCallback in section 38, for the classic routines, with
-  -- the callback routine named rtn
-  Use Strict Arg kind, action, rtn = "classicRaisingCB"
+  -- the callback routine named rtn; how CATCH as there (section C18)
+  Use Strict Arg kind, action, rtn = "classicRaisingCB", how = "SIGNAL"
   .local~classicRaiseAction = action
   .local~classicRaiseCalls = 0
   db = self~classicOpenMemory
@@ -10415,6 +10506,21 @@ Syntax:
     When "commit" Then Call oosqlCommitHook db, rtn
     When "scalar" Then Call oosqlCreateFunction db, "f", 1, rtn
     Otherwise Nop
+  End
+  If how == "CATCH" Then Do
+    Do
+      Select Case kind
+        When "commit" Then Call oosqlExec db, "INSERT INTO t VALUES('q');"
+        When "scalar" Then Call oosqlExec db, "SELECT f(a) FROM t;", .true
+        When "exec" Then Call oosqlExec db, "SELECT a FROM t;", .true, , rtn
+      End
+    Catch co = Syntax, Halt, User Boom, Error, NoString
+      r~condition = co~condition
+      r~code = co~code
+      r~message = co~message
+      r~additional = co~additional
+    End
+    Signal Done
   End
   Signal On Syntax Name Trapped
   Signal On Halt Name Trapped
@@ -10972,6 +11078,45 @@ Trapped:
   self~assertEquals(1, rows[4]["W"])
   self~assertEquals(0, oosqlClose(db))
 
+/******************************************************************************/
+/*                                                                            */
+/* Section C18: Classic — conditions from callbacks reach a CATCH clause      */
+/*                                                                            */
+/* Section 45 for the routines: the cases of sections C11 run with a CATCH    */
+/* clause in the caller, and must arrive as they arrive to SIGNAL ON.         */
+/*                                                                            */
+/******************************************************************************/
+
+::Method assertClassicCatchLikeSignal
+  Use Strict Arg kind, action, rtn = "classicRaisingCB"
+  bySignal = catchTrapSummary(self~classicConditionInCallback(kind, action, rtn))
+  byCatch = catchTrapSummary(self~classicConditionInCallback(kind, action, rtn, "CATCH"))
+  self~assertEquals(bySignal, byCatch, kind action rtn": CATCH and SIGNAL ON")
+
+::Method testClassicCatchConditionInCallback
+  self~assertClassicCatchLikeSignal("exec", "USER")
+  self~assertClassicCatchLikeSignal("exec", "ERROR")
+  self~assertClassicCatchLikeSignal("exec", "", "classicNoReturnCB")
+  self~assertClassicCatchLikeSignal("exec", "", "classicBadReturnCB")
+  self~assertClassicCatchLikeSignal("commit", "USER")
+  self~assertClassicCatchLikeSignal("scalar", "HALT")
+  Do kind Over .Array~of("commit", "scalar", "exec")
+    Do action Over .Array~of("OBJECT", "MAKESTRING", "STRING")
+      self~assertClassicCatchLikeSignal(kind, action)
+    End
+  End
+
+::Method testClassicCatchCallbackOnAnotherThread
+  .local~classicRaiseAction = "USER"
+  .local~classicRaiseCalls = 0
+  db = self~classicOpenMemory
+  Call oosqlCreateFunction db, "f", 1, "classicRaisingCB"
+  w = .CallbackWorker~new
+  w~start("run", db, "SELECT f(1);", "classic", "CATCH")
+  self~assertEquals('SYNTAX 98.900 The USER BOOM condition was raised in the callback "classicRaisingCB": boom-user.', w~wait)
+  self~assertEquals(1, .local~classicRaiseCalls)
+  self~assertEquals(0, oosqlClose(db))
+
 ::Routine classicExecRowCB Public
   Use Arg row, count
   .local~classicExecRows~append(row)
@@ -11367,6 +11512,30 @@ TrapNoString:
 TrapSyntax:
   Return "SYNTAX" Condition("O")~code
 
+::Routine catchTrapSummary Public
+  -- Sections 45 and C18: what a trap got, as one string, to compare
+  Use Strict Arg r
+  t = r~condition r~code r~message "calls" r~calls "close" r~close
+  a = r~additional
+  If a~isA(.Array) Then Do
+    t = t "additional" a~items
+    If a~hasIndex(2), \a[2]~isA(.String) Then t = t "original" a[2]~condition
+  End
+  Return t
+
+::Routine noStringCatch Public
+  -- As noStringTrap, with a CATCH clause for each condition (section 45)
+  Use Strict Arg code, v
+  Do
+    Interpret code
+    r = "none"
+  Catch NoString
+    r = "NOSTRING"
+  Catch co = Syntax
+    r = "SYNTAX" co~code
+  End
+  Return r
+
 ::Routine classicNoReturnCB Public
   .local~classicRaiseCalls += 1
   Return
@@ -11536,7 +11705,17 @@ TrapSyntax:
   done = .false
   answer = ""
 ::Method run Unguarded
-  Use Strict Arg db, sql, iface
+  Use Strict Arg db, sql, iface, how = "SIGNAL"
+  If how == "CATCH" Then Do
+    Do
+      If iface == "oo" Then rc = db~exec(sql)
+      Else rc = oosqlExec(db, sql)
+      self~finish("rc" rc)
+    Catch co = Syntax, User Boom
+      self~finish(co~condition co~code co~message)
+    End
+    Return
+  End
   Signal On Syntax Name Trapped
   Signal On User Boom Name Trapped
   If iface == "oo" Then rc = db~exec(sql)
