@@ -482,14 +482,14 @@ Return testResult
 ::Method testConnectionFile
   tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_conn.db")
   dbFile = tempFile~fullName
-  Signal On Syntax Name TestConnectionFileCleanup
-  db = .ooSQLiteConnection~new(dbFile)
-  self~assertEquals(db~OK, db~initCode, "File DB initCode should be OK")
-  self~assertFalse(db~closed, "File DB should not be closed")
-  db~close
-
-TestConnectionFileCleanup:
-  Call SysFileDelete dbFile
+  Do
+    db = .ooSQLiteConnection~new(dbFile)
+    self~assertEquals(db~OK, db~initCode, "File DB initCode should be OK")
+    self~assertFalse(db~closed, "File DB should not be closed")
+    db~close
+  Finally
+    Call SysFileDelete dbFile
+  End
 
 --------------------------------------------------------------------------------
 -- fileName                                                                   --
@@ -561,21 +561,20 @@ TestConnectionFileCleanup:
 ::Method testOpenReadOnly
   tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_ro.db")
   dbFile = tempFile~fullName
-  Signal On Syntax Name TestOpenReadOnlyCleanup
+  Do
+    -- First create the database
+    db = .ooSQLiteConnection~new(dbFile)
+    db~exec("CREATE TABLE t(x);", .true)
+    db~close
 
-  -- First create the database
-  db = .ooSQLiteConnection~new(dbFile)
-  db~exec("CREATE TABLE t(x);", .true)
-  db~close
-
-  -- Now open read-only
-  dbRO = .ooSQLiteConnection~new(dbFile, .ooSQLite~OPEN_READONLY)
-  self~assertEquals(dbRO~OK, dbRO~initCode, "Read-only open should succeed")
-  self~assertEquals(1, dbRO~dbReadOnly("main"), "dbReadOnly should return 1")
-  dbRO~close
-
-TestOpenReadOnlyCleanup:
-  Call SysFileDelete dbFile
+    -- Now open read-only
+    dbRO = .ooSQLiteConnection~new(dbFile, .ooSQLite~OPEN_READONLY)
+    self~assertEquals(dbRO~OK, dbRO~initCode, "Read-only open should succeed")
+    self~assertEquals(1, dbRO~dbReadOnly("main"), "dbReadOnly should return 1")
+    dbRO~close
+  Finally
+    Call SysFileDelete dbFile
+  End
 
 /******************************************************************************/
 /*                                                                            */
@@ -1020,29 +1019,28 @@ TestOpenReadOnlyCleanup:
 ::Method testBackupMemoryToFile
   tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_backup.db")
   dbFile = tempFile~fullName
-  Signal On Syntax Name TestBackupCleanup
+  Do
+    -- Create source in memory
+    srcDB = self~openMemoryDB
+    self~createTestTable(srcDB)
 
-  -- Create source in memory
-  srcDB = self~openMemoryDB
-  self~createTestTable(srcDB)
+    -- Backup to file
+    bu = .ooSQLiteBackup~new(srcDB, dbFile)
+    self~assertEquals(bu~OK, bu~initCode, "Backup initCode should be OK")
+    rc = bu~step(-1)
+    self~assertEquals(bu~DONE, rc, "Backup step(-1) should return DONE")
+    self~assertTrue(bu~finished, "Backup should be finished")
+    srcDB~close
 
-  -- Backup to file
-  bu = .ooSQLiteBackup~new(srcDB, dbFile)
-  self~assertEquals(bu~OK, bu~initCode, "Backup initCode should be OK")
-  rc = bu~step(-1)
-  self~assertEquals(bu~DONE, rc, "Backup step(-1) should return DONE")
-  self~assertTrue(bu~finished, "Backup should be finished")
-  srcDB~close
-
-  -- Verify the backup
-  dstDB = .ooSQLiteConnection~new(dbFile, .ooSQLite~OPEN_READONLY)
-  self~assertEquals(dstDB~OK, dstDB~initCode, "Backup DB should open OK")
-  rs = dstDB~exec("SELECT COUNT(*) AS cnt FROM foods;", .true)
-  self~assertEquals(5, rs[1]~entry("cnt"), "Backup should contain 5 rows")
-  dstDB~close
-
-TestBackupCleanup:
-  Call SysFileDelete dbFile
+    -- Verify the backup
+    dstDB = .ooSQLiteConnection~new(dbFile, .ooSQLite~OPEN_READONLY)
+    self~assertEquals(dstDB~OK, dstDB~initCode, "Backup DB should open OK")
+    rs = dstDB~exec("SELECT COUNT(*) AS cnt FROM foods;", .true)
+    self~assertEquals(5, rs[1]~entry("cnt"), "Backup should contain 5 rows")
+    dstDB~close
+  Finally
+    Call SysFileDelete dbFile
+  End
 
 /******************************************************************************/
 /*                                                                            */
@@ -1208,21 +1206,21 @@ TestBackupCleanup:
 
 ::Method testFTS5
   db = self~openMemoryDB
-  Signal On Syntax Name FTS5NotAvailable
-
-  db~exec("CREATE VIRTUAL TABLE docs USING fts5(title, body);", .true)
-  db~exec("INSERT INTO docs VALUES('First', 'The quick brown fox');", .true)
-  db~exec("INSERT INTO docs VALUES('Second', 'Jumped over the lazy dog');", .true)
-  rs = db~exec("SELECT title FROM docs WHERE docs MATCH 'fox';", .true)
-  self~assertEquals(1, rs~items, "FTS5 search should find 1 result")
-  self~assertEquals("First", rs[1]~entry("title"), "FTS5 should find 'First'")
-  db~close
-  Return
-
-FTS5NotAvailable:
-  -- FTS5 might not be compiled in — skip gracefully
-  self~assertTrue(.true, "FTS5 not available — test skipped")
-  db~close
+  Do
+    db~exec("CREATE VIRTUAL TABLE docs USING fts5(title, body);", .true)
+    db~exec("INSERT INTO docs VALUES('First', 'The quick brown fox');", .true)
+    db~exec("INSERT INTO docs VALUES('Second', 'Jumped over the lazy dog');", .true)
+    rs = db~exec("SELECT title FROM docs WHERE docs MATCH 'fox';", .true)
+    self~assertEquals(1, rs~items, "FTS5 search should find 1 result")
+    self~assertEquals("First", rs[1]~entry("title"), "FTS5 should find 'First'")
+  Catch co = Syntax
+    -- A failed assertion (93.964) is not a missing FTS5
+    If co~code == 93.964 Then Raise Propagate
+    -- FTS5 might not be compiled in — skip gracefully
+    self~assertTrue(.true, "FTS5 not available — test skipped")
+  Finally
+    db~close
+  End
 
 /******************************************************************************/
 /*                                                                            */
@@ -1289,35 +1287,31 @@ FTS5NotAvailable:
 
 ::Method testRecordFormatSet
   origFmt = .ooSQLite~recordFormat
-  Signal On Syntax Name RecFmtSetCleanup
-  -- Change to OO_STEM_OF_STEMS
-  .ooSQLite~recordFormat = .ooSQLite~OO_STEM_OF_STEMS
-  self~assertEquals(.ooSQLite~OO_STEM_OF_STEMS, .ooSQLite~recordFormat, -
-    "recordFormat should be OO_STEM_OF_STEMS after set")
-  .ooSQLite~recordFormat = origFmt
-  Return
-
-RecFmtSetCleanup:
-  .ooSQLite~recordFormat = origFmt
+  Do
+    -- Change to OO_STEM_OF_STEMS
+    .ooSQLite~recordFormat = .ooSQLite~OO_STEM_OF_STEMS
+    self~assertEquals(.ooSQLite~OO_STEM_OF_STEMS, .ooSQLite~recordFormat, -
+      "recordFormat should be OO_STEM_OF_STEMS after set")
+  Finally
+    .ooSQLite~recordFormat = origFmt
+  End
 
 ::Method testRecordFormatSetAffectsExec
   origFmt = .ooSQLite~recordFormat
-  Signal On Syntax Name RecFmtExecCleanup
-  -- Set process-wide format BEFORE creating the connection,
-  -- because new() snapshots the class recordFormat at init time.
-  .ooSQLite~recordFormat = .ooSQLite~OO_STEM_OF_STEMS
-  db = .ooSQLiteConnection~new(":memory:")
-  self~assertEquals(db~OK, db~initCode, "openMemoryDB: initCode should be OK")
-  self~createTestTable(db)
-  rs = db~exec("SELECT id, name FROM foods ORDER BY id;", .true)
-  self~assertIsA(rs, .Stem, "Result with OO_STEM_OF_STEMS should be a Stem")
-  self~assertEquals(5, rs[0], "Stem[0] should be 5")
-  db~close
-  .ooSQLite~recordFormat = origFmt
-  Return
-
-RecFmtExecCleanup:
-  .ooSQLite~recordFormat = origFmt
+  Do
+    -- Set process-wide format BEFORE creating the connection,
+    -- because new() snapshots the class recordFormat at init time.
+    .ooSQLite~recordFormat = .ooSQLite~OO_STEM_OF_STEMS
+    db = .ooSQLiteConnection~new(":memory:")
+    self~assertEquals(db~OK, db~initCode, "openMemoryDB: initCode should be OK")
+    self~createTestTable(db)
+    rs = db~exec("SELECT id, name FROM foods ORDER BY id;", .true)
+    self~assertIsA(rs, .Stem, "Result with OO_STEM_OF_STEMS should be a Stem")
+    self~assertEquals(5, rs[0], "Stem[0] should be 5")
+    db~close
+  Finally
+    .ooSQLite~recordFormat = origFmt
+  End
 
 /******************************************************************************/
 /*                                                                            */
@@ -1334,15 +1328,15 @@ RecFmtExecCleanup:
 ::Method testDbFileName
   tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_dbfn.db")
   dbFile = tempFile~fullName
-  Signal On Syntax Name TestDbFileNameCleanup
-  db = self~openFileDB(dbFile)
-  fn = db~dbFileName("main")
-  self~assertTrue(fn~pos("oosqlite_test_dbfn.db") > 0, -
-    "dbFileName('main') should contain the file name:" fn)
-  db~close
-
-TestDbFileNameCleanup:
-  Call SysFileDelete dbFile
+  Do
+    db = self~openFileDB(dbFile)
+    fn = db~dbFileName("main")
+    self~assertTrue(fn~pos("oosqlite_test_dbfn.db") > 0, -
+      "dbFileName('main') should contain the file name:" fn)
+    db~close
+  Finally
+    Call SysFileDelete dbFile
+  End
 
 ::Method testDbFileNameMemory
   db = self~openMemoryDB
@@ -1741,13 +1735,11 @@ TestDbFileNameCleanup:
   db = self~openMemoryDB
   stmt = .ooSQLiteStmt~new(db, "SELECT 1;")
   raised = .false
-  Signal On Syntax Name StmtRecFmtInvalid
-  stmt~recordFormat = 9
-  Signal StmtRecFmtDone
-StmtRecFmtInvalid:
-  raised = .true
-StmtRecFmtDone:
-  Signal Off Syntax
+  Do
+    stmt~recordFormat = 9
+  Catch Syntax
+    raised = .true
+  End
   self~assertTrue(raised, "Setting recordFormat to 9 should raise a syntax error")
   self~assertEquals(0, stmt~initCode, "Stmt initCode should still be 0")
   stmt~finalize
@@ -1961,29 +1953,32 @@ StmtRecFmtDone:
   -- Do a multi-step backup to observe pageCount/remaining
   tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_bu_pc.db")
   dbFile = tempFile~fullName
-  Signal On Syntax Name TestBuPCCleanup
+  Do
+    bu = .ooSQLiteBackup~new(srcDB, dbFile)
+    self~assertEquals(bu~OK, bu~initCode, "Backup initCode should be OK")
 
-  bu = .ooSQLiteBackup~new(srcDB, dbFile)
-  self~assertEquals(bu~OK, bu~initCode, "Backup initCode should be OK")
+    -- The engine reports what the last step stored: before the first step,
+    -- 0 for both (this test asserted pageCount > 0 there; the failure was
+    -- lost in its SIGNAL ON SYNTAX cleanup, which did not reraise it)
+    self~assertEquals(0, bu~pageCount, "pageCount before the first step")
+    self~assertEquals(0, bu~remaining, "remaining before the first step")
+    bu~step(1)
 
-  pc = bu~pageCount
-  self~assertTrue(pc~dataType("W"), "pageCount should be a number:" pc)
-  self~assertTrue(pc > 0, "pageCount should be > 0:" pc)
+    pc = bu~pageCount
+    self~assertTrue(pc~dataType("W"), "pageCount should be a number:" pc)
+    self~assertTrue(pc > 0, "pageCount should be > 0:" pc)
 
-  rem = bu~remaining
-  self~assertTrue(rem~dataType("W"), "remaining should be a number:" rem)
-  self~assertTrue(rem > 0, "remaining should be > 0:" rem)
-  self~assertTrue(rem <= pc, "remaining should be <= pageCount")
+    rem = bu~remaining
+    self~assertTrue(rem~dataType("W"), "remaining should be a number:" rem)
+    self~assertTrue(rem >= 0, "remaining should be >= 0:" rem)
+    self~assertTrue(rem < pc, "one page copied: remaining should be < pageCount")
 
-  -- Finish the backup
-  bu~step(-1)
-  srcDB~close
-  Call SysFileDelete dbFile
-  Return
-
-TestBuPCCleanup:
-  srcDB~close
-  Call SysFileDelete dbFile
+    -- Finish the backup
+    bu~step(-1)
+  Finally
+    srcDB~close
+    Call SysFileDelete dbFile
+  End
 
 --------------------------------------------------------------------------------
 -- finish (explicit abandon)                                                  --
@@ -1994,21 +1989,17 @@ TestBuPCCleanup:
   self~createTestTable(srcDB)
   tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_bu_fin.db")
   dbFile = tempFile~fullName
-  Signal On Syntax Name TestBuFinCleanup
-
-  bu = .ooSQLiteBackup~new(srcDB, dbFile)
-  self~assertEquals(bu~OK, bu~initCode, "Backup initCode should be OK")
-  -- Abandon the backup via explicit finish
-  rc = bu~finish
-  self~assertEquals(bu~OK, rc, "finish should return OK")
-  self~assertTrue(bu~finished, "Backup should be finished after finish")
-  srcDB~close
-  Call SysFileDelete dbFile
-  Return
-
-TestBuFinCleanup:
-  srcDB~close
-  Call SysFileDelete dbFile
+  Do
+    bu = .ooSQLiteBackup~new(srcDB, dbFile)
+    self~assertEquals(bu~OK, bu~initCode, "Backup initCode should be OK")
+    -- Abandon the backup via explicit finish
+    rc = bu~finish
+    self~assertEquals(bu~OK, rc, "finish should return OK")
+    self~assertTrue(bu~finished, "Backup should be finished after finish")
+  Finally
+    srcDB~close
+    Call SysFileDelete dbFile
+  End
 
 --------------------------------------------------------------------------------
 -- getDestConn with saveDestConn                                              --
@@ -2019,27 +2010,23 @@ TestBuFinCleanup:
   self~createTestTable(srcDB)
   tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_bu_gdc.db")
   dbFile = tempFile~fullName
-  Signal On Syntax Name TestBuGDCCleanup
-
-  bu = .ooSQLiteBackup~new(srcDB, dbFile)
-  self~assertEquals(bu~OK, bu~initCode, "Backup initCode should be OK")
-  bu~saveDestConn = .true
-  bu~step(-1)
-  -- Now getDestConn should return a usable connection
-  dstConn = bu~getDestConn
-  self~assertTrue(dstConn \= .nil, "getDestConn should not be .nil")
-  -- Verify we can query the backup
-  rs = dstConn~exec("SELECT COUNT(*) AS cnt FROM foods;", .true)
-  self~assertEquals(5, rs[1]~entry("cnt"), -
-    "getDestConn DB should have 5 rows in foods")
-  dstConn~close
-  srcDB~close
-  Call SysFileDelete dbFile
-  Return
-
-TestBuGDCCleanup:
-  srcDB~close
-  Call SysFileDelete dbFile
+  Do
+    bu = .ooSQLiteBackup~new(srcDB, dbFile)
+    self~assertEquals(bu~OK, bu~initCode, "Backup initCode should be OK")
+    bu~saveDestConn = .true
+    bu~step(-1)
+    -- Now getDestConn should return a usable connection
+    dstConn = bu~getDestConn
+    self~assertTrue(dstConn \= .nil, "getDestConn should not be .nil")
+    -- Verify we can query the backup
+    rs = dstConn~exec("SELECT COUNT(*) AS cnt FROM foods;", .true)
+    self~assertEquals(5, rs[1]~entry("cnt"), -
+      "getDestConn DB should have 5 rows in foods")
+    dstConn~close
+  Finally
+    srcDB~close
+    Call SysFileDelete dbFile
+  End
 
 --------------------------------------------------------------------------------
 -- lastErrCode, lastErrMsg (backup)                                           --
@@ -2050,39 +2037,31 @@ TestBuGDCCleanup:
   self~createTestTable(srcDB)
   tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_bu_ec.db")
   dbFile = tempFile~fullName
-  Signal On Syntax Name TestBuECCleanup
-
-  bu = .ooSQLiteBackup~new(srcDB, dbFile)
-  self~assertEquals(bu~OK, bu~lastErrCode, -
-    "Backup lastErrCode after init should be OK")
-  bu~step(-1)
-  srcDB~close
-  Call SysFileDelete dbFile
-  Return
-
-TestBuECCleanup:
-  srcDB~close
-  Call SysFileDelete dbFile
+  Do
+    bu = .ooSQLiteBackup~new(srcDB, dbFile)
+    self~assertEquals(bu~OK, bu~lastErrCode, -
+      "Backup lastErrCode after init should be OK")
+    bu~step(-1)
+  Finally
+    srcDB~close
+    Call SysFileDelete dbFile
+  End
 
 ::Method testBackupLastErrMsg
   srcDB = self~openMemoryDB
   self~createTestTable(srcDB)
   tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_bu_em.db")
   dbFile = tempFile~fullName
-  Signal On Syntax Name TestBuEMCleanup
-
-  bu = .ooSQLiteBackup~new(srcDB, dbFile)
-  msg = bu~lastErrMsg
-  self~assertTrue(msg~length > 0, -
-    "Backup lastErrMsg should return a non-empty string:" msg)
-  bu~step(-1)
-  srcDB~close
-  Call SysFileDelete dbFile
-  Return
-
-TestBuEMCleanup:
-  srcDB~close
-  Call SysFileDelete dbFile
+  Do
+    bu = .ooSQLiteBackup~new(srcDB, dbFile)
+    msg = bu~lastErrMsg
+    self~assertTrue(msg~length > 0, -
+      "Backup lastErrMsg should return a non-empty string:" msg)
+    bu~step(-1)
+  Finally
+    srcDB~close
+    Call SysFileDelete dbFile
+  End
 
 /******************************************************************************/
 /*                                                                            */
@@ -2124,12 +2103,12 @@ TestBuEMCleanup:
 ::Method mutexError
   -- Sends msgName to mtx, returns the code and message of the syntax error
   Use Strict Arg mtx, msgName
-  Signal On Syntax
-  mtx~send(msgName)
+  Do
+    mtx~send(msgName)
+  Catch co = Syntax
+    Return co~code co~message
+  End
   Return "no error"
-Syntax:
-  co = Condition("O")
-  Return co~code co~message
 
 ::Method testMutexTry
   mtx = .ooSQLiteMutex~new
@@ -2578,38 +2557,35 @@ Syntax:
 ::Method testBusyHandler
   tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_busy.db")
   dbFile = tempFile~fullName
-  Signal On Syntax Name TestBusyCleanup
-  Call SysFileDelete dbFile
-  -- Create the database and a table
-  db1 = .ooSQLiteConnection~new(dbFile)
-  self~assertEquals(db1~OK, db1~initCode, "db1 should open OK")
-  db1~exec("CREATE TABLE t(x INTEGER);", .true)
-  db1~exec("INSERT INTO t VALUES(1);", .true)
-  -- db1 holds an exclusive lock
-  db1~exec("BEGIN IMMEDIATE;")
-  -- db2 opens the same file
-  db2 = .ooSQLiteConnection~new(dbFile)
-  self~assertEquals(db2~OK, db2~initCode, "db2 should open OK")
-  -- Register busy handler on db2
-  handler = .BusyHandler~new(3)
-  db2~busyHandler(handler)
-  -- db2 tries to write — should invoke busy handler, then get BUSY
-  rc = db2~exec("INSERT INTO t VALUES(2);")
-  self~assertEquals(db2~BUSY, rc, -
-    "db2 INSERT should return BUSY after handler gives up")
-  self~assertTrue(handler~callCount > 0, -
-    "busyHandler should have been invoked at least once")
-  -- Clean up
-  db1~exec("ROLLBACK;")
-  db1~close
-  db2~close
-  Call SysFileDelete dbFile
-  Return
-
-TestBusyCleanup:
-  db1~close
-  db2~close
-  Call SysFileDelete dbFile
+  Do
+    Call SysFileDelete dbFile
+    -- Create the database and a table
+    db1 = .ooSQLiteConnection~new(dbFile)
+    self~assertEquals(db1~OK, db1~initCode, "db1 should open OK")
+    db1~exec("CREATE TABLE t(x INTEGER);", .true)
+    db1~exec("INSERT INTO t VALUES(1);", .true)
+    -- db1 holds an exclusive lock
+    db1~exec("BEGIN IMMEDIATE;")
+    -- db2 opens the same file
+    db2 = .ooSQLiteConnection~new(dbFile)
+    self~assertEquals(db2~OK, db2~initCode, "db2 should open OK")
+    -- Register busy handler on db2
+    handler = .BusyHandler~new(3)
+    db2~busyHandler(handler)
+    -- db2 tries to write — should invoke busy handler, then get BUSY
+    rc = db2~exec("INSERT INTO t VALUES(2);")
+    self~assertEquals(db2~BUSY, rc, -
+      "db2 INSERT should return BUSY after handler gives up")
+    self~assertTrue(handler~callCount > 0, -
+      "busyHandler should have been invoked at least once")
+    -- Clean up
+    db1~exec("ROLLBACK;")
+  Finally
+    -- An error in this clause would replace the one that left the block
+    If Var("db1") Then db1~close
+    If Var("db2") Then db2~close
+    Call SysFileDelete dbFile
+  End
 
 --------------------------------------------------------------------------------
 -- busyHandler: userData propagation                                          --
@@ -2618,32 +2594,29 @@ TestBusyCleanup:
 ::Method testBusyHandlerUserData
   tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_busy_ud.db")
   dbFile = tempFile~fullName
-  Signal On Syntax Name TestBusyUDCleanup
-  Call SysFileDelete dbFile
-  db1 = .ooSQLiteConnection~new(dbFile)
-  db1~exec("CREATE TABLE t(x INTEGER);", .true)
-  db1~exec("INSERT INTO t VALUES(1);", .true)
-  db1~exec("BEGIN IMMEDIATE;")
-  db2 = .ooSQLiteConnection~new(dbFile)
-  -- Register with userData
-  handler = .BusyHandler~new(2)
-  myData = "busy_user_data"
-  db2~busyHandler(handler,, myData)
-  db2~exec("INSERT INTO t VALUES(2);")
-  -- BusyHandler doesn't store userData, but we can verify it was called
-  self~assertTrue(handler~callCount > 0, -
-    "busyHandler should be invoked with userData")
-  -- Clean up
-  db1~exec("ROLLBACK;")
-  db1~close
-  db2~close
-  Call SysFileDelete dbFile
-  Return
-
-TestBusyUDCleanup:
-  db1~close
-  db2~close
-  Call SysFileDelete dbFile
+  Do
+    Call SysFileDelete dbFile
+    db1 = .ooSQLiteConnection~new(dbFile)
+    db1~exec("CREATE TABLE t(x INTEGER);", .true)
+    db1~exec("INSERT INTO t VALUES(1);", .true)
+    db1~exec("BEGIN IMMEDIATE;")
+    db2 = .ooSQLiteConnection~new(dbFile)
+    -- Register with userData
+    handler = .BusyHandler~new(2)
+    myData = "busy_user_data"
+    db2~busyHandler(handler,, myData)
+    db2~exec("INSERT INTO t VALUES(2);")
+    -- BusyHandler doesn't store userData, but we can verify it was called
+    self~assertTrue(handler~callCount > 0, -
+      "busyHandler should be invoked with userData")
+    -- Clean up
+    db1~exec("ROLLBACK;")
+  Finally
+    -- An error in this clause would replace the one that left the block
+    If Var("db1") Then db1~close
+    If Var("db2") Then db2~close
+    Call SysFileDelete dbFile
+  End
 
 --------------------------------------------------------------------------------
 -- busyHandler: deregistration                                                --
@@ -2652,34 +2625,31 @@ TestBusyUDCleanup:
 ::Method testBusyHandlerDeregister
   tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_busy_dereg.db")
   dbFile = tempFile~fullName
-  Signal On Syntax Name TestBusyDeregCleanup
-  Call SysFileDelete dbFile
-  db1 = .ooSQLiteConnection~new(dbFile)
-  db1~exec("CREATE TABLE t(x INTEGER);", .true)
-  db1~exec("INSERT INTO t VALUES(1);", .true)
-  db2 = .ooSQLiteConnection~new(dbFile)
-  -- Register then deregister
-  handler = .BusyHandler~new(3)
-  db2~busyHandler(handler)
-  db2~busyHandler(.nil)
-  -- Lock and try write — handler should NOT be invoked
-  db1~exec("BEGIN IMMEDIATE;")
-  rc = db2~exec("INSERT INTO t VALUES(2);")
-  self~assertEquals(db2~BUSY, rc, -
-    "db2 INSERT should return BUSY immediately after deregister")
-  self~assertEquals(0, handler~callCount, -
-    "busyHandler should not be invoked after deregister")
-  -- Clean up
-  db1~exec("ROLLBACK;")
-  db1~close
-  db2~close
-  Call SysFileDelete dbFile
-  Return
-
-TestBusyDeregCleanup:
-  db1~close
-  db2~close
-  Call SysFileDelete dbFile
+  Do
+    Call SysFileDelete dbFile
+    db1 = .ooSQLiteConnection~new(dbFile)
+    db1~exec("CREATE TABLE t(x INTEGER);", .true)
+    db1~exec("INSERT INTO t VALUES(1);", .true)
+    db2 = .ooSQLiteConnection~new(dbFile)
+    -- Register then deregister
+    handler = .BusyHandler~new(3)
+    db2~busyHandler(handler)
+    db2~busyHandler(.nil)
+    -- Lock and try write — handler should NOT be invoked
+    db1~exec("BEGIN IMMEDIATE;")
+    rc = db2~exec("INSERT INTO t VALUES(2);")
+    self~assertEquals(db2~BUSY, rc, -
+      "db2 INSERT should return BUSY immediately after deregister")
+    self~assertEquals(0, handler~callCount, -
+      "busyHandler should not be invoked after deregister")
+    -- Clean up
+    db1~exec("ROLLBACK;")
+  Finally
+    -- An error in this clause would replace the one that left the block
+    If Var("db1") Then db1~close
+    If Var("db2") Then db2~close
+    Call SysFileDelete dbFile
+  End
 
 /******************************************************************************/
 /*                                                                            */
@@ -2929,121 +2899,112 @@ TestBusyDeregCleanup:
 --------------------------------------------------------------------------------
 
 ::Method testAutoBuiltinSingle
-  Signal On Syntax Name TestAutoSingleCleanup
-  -- Ensure clean state
-  .ooSQLExtensions~resetAutoBuiltin
-  -- Auto-register rot13
-  rc = .ooSQLExtensions~autoBuiltin("rot13")
-  self~assertEquals(0, rc, -
-    "autoBuiltin('rot13') should return SQLITE_OK")
-  -- New connection should have rot13 available
-  db = .ooSQLiteConnection~new(":memory:")
-  rows = db~exec("SELECT rot13('auto') AS val;", .true)
-  self~assertEquals("nhgb", rows[1]["VAL"], -
-    "rot13 should be auto-available in new connection")
-  -- ieee754 should NOT be available
-  rc2 = db~exec("SELECT ieee754(1.0);")
-  self~assertEquals(1, rc2, -
-    "ieee754 should NOT be auto-available")
-  db~close
-  .ooSQLExtensions~resetAutoBuiltin
-  Return
-
-TestAutoSingleCleanup:
-  .ooSQLExtensions~resetAutoBuiltin
+  Do
+    -- Ensure clean state
+    .ooSQLExtensions~resetAutoBuiltin
+    -- Auto-register rot13
+    rc = .ooSQLExtensions~autoBuiltin("rot13")
+    self~assertEquals(0, rc, -
+      "autoBuiltin('rot13') should return SQLITE_OK")
+    -- New connection should have rot13 available
+    db = .ooSQLiteConnection~new(":memory:")
+    rows = db~exec("SELECT rot13('auto') AS val;", .true)
+    self~assertEquals("nhgb", rows[1]["VAL"], -
+      "rot13 should be auto-available in new connection")
+    -- ieee754 should NOT be available
+    rc2 = db~exec("SELECT ieee754(1.0);")
+    self~assertEquals(1, rc2, -
+      "ieee754 should NOT be auto-available")
+    db~close
+  Finally
+    .ooSQLExtensions~resetAutoBuiltin
+  End
 
 --------------------------------------------------------------------------------
 -- autoBuiltin: all extensions available in new connections                    --
 --------------------------------------------------------------------------------
 
 ::Method testAutoBuiltinAll
-  Signal On Syntax Name TestAutoAllCleanup
-  .ooSQLExtensions~resetAutoBuiltin
-  rc = .ooSQLExtensions~autoBuiltin
-  self~assertEquals(0, rc, -
-    "autoBuiltin() should return SQLITE_OK")
-  db = .ooSQLiteConnection~new(":memory:")
-  -- rot13 should work
-  rows = db~exec("SELECT rot13('all') AS val;", .true)
-  self~assertEquals("nyy", rows[1]["VAL"], -
-    "rot13 should be auto-available after autoBuiltin()")
-  -- ieee754 should also work
-  rows2 = db~exec("SELECT typeof(ieee754(1.0)) AS val;", .true)
-  self~assertEquals("text", rows2[1]["VAL"], -
-    "ieee754 should be auto-available after autoBuiltin()")
-  db~close
-  .ooSQLExtensions~resetAutoBuiltin
-  Return
-
-TestAutoAllCleanup:
-  .ooSQLExtensions~resetAutoBuiltin
+  Do
+    .ooSQLExtensions~resetAutoBuiltin
+    rc = .ooSQLExtensions~autoBuiltin
+    self~assertEquals(0, rc, -
+      "autoBuiltin() should return SQLITE_OK")
+    db = .ooSQLiteConnection~new(":memory:")
+    -- rot13 should work
+    rows = db~exec("SELECT rot13('all') AS val;", .true)
+    self~assertEquals("nyy", rows[1]["VAL"], -
+      "rot13 should be auto-available after autoBuiltin()")
+    -- ieee754 should also work
+    rows2 = db~exec("SELECT typeof(ieee754(1.0)) AS val;", .true)
+    self~assertEquals("text", rows2[1]["VAL"], -
+      "ieee754 should be auto-available after autoBuiltin()")
+    db~close
+  Finally
+    .ooSQLExtensions~resetAutoBuiltin
+  End
 
 --------------------------------------------------------------------------------
 -- cancelAutoBuiltin: cancels auto-registration of a single extension         --
 --------------------------------------------------------------------------------
 
 ::Method testCancelAutoBuiltin
-  Signal On Syntax Name TestCancelAutoCleanup
-  .ooSQLExtensions~resetAutoBuiltin
-  -- Auto-register rot13, then cancel it
-  .ooSQLExtensions~autoBuiltin("rot13")
-  rc = .ooSQLExtensions~cancelAutoBuiltin("rot13")
-  self~assertEquals(0, rc, -
-    "cancelAutoBuiltin('rot13') should return SQLITE_OK")
-  -- New connection should NOT have rot13
-  db = .ooSQLiteConnection~new(":memory:")
-  rc2 = db~exec("SELECT rot13('test');")
-  self~assertEquals(1, rc2, -
-    "rot13 should NOT be available after cancelAutoBuiltin")
-  db~close
-  .ooSQLExtensions~resetAutoBuiltin
-  Return
-
-TestCancelAutoCleanup:
-  .ooSQLExtensions~resetAutoBuiltin
+  Do
+    .ooSQLExtensions~resetAutoBuiltin
+    -- Auto-register rot13, then cancel it
+    .ooSQLExtensions~autoBuiltin("rot13")
+    rc = .ooSQLExtensions~cancelAutoBuiltin("rot13")
+    self~assertEquals(0, rc, -
+      "cancelAutoBuiltin('rot13') should return SQLITE_OK")
+    -- New connection should NOT have rot13
+    db = .ooSQLiteConnection~new(":memory:")
+    rc2 = db~exec("SELECT rot13('test');")
+    self~assertEquals(1, rc2, -
+      "rot13 should NOT be available after cancelAutoBuiltin")
+    db~close
+  Finally
+    .ooSQLExtensions~resetAutoBuiltin
+  End
 
 --------------------------------------------------------------------------------
 -- cancelAutoBuiltin: returns SQLITE_MISUSE when not auto-registered          --
 --------------------------------------------------------------------------------
 
 ::Method testCancelAutoBuiltinNotRegistered
-  Signal On Syntax Name TestCancelNotRegCleanup
-  .ooSQLExtensions~resetAutoBuiltin
-  rc = .ooSQLExtensions~cancelAutoBuiltin("rot13")
-  self~assertEquals(21, rc, -
-    "cancelAutoBuiltin should return SQLITE_MISUSE when not auto-registered")
-  self~assertEquals(21, .ooSQLExtensions~lastErrCode, -
-    "lastErrCode should be SQLITE_MISUSE")
-  .ooSQLExtensions~resetAutoBuiltin
-  Return
-
-TestCancelNotRegCleanup:
-  .ooSQLExtensions~resetAutoBuiltin
+  Do
+    .ooSQLExtensions~resetAutoBuiltin
+    rc = .ooSQLExtensions~cancelAutoBuiltin("rot13")
+    self~assertEquals(21, rc, -
+      "cancelAutoBuiltin should return SQLITE_MISUSE when not auto-registered")
+    self~assertEquals(21, .ooSQLExtensions~lastErrCode, -
+      "lastErrCode should be SQLITE_MISUSE")
+  Finally
+    .ooSQLExtensions~resetAutoBuiltin
+  End
 
 --------------------------------------------------------------------------------
 -- resetAutoBuiltin: clears all auto-registrations                            --
 --------------------------------------------------------------------------------
 
 ::Method testResetAutoBuiltin
-  Signal On Syntax Name TestResetCleanup
-  -- Auto-register all, then reset
-  .ooSQLExtensions~autoBuiltin
-  rc = .ooSQLExtensions~resetAutoBuiltin
-  self~assertEquals(0, rc, -
-    "resetAutoBuiltin should return SQLITE_OK")
-  -- New connection should have nothing auto-registered
-  db = .ooSQLiteConnection~new(":memory:")
-  rc2 = db~exec("SELECT rot13('test');")
-  self~assertEquals(1, rc2, -
-    "rot13 should NOT be available after resetAutoBuiltin")
-  rc3 = db~exec("SELECT ieee754(1.0);")
-  self~assertEquals(1, rc3, -
-    "ieee754 should NOT be available after resetAutoBuiltin")
-  db~close
-  Return
-
-TestResetCleanup:
-  .ooSQLExtensions~resetAutoBuiltin
+  Do
+    -- Auto-register all, then reset
+    .ooSQLExtensions~autoBuiltin
+    rc = .ooSQLExtensions~resetAutoBuiltin
+    self~assertEquals(0, rc, -
+      "resetAutoBuiltin should return SQLITE_OK")
+    -- New connection should have nothing auto-registered
+    db = .ooSQLiteConnection~new(":memory:")
+    rc2 = db~exec("SELECT rot13('test');")
+    self~assertEquals(1, rc2, -
+      "rot13 should NOT be available after resetAutoBuiltin")
+    rc3 = db~exec("SELECT ieee754(1.0);")
+    self~assertEquals(1, rc3, -
+      "ieee754 should NOT be available after resetAutoBuiltin")
+    db~close
+  Finally
+    .ooSQLExtensions~resetAutoBuiltin
+  End
 
 --------------------------------------------------------------------------------
 -- lastErrCode / lastErrMsg: updated on error, reset on success               --
@@ -3424,11 +3385,12 @@ TestResetCleanup:
 -- or "" if it raises none.
 ::Method aggregateErrorMessage
   Use Strict Arg db, sql
-  Signal On Syntax Name AggregateErrorTrapped
-  db~exec(sql, .true)
+  Do
+    db~exec(sql, .true)
+  Catch co = Syntax
+    Return co~message
+  End
   Return ""
-AggregateErrorTrapped:
-  Return Condition("O")~message
 
 --------------------------------------------------------------------------------
 -- createFunction: aggregate UDF (average, double result)                     --
@@ -5340,29 +5302,26 @@ AggregateErrorTrapped:
 --------------------------------------------------------------------------------
 
 ::Method testZipFileCompressAuto
-  Signal On Syntax Name TestZipAutoCleanup
-  .ooSQLExtensions~resetAutoBuiltin
-  self~assertEquals(0, .ooSQLExtensions~autoBuiltin("zipFile"), "autoBuiltin zipFile")
-  self~assertEquals(0, .ooSQLExtensions~autoBuiltin("COMPRESS"), -
-    "autoBuiltin COMPRESS (names are case-insensitive)")
-  db = self~openMemoryDB
-  rows = self~tier5Rows(db, "SELECT hex(uncompress(compress('ab')))," -
-    "(SELECT count(*) FROM zipfile((SELECT zipfile('n', 'd'))));")
-  self~assertEquals("6162", rows[1][1], "compress is automatic")
-  self~assertEquals(1, rows[1][2], "zipfile is automatic")
-  db~close
-  self~assertEquals(0, .ooSQLExtensions~cancelAutoBuiltin("compress"))
-  db = self~openMemoryDB
-  stmt = .ooSQLiteStmt~new(db, "SELECT compress('x');")
-  self~assertEquals(1, stmt~initCode, "compress is no longer automatic")
-  stmt~finalize
-  db~close
-  .ooSQLExtensions~resetAutoBuiltin
-  Return
-
-TestZipAutoCleanup:
-  .ooSQLExtensions~resetAutoBuiltin
-  Raise Propagate
+  Do
+    .ooSQLExtensions~resetAutoBuiltin
+    self~assertEquals(0, .ooSQLExtensions~autoBuiltin("zipFile"), "autoBuiltin zipFile")
+    self~assertEquals(0, .ooSQLExtensions~autoBuiltin("COMPRESS"), -
+      "autoBuiltin COMPRESS (names are case-insensitive)")
+    db = self~openMemoryDB
+    rows = self~tier5Rows(db, "SELECT hex(uncompress(compress('ab')))," -
+      "(SELECT count(*) FROM zipfile((SELECT zipfile('n', 'd'))));")
+    self~assertEquals("6162", rows[1][1], "compress is automatic")
+    self~assertEquals(1, rows[1][2], "zipfile is automatic")
+    db~close
+    self~assertEquals(0, .ooSQLExtensions~cancelAutoBuiltin("compress"))
+    db = self~openMemoryDB
+    stmt = .ooSQLiteStmt~new(db, "SELECT compress('x');")
+    self~assertEquals(1, stmt~initCode, "compress is no longer automatic")
+    stmt~finalize
+    db~close
+  Finally
+    .ooSQLExtensions~resetAutoBuiltin
+  End
 
 /******************************************************************************/
 /*                                                                            */
@@ -5887,12 +5846,12 @@ TestZipAutoCleanup:
   -- Sends msgName with args to receiver; returns the code and message of the
   -- syntax error, or "no error"
   Use Arg receiver, msgName, ...
-  Signal On Syntax
-  receiver~sendWith(msgName, Arg(3, "A"))
+  Do
+    receiver~sendWith(msgName, Arg(3, "A"))
+  Catch co = Syntax
+    Return co~code co~message
+  End
   Return "no error"
-Syntax:
-  co = Condition("O")
-  Return co~code co~message
 
 ::Method testPackageRegisterClosedConnection
   -- register with a closed connection crashed (SIGSEGV)
@@ -5948,24 +5907,22 @@ Syntax:
 ::Method testCancelAutoBuiltinAll
   -- cancelling ALL returned MISUSE, with a wrong message, when some builtin
   -- was not automatic
-  Signal On Syntax Name TestCancelAllCleanup
-  .ooSQLExtensions~resetAutoBuiltin
-  self~assertEquals(0, .ooSQLExtensions~cancelAutoBuiltin, -
-    "cancelAutoBuiltin() with nothing automatic should return OK")
-  .ooSQLExtensions~autoBuiltin("rot13")
-  self~assertEquals(0, .ooSQLExtensions~cancelAutoBuiltin("ALL"), -
-    "cancelAutoBuiltin('ALL') should return OK")
-  self~assertEquals(0, .ooSQLExtensions~lastErrCode, -
-    "lastErrCode should be 0 after cancelAutoBuiltin('ALL')")
-  db = .ooSQLiteConnection~new(":memory:")
-  rc = db~exec("SELECT rot13('test');")
-  db~close
-  self~assertEquals(1, rc, "rot13 should not be automatic any more")
-  .ooSQLExtensions~resetAutoBuiltin
-  Return
-TestCancelAllCleanup:
-  .ooSQLExtensions~resetAutoBuiltin
-  Raise Propagate
+  Do
+    .ooSQLExtensions~resetAutoBuiltin
+    self~assertEquals(0, .ooSQLExtensions~cancelAutoBuiltin, -
+      "cancelAutoBuiltin() with nothing automatic should return OK")
+    .ooSQLExtensions~autoBuiltin("rot13")
+    self~assertEquals(0, .ooSQLExtensions~cancelAutoBuiltin("ALL"), -
+      "cancelAutoBuiltin('ALL') should return OK")
+    self~assertEquals(0, .ooSQLExtensions~lastErrCode, -
+      "lastErrCode should be 0 after cancelAutoBuiltin('ALL')")
+    db = .ooSQLiteConnection~new(":memory:")
+    rc = db~exec("SELECT rot13('test');")
+    db~close
+    self~assertEquals(1, rc, "rot13 should not be automatic any more")
+  Finally
+    .ooSQLExtensions~resetAutoBuiltin
+  End
 
 ::Method testAutoMarkedTwice
   -- marking an automatic function, collation or package again added it again,
@@ -6596,10 +6553,11 @@ TestCancelAllCleanup:
 
 ::Method constantValue
   Use Strict Arg name
-  Signal On Syntax Name ConstantMissing
-  Return .ooSQLite~send(name)
-ConstantMissing:
-  Return .nil
+  Do
+    Return .ooSQLite~send(name)
+  Catch Syntax
+    Return .nil
+  End
 
 ::Method testConstantsKeptOldNames
   -- SQLite renamed these; the names of SQLite 3.8.4.3 are still valid
@@ -6705,10 +6663,14 @@ ConstantMissing:
   -- MESSAGE, ADDITIONAL, CALLS and CLOSE.  With how CATCH, a CATCH clause
   -- traps it (section 45) instead of SIGNAL ON.
   Use Strict Arg kind, action, how = "SIGNAL"
-  -- A name for each case: when a TemporaryTestFile object is collected, it
-  -- deletes its file, which must not be the file of a later case (how too:
-  -- section 45 runs each case with SIGNAL ON and then with CATCH)
-  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_cond_"kind"_"action"_"how".db")
+  -- A name for each call: when a TemporaryTestFile object is collected, it
+  -- deletes its file, which must not be the file of a later call (section 45
+  -- runs the cases of section 38 again, with SIGNAL ON and with CATCH)
+  caseNumber = .local~oosqliteConditionCases
+  If caseNumber == .nil Then caseNumber = 0
+  caseNumber += 1
+  .local~oosqliteConditionCases = caseNumber
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_cond_"caseNumber"_"kind"_"action".db")
   dbFile = tempFile~fullName
   Call SysFileDelete dbFile
   db = .ooSQLiteConnection~new(dbFile)
@@ -7130,11 +7092,14 @@ Done:
   -- ObjectToStringValue() too, and raised NOSTRING instead of the error
   v = .Directory~new
   self~assertEquals("SYNTAX 88.900", noStringTrap("x = .ooSQLiteStmt~new(.Object~new, 'SELECT 1;')", v))
-  Signal On Syntax Name WrongClass
-  x = .ooSQLiteStmt~new(.Object~new, "SELECT 1;")
-WrongClass:
+  co = .nil
+  Do
+    x = .ooSQLiteStmt~new(.Object~new, "SELECT 1;")
+  Catch co = Syntax
+  End
+  self~assertNotNil(co, "a syntax error")
   self~assertEquals("Argument 1 must be of the ooSQLiteConnection class; found an Object.", -
-    Condition("O")~message)
+    co~message)
 
 /******************************************************************************/
 /*                                                                            */
@@ -7270,12 +7235,14 @@ WrongClass:
   self~assertEquals(db~OK, db~initCode, db~lastErrMsg)
   db~close
   Call churnMemory
-  Signal On Syntax Name NotOpen
-  db~exec("SELECT 1;")
-  self~fail("exec on a closed connection should raise an error")
-NotOpen:
+  co = .nil
+  Do
+    db~exec("SELECT 1;")
+  Catch co = Syntax
+  End
+  self~assertNotNil(co, "exec on a closed connection should raise an error")
   self~assertEquals("The" .File~new(dbFile)~absolutePath "data base is not open.", -
-    Condition("O")~message, "the message names the file")
+    co~message, "the message names the file")
   Call SysFileDelete dbFile
 
 ::Method testKeptExtensionsLastErrAfterReset
@@ -8005,11 +7972,12 @@ NotOpen:
 
 ::Method syntaxMessage
   Use Strict Arg code
-  Signal On Syntax Name SyntaxRaised
-  Interpret "Call" code
+  Do
+    Interpret "Call" code
+  Catch co = Syntax
+    Return co~message
+  End
   Return ""
-SyntaxRaised:
-  Return Condition("O")~message
 
 ::Method testClassicExecFormatArgPosition
   .local~argPosDb = self~classicOpenMemory
@@ -8462,14 +8430,12 @@ SyntaxRaised:
   db = self~classicOpenMemory
   Call oosqlPrepare db, "", "stmt"
   self~assertTrue(oosqlIsHandleNull(stmt), "Empty SQL gives a null handle")
-  msg = ""
-  Signal On Syntax Name NullStmtRaised
-  Call oosqlStep stmt
-  Signal Off Syntax
-  self~fail("oosqlStep with a null handle should raise a syntax error")
-NullStmtRaised:
-  Signal Off Syntax
-  co = Condition("O")
+  co = .nil
+  Do
+    Call oosqlStep stmt
+  Catch co = Syntax
+  End
+  self~assertNotNil(co, "oosqlStep with a null handle should raise a syntax error")
   self~assertEquals(88.900, co~code, "Error code")
   self~assertEquals("Argument 1, the prepared statement handle, must not be null.", co~message, "Error message")
   Call oosqlClose db
@@ -8503,12 +8469,12 @@ NullStmtRaised:
   -- syntax error it raises
   Use Strict Arg name, args
   rtn = .context~package~findRoutine(name)
-  Signal On Syntax
-  rtn~callWith(args)
+  Do
+    rtn~callWith(args)
+  Catch co = Syntax
+    Return co~code co~message
+  End
   Return "no error"
-Syntax:
-  co = Condition("O")
-  Return co~code co~message
 
 /******************************************************************************/
 /*                                                                            */
@@ -10302,12 +10268,12 @@ Syntax:
   -- Sends the message name with args to receiver, returns the code and
   -- message of the syntax error it raises
   Use Strict Arg receiver, name, args
-  Signal On Syntax
-  receiver~sendWith(name, args)
+  Do
+    receiver~sendWith(name, args)
+  Catch co = Syntax
+    Return co~code co~message
+  End
   Return "no error"
-Syntax:
-  co = Condition("O")
-  Return co~code co~message
 
 ::Method testClassicRegistryFinalizedStmt
   -- oosqlStep or oosqlFinalize on a finalized statement: SIGSEGV before
@@ -10987,12 +10953,14 @@ Done:
   self~assertEquals(0, oosqlCreateFunction(db, sqlName, 0, rtn))
   Drop rtn sqlName
   Call churnMemory
-  Signal On Syntax Name Trapped
-  Call oosqlExec db, "SELECT ff();"
-  self~fail("the condition should reach the caller")
-Trapped:
+  co = .nil
+  Do
+    Call oosqlExec db, "SELECT ff();"
+  Catch co = Syntax
+  End
+  self~assertNotNil(co, "the condition should reach the caller")
   self~assertEquals('The USER BOOM condition was raised in the callback "classicRaisingCB": boom-user.', -
-    Condition("O")~message, "the name of the routine")
+    co~message, "the name of the routine")
   self~assertEquals(0, oosqlClose(db))
 
 ::Method testClassicCallbackNameComputedHook
@@ -11003,12 +10971,14 @@ Trapped:
   Call oosqlCommitHook db, rtn
   Drop rtn
   Call churnMemory
-  Signal On Syntax Name Trapped
-  Call oosqlExec db, "INSERT INTO t VALUES(1);"
-  self~fail("the condition should reach the caller")
-Trapped:
+  co = .nil
+  Do
+    Call oosqlExec db, "INSERT INTO t VALUES(1);"
+  Catch co = Syntax
+  End
+  self~assertNotNil(co, "the condition should reach the caller")
   self~assertEquals('The USER BOOM condition was raised in the callback "classicRaisingCB": boom-user.', -
-    Condition("O")~message, "the name of the routine")
+    co~message, "the name of the routine")
   Call oosqlCommitHook db, ""
   self~assertEquals(0, oosqlClose(db))
 
@@ -11379,21 +11349,18 @@ Trapped:
 ::Routine classicPointerBlobCB Public
   -- testClassicResultBlobPointerRefused: a connection handle as the blob
   Use Arg db, ctx, userData
-  Signal On Syntax Name Classic1
-  Call oosqlResultBlob ctx, .local~classicBlobPtr, 16
-  .local~classicBlobErrors~append("no error")
-  Signal Next1
-Classic1:
-  co = Condition("O")
-  .local~classicBlobErrors~append(co~code co~message)
-Next1:
-  Signal On Syntax Name OO1
-  .ooSQLResult~blob(ctx, .local~classicBlobPtr, 16)
-  .local~classicBlobErrors~append("no error")
-  Return 0
-OO1:
-  co = Condition("O")
-  .local~classicBlobErrors~append(co~code co~message)
+  Do
+    Call oosqlResultBlob ctx, .local~classicBlobPtr, 16
+    .local~classicBlobErrors~append("no error")
+  Catch co = Syntax
+    .local~classicBlobErrors~append(co~code co~message)
+  End
+  Do
+    .ooSQLResult~blob(ctx, .local~classicBlobPtr, 16)
+    .local~classicBlobErrors~append("no error")
+  Catch co = Syntax
+    .local~classicBlobErrors~append(co~code co~message)
+  End
   Return 0
 
 ::Routine classicResultBlobStringCB Public
@@ -11753,21 +11720,19 @@ Trapped:
   -- Binds v to stmt; a syntax error gives its code and message
   Use Strict Arg stmt, v
   self~arm(7)
-  Signal On Syntax
-  self~finish(oosqlBindValue(stmt, 1, v))
-  Return
-Syntax:
-  co = Condition("O")
-  self~finish(co~code co~message)
+  Do
+    self~finish(oosqlBindValue(stmt, 1, v))
+  Catch co = Syntax
+    self~finish(co~code co~message)
+  End
 ::Method ooBindValue Unguarded
   Use Strict Arg stmt, v
   self~arm(7)
-  Signal On Syntax
-  self~finish(stmt~bindValue(1, v))
-  Return
-Syntax:
-  co = Condition("O")
-  self~finish(co~code co~message)
+  Do
+    self~finish(stmt~bindValue(1, v))
+  Catch co = Syntax
+    self~finish(co~code co~message)
+  End
 ::Method step Unguarded
   Use Strict Arg stmt
   self~arm
