@@ -6706,8 +6706,9 @@ ConstantMissing:
   -- traps it (section 45) instead of SIGNAL ON.
   Use Strict Arg kind, action, how = "SIGNAL"
   -- A name for each case: when a TemporaryTestFile object is collected, it
-  -- deletes its file, which must not be the file of a later case
-  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_cond_"kind"_"action".db")
+  -- deletes its file, which must not be the file of a later case (how too:
+  -- section 45 runs each case with SIGNAL ON and then with CATCH)
+  tempFile = .TemporaryTestFile~new(.nil, "oosqlite_test_cond_"kind"_"action"_"how".db")
   dbFile = tempFile~fullName
   Call SysFileDelete dbFile
   db = .ooSQLiteConnection~new(dbFile)
