@@ -35,12 +35,12 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 
--- ooSQLite 1.1 needs ooRexx 5.3.0 r13532 or later: the revision the ooRexx
--- bridges family is based on, which includes the fixes of #2116, #2123,
--- #2126, #2128, #2129 and #2132 to the native API.  With an older ooRexx,
+-- ooSQLite 1.1 needs ooRexx 5.3.0 r13550 or later: it has THROW (RFE #31),
+-- which the callback trampoline of the library uses, and the fixes of #2116,
+-- #2123, #2126, #2128, #2129 and #2132 to the native API.  With an older ooRexx,
 -- the program that requires this package stops here with a clear message,
 -- rather than later in a crash.
-minimumRevision = 13532
+minimumRevision = 13550
 revision = 0
 if .RexxInfo~hasMethod("REVISION") then revision = .RexxInfo~revision
 if \datatype(revision, "W") then revision = 0

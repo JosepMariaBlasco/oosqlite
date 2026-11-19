@@ -2,7 +2,7 @@
 
 These files are copied unchanged from the ooRexx test suite, in the ooRexx
 Subversion repository on SourceForge (`oorexx/code-0`, `test/trunk`,
-exported at r13533). They are distributed under the Common Public License
+exported at r13553). They are distributed under the Common Public License
 1.0, like the rest of this repository.
 
 | File | Path in `test/trunk` |
