@@ -133,6 +133,43 @@
   SQL, not with <computeroutput>SIGNAL ON USER</computeroutput>.
 </para>
 <para revisionflag="added">
+  A condition <emphasis role="italic">thrown</emphasis> in a callback, with the THROW instruction (see "Thrown
+  Conditions" in the <citetitle>Open Object Rexx: Reference</citetitle>), stops SQLite in the same way, but it is not
+  turned into a SYNTAX error: once SQLite has returned, it is thrown again, as itself, from the method or routine that
+  executes the SQL. It keeps its name, its description, its additional information and its
+  <computeroutput>THROWN</computeroutput> entry, <computeroutput>.true</computeroutput>, and it goes on from caller to
+  caller until a CATCH clause or a <computeroutput>SIGNAL ON</computeroutput> trap for it catches it, as THROW
+  intends; <computeroutput>CALL ON</computeroutput> does not catch it, and if nothing does, it is error 4.1 or 4.901.
+  The same holds for a condition thrown by the MAKESTRING or STRING method of the value a callback returns. For
+  example, a user defined function can refuse a value, and the program catch that where it makes sense:
+</para>
+<programlisting language="rexx">
+db = .ooSQLiteConnection~new(":memory:")
+db~exec("CREATE TABLE prices(item, price); INSERT INTO prices VALUES('pen', 2), ('ink', -1);")
+db~createFunction("checked", .Checker~new, 1, "check")
+do
+  rows = db~exec("SELECT item, checked(price) FROM prices;", .true)
+  say rows~items "rows"
+catch c = user badPrice
+  say "Not loaded:" c~description
+end
+say "close:" db~close
+/* Output:
+Not loaded: negative price: -1
+close: 0
+*/
+
+::requires "ooSQLite.cls"
+
+::class Checker
+::method check
+  use arg db, ctx, userData, value
+  price = oosqlValueInt(value)
+  if price &lt; 0 then throw user badPrice description ("negative price:" price)
+  .ooSQLResult~int(ctx, price)
+  return 0
+</programlisting>
+<para revisionflag="added">
   The value a callback returns is asked for its string value in the same way, still under the protection of ooSQLite:
   a condition raised by its MAKESTRING method or, for an object with no string value, by its STRING method, arrives as
   described above, error 98.900 being then <computeroutput>The USER BOOM condition was raised by the value returned

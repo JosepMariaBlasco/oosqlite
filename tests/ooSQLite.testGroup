@@ -6660,8 +6660,9 @@ Return testResult
   -- Registers a callback of the given kind that raises the condition given
   -- by action, runs SQL that invokes it, traps what reaches the caller, and
   -- closes the connection.  Returns a directory with CONDITION, CODE,
-  -- MESSAGE, ADDITIONAL, CALLS and CLOSE.  With how CATCH, a CATCH clause
-  -- traps it (section 45) instead of SIGNAL ON.
+  -- MESSAGE, ADDITIONAL, DESCRIPTION, THROWN, RC, CALLS and CLOSE.  With how
+  -- CATCH, a CATCH clause traps it (section 45) instead of SIGNAL ON; with
+  -- DEEP, the SQL runs one level further down, in callbackSql (section 46).
   Use Strict Arg kind, action, how = "SIGNAL"
   -- A name for each call: when a TemporaryTestFile object is collected, it
   -- deletes its file, which must not be the file of a later call (section 45
@@ -6698,6 +6699,20 @@ Return testResult
     When "final" Then db~createFunction("g", h, 1, , "st", "cb")
     Otherwise Nop
   End
+  If how == "DEEP" Then Do
+    Do
+      Call callbackSql db, kind, h
+    Catch co = Syntax, Halt, User Boom, Error, NoString
+      r~condition = co~condition
+      r~code = co~code
+      r~message = co~message
+      r~additional = co~additional
+      r~description = co~description
+      r~thrown = co~thrown
+      r~rc = co~rc
+    End
+    Signal Done
+  End
   If how == "CATCH" Then Do
     -- The same SQL as below, in a block that ends with a CATCH clause
     Do
@@ -6716,6 +6731,9 @@ Return testResult
       r~code = co~code
       r~message = co~message
       r~additional = co~additional
+      r~description = co~description
+      r~thrown = co~thrown
+      r~rc = co~rc
     End
     Signal Done
   End
@@ -6741,6 +6759,9 @@ Trapped:
   r~code = co~code
   r~message = co~message
   r~additional = co~additional
+  r~description = co~description
+  r~thrown = co~thrown
+  r~rc = co~rc
 Done:
   Signal Off Syntax
   Signal Off Halt
@@ -7442,6 +7463,128 @@ Done:
   r = self~onAnotherThread(db, "SELECT f(1);", "oo", "CATCH")
   self~assertEquals("SYNTAX 93.900 boom-syntax.", r)
   self~assertEquals(1, h~calls)
+  self~assertEquals(0, db~close)
+
+/******************************************************************************/
+/*                                                                            */
+/* Section 46: Conditions thrown in callbacks                                 */
+/*                                                                            */
+/* ooRexx r13541 has THROW (RFE #31): a thrown condition goes from caller to  */
+/* caller until something catches it, as a SYNTAX error does, whatever its    */
+/* name, and it crosses native code as SYNTAX does.  The callback trampoline  */
+/* turned every condition other than SYNTAX into SYNTAX 98.900 (section 38),  */
+/* so a condition thrown in a callback reached the caller as 98.900, with     */
+/* THROWN .false, and a CATCH clause or SIGNAL ON for it never saw it.  Now   */
+/* the trampoline throws a thrown condition again, as itself: it reaches the  */
+/* caller of the ooSQLite method, and the callers beyond, with its name,      */
+/* description and THROWN .true; SQLite stops where it can, as in section 38. */
+/* A raised condition still arrives as SYNTAX.                                */
+/*                                                                            */
+/******************************************************************************/
+
+::Method assertThrownArrives
+  -- A USER BOOM thrown in the callback (or by its reply, for action
+  -- THROWMAKESTRING or THROWSTRING) arrives as itself to SIGNAL ON, to a
+  -- CATCH clause, and to a CATCH clause one level further up
+  Use Strict Arg kind, action = "THROWUSER", description = "boom-throw"
+  Do how Over .Array~of("SIGNAL", "CATCH", "DEEP")
+    r = self~conditionInCallback(kind, action, how)
+    self~assertSame("USER BOOM", r~condition, kind action how": the condition")
+    self~assertSame(.true, r~thrown, kind action how": THROWN")
+    self~assertSame(description, r~description, kind action how": the description")
+    self~assertEquals(0, r~close, kind action how": close")
+  End
+  Return r
+
+::Method testThrowInCallback
+  kinds = .Array~of("busy", "commit", "rollback", "update", "trace", "profile", -
+    "progress", "auth", "collation", "collneed", "final")
+  Do kind Over kinds
+    self~assertThrownArrives(kind)
+  End
+  Do kind Over .Array~of("scalar", "step", "exec")
+    r = self~assertThrownArrives(kind)
+    self~assertEquals(1, r~calls, kind": the statement stops at the first row")
+  End
+
+::Method testThrowByCallbackReply
+  -- Thrown by the MAKESTRING or STRING method of the value a callback
+  -- returns (technical note #69)
+  kinds = .Array~of("busy", "commit", "rollback", "update", "trace", "profile", -
+    "progress", "auth", "collation", "collneed", "scalar", "final", "exec")
+  Do kind Over kinds
+    self~assertThrownArrives(kind, "THROWMAKESTRING", "boom-makestring")
+    self~assertThrownArrives(kind, "THROWSTRING", "boom-string")
+  End
+
+::Method testThrowSyntaxInCallback
+  -- THROW SYNTAX arrived as SYNTAX, but RAISE PROPAGATE in the trampoline made
+  -- THROWN .false
+  Do how Over .Array~of("SIGNAL", "CATCH", "DEEP")
+    r = self~conditionInCallback("scalar", "THROWSYNTAX", how)
+    self~assertSame("SYNTAX", r~condition, how)
+    self~assertEquals(93.900, r~code, how)
+    self~assertSame("boom-throw-syntax.", r~message, how)
+    self~assertSame(.true, r~thrown, how": THROWN")
+    self~assertEquals(1, r~calls, how": the statement stops at the first row")
+    self~assertEquals(0, r~close, how": close")
+  End
+
+::Method testThrowHaltAndErrorInCallback
+  -- A thrown HALT stays HALT (a raised one arrives as 4.1); ERROR keeps its RC
+  Do how Over .Array~of("SIGNAL", "CATCH", "DEEP")
+    r = self~conditionInCallback("exec", "THROWHALT", how)
+    self~assertSame("HALT", r~condition, how)
+    self~assertSame("boom-throw-halt", r~description, how)
+    self~assertSame(.true, r~thrown, how": THROWN")
+    self~assertEquals(0, r~close, how": close")
+    r = self~conditionInCallback("exec", "THROWERROR", how)
+    self~assertSame("ERROR", r~condition, how)
+    self~assertEquals(7, r~rc, how": the RC")
+    self~assertSame("boom-throw-error", r~description, how)
+    self~assertSame(.true, r~thrown, how": THROWN")
+    self~assertEquals(0, r~close, how": close")
+  End
+
+::Method testRaiseInCallbackStillSyntax
+  -- RAISE still arrives as SYNTAX 98.900, also one level further up
+  r = self~conditionInCallback("scalar", "USER", "DEEP")
+  self~assertSame("SYNTAX", r~condition)
+  self~assertEquals(98.900, r~code)
+  self~assertSame(.false, r~thrown, "THROWN")
+  self~assertSame("USER BOOM", r~additional[2]~condition, "the original condition in ADDITIONAL")
+  self~assertEquals(0, r~close)
+
+::Method testThrowInCallbackCallOn
+  -- CALL ON does not catch a thrown condition: it goes past the level that
+  -- has CALL ON USER BOOM to the CATCH clause of its caller
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE t(a TEXT); INSERT INTO t VALUES('a'), ('b');")
+  h = .RaisingHandler~new("THROWUSER")
+  db~createFunction("f", h, 1, "cb")
+  w = .CallOnRunner~new
+  Do
+    w~run(db, "SELECT f(a) FROM t;")
+    co = .nil
+  Catch co = User Boom
+  End
+  self~assertNotNil(co, "the CATCH clause caught it")
+  self~assertSame(.true, co~thrown, "THROWN")
+  self~assertSame(.false, w~handled, "the CALL ON handler was not called")
+  self~assertSame(.false, w~wentOn, "the level with CALL ON did not go on")
+  self~assertEquals(1, h~calls)
+  self~assertEquals(0, db~close)
+
+::Method testThrowInCallbackOnAnotherThread
+  -- Section 39: thrown on the thread that runs the SQL, it reaches the CATCH
+  -- clause there as itself
+  db = self~openMemoryDB
+  db~exec("CREATE TABLE t(a TEXT);")
+  h = .RaisingHandler~new("THROWUSER")
+  db~commitHook(h, "cb")
+  r = self~onAnotherThread(db, "INSERT INTO t VALUES('q');", "oo", "CATCH")
+  self~assertSame("USER BOOM The NIL object The NIL object", r)
+  db~commitHook(.nil)
   self~assertEquals(0, db~close)
 
 ::Class "ooSQLiteClassic.testGroup" Subclass ooTestCase Public
@@ -10461,7 +10604,8 @@ Done:
 
 ::Method classicConditionInCallback
   -- As conditionInCallback in section 38, for the classic routines, with
-  -- the callback routine named rtn; how CATCH as there (section C18)
+  -- the callback routine named rtn; how CATCH (section C18) and DEEP
+  -- (section C19) as there
   Use Strict Arg kind, action, rtn = "classicRaisingCB", how = "SIGNAL"
   .local~classicRaiseAction = action
   .local~classicRaiseCalls = 0
@@ -10473,6 +10617,19 @@ Done:
     When "commit" Then Call oosqlCommitHook db, rtn
     When "scalar" Then Call oosqlCreateFunction db, "f", 1, rtn
     Otherwise Nop
+  End
+  If how == "DEEP" Then Do
+    Do
+      Call classicCallbackSql db, kind, rtn
+    Catch co = Syntax, Halt, User Boom, Error, NoString
+      r~condition = co~condition
+      r~code = co~code
+      r~message = co~message
+      r~additional = co~additional
+      r~description = co~description
+      r~thrown = co~thrown
+    End
+    Signal Done
   End
   If how == "CATCH" Then Do
     Do
@@ -10486,6 +10643,8 @@ Done:
       r~code = co~code
       r~message = co~message
       r~additional = co~additional
+      r~description = co~description
+      r~thrown = co~thrown
     End
     Signal Done
   End
@@ -10506,6 +10665,8 @@ Trapped:
   r~code = co~code
   r~message = co~message
   r~additional = co~additional
+  r~description = co~description
+  r~thrown = co~thrown
 Done:
   Signal Off Syntax
   Signal Off Halt
@@ -11088,6 +11249,65 @@ Done:
   self~assertEquals(1, .local~classicRaiseCalls)
   self~assertEquals(0, oosqlClose(db))
 
+/******************************************************************************/
+/*                                                                            */
+/* Section C19: Classic — conditions thrown in callbacks                      */
+/*                                                                            */
+/* Section 46 for the routines: a condition thrown in a callback routine      */
+/* arrives as itself, with THROWN .true, to SIGNAL ON and to a CATCH clause   */
+/* of the caller and of the callers beyond.                                   */
+/*                                                                            */
+/******************************************************************************/
+
+::Method assertClassicThrownArrives
+  Use Strict Arg kind, action = "THROWUSER", description = "boom-throw"
+  Do how Over .Array~of("SIGNAL", "CATCH", "DEEP")
+    r = self~classicConditionInCallback(kind, action, "classicRaisingCB", how)
+    self~assertSame("USER BOOM", r~condition, kind action how": the condition")
+    self~assertSame(.true, r~thrown, kind action how": THROWN")
+    self~assertSame(description, r~description, kind action how": the description")
+    self~assertEquals(0, r~close, kind action how": close")
+  End
+  Return r
+
+::Method testClassicThrowInCallback
+  self~assertClassicThrownArrives("commit")
+  Do kind Over .Array~of("scalar", "exec")
+    r = self~assertClassicThrownArrives(kind)
+    self~assertEquals(1, r~calls, kind": the statement stops at the first row")
+  End
+  Do kind Over .Array~of("commit", "scalar", "exec")
+    self~assertClassicThrownArrives(kind, "THROWMAKESTRING", "boom-makestring")
+    self~assertClassicThrownArrives(kind, "THROWSTRING", "boom-string")
+  End
+
+::Method testClassicThrowSyntaxInCallback
+  Do how Over .Array~of("SIGNAL", "CATCH", "DEEP")
+    r = self~classicConditionInCallback("scalar", "THROWSYNTAX", "classicRaisingCB", how)
+    self~assertSame("SYNTAX", r~condition, how)
+    self~assertEquals(93.900, r~code, how)
+    self~assertSame(.true, r~thrown, how": THROWN")
+    self~assertEquals(0, r~close, how": close")
+  End
+
+::Method testClassicRaiseInCallbackStillSyntax
+  r = self~classicConditionInCallback("exec", "USER", "classicRaisingCB", "DEEP")
+  self~assertSame("SYNTAX", r~condition)
+  self~assertEquals(98.900, r~code)
+  self~assertSame(.false, r~thrown, "THROWN")
+  self~assertEquals(0, r~close)
+
+::Method testClassicThrowInCallbackOnAnotherThread
+  .local~classicRaiseAction = "THROWUSER"
+  .local~classicRaiseCalls = 0
+  db = self~classicOpenMemory
+  Call oosqlCreateFunction db, "f", 1, "classicRaisingCB"
+  w = .CallbackWorker~new
+  w~start("run", db, "SELECT f(1);", "classic", "CATCH")
+  self~assertSame("USER BOOM The NIL object The NIL object", w~wait)
+  self~assertEquals(1, .local~classicRaiseCalls)
+  self~assertEquals(0, oosqlClose(db))
+
 ::Routine classicExecRowCB Public
   Use Arg row, count
   .local~classicExecRows~append(row)
@@ -11457,6 +11677,13 @@ Done:
     When "MUTABLE" Then Return .MutableBuffer~new("0")
     When "MAKESTRING" Then Return .RaisingMakeString~new("USER")
     When "STRING" Then Return .RaisingStringText~new("USER")
+    -- Section C19: thrown instead of raised
+    When "THROWUSER" Then Throw User Boom Description "boom-throw"
+    When "THROWSYNTAX" Then Throw Syntax 93.900 Array("boom-throw-syntax")
+    When "THROWHALT" Then Throw Halt Description "boom-throw-halt"
+    When "THROWERROR" Then Throw Error 7 Description "boom-throw-error"
+    When "THROWMAKESTRING" Then Return .RaisingMakeString~new("THROW")
+    When "THROWSTRING" Then Return .RaisingStringText~new("THROW")
   End
   Return 0
 
@@ -11479,6 +11706,29 @@ TrapNoString:
   Return "NOSTRING"
 TrapSyntax:
   Return "SYNTAX" Condition("O")~code
+
+::Routine callbackSql Public
+  -- Section 46: the SQL of conditionInCallback, one level further down
+  Use Strict Arg db, kind, h
+  Select Case kind
+    When "commit", "update" Then db~exec("INSERT INTO t VALUES('q');")
+    When "rollback" Then db~exec("BEGIN; INSERT INTO t VALUES('q'); ROLLBACK;")
+    When "collation" Then db~exec("SELECT a FROM t ORDER BY a COLLATE c;", .true)
+    When "collneed" Then db~exec("SELECT a FROM t ORDER BY a COLLATE nosuch;", .true)
+    When "scalar" Then db~exec("SELECT f(a) FROM t;", .true)
+    When "step", "final" Then db~exec("SELECT g(a) FROM t;", .true)
+    When "exec" Then db~exec("SELECT a FROM t;", .true, , h, "cb")
+    Otherwise db~exec("SELECT a FROM t;")
+  End
+
+::Routine classicCallbackSql Public
+  -- Section C19: the SQL of classicConditionInCallback, one level further down
+  Use Strict Arg db, kind, rtn
+  Select Case kind
+    When "commit" Then Call oosqlExec db, "INSERT INTO t VALUES('q');"
+    When "scalar" Then Call oosqlExec db, "SELECT f(a) FROM t;", .true
+    When "exec" Then Call oosqlExec db, "SELECT a FROM t;", .true, , rtn
+  End
 
 ::Routine catchTrapSummary Public
   -- Sections 45 and C18: what a trap got, as one string, to compare
@@ -11638,6 +11888,13 @@ TrapSyntax:
     When "MAKESTRING" Then Return .RaisingMakeString~new("USER")
     When "STRING" Then Return .RaisingStringText~new("USER")
     When "HALTSTRING" Then Return .RaisingMakeString~new("HALT")
+    -- Section 46: thrown instead of raised
+    When "THROWUSER" Then Throw User Boom Description "boom-throw"
+    When "THROWSYNTAX" Then Throw Syntax 93.900 Array("boom-throw-syntax")
+    When "THROWHALT" Then Throw Halt Description "boom-throw-halt"
+    When "THROWERROR" Then Throw Error 7 Description "boom-throw-error"
+    When "THROWMAKESTRING" Then Return .RaisingMakeString~new("THROW")
+    When "THROWSTRING" Then Return .RaisingStringText~new("THROW")
     Otherwise Nop
   End
   Return 0
@@ -11652,7 +11909,8 @@ TrapSyntax:
 
 -- Sections 38 and C11: a value returned by a callback that raises a condition
 -- (USER BOOM or HALT) when asked for its string value: in its MAKESTRING
--- method or, if it has none (an object with no string value), in STRING
+-- method or, if it has none (an object with no string value), in STRING.
+-- With condition THROW, USER BOOM is thrown instead (sections 46 and C19).
 ::Class RaisingReply
 ::Attribute condition
 ::Method init
@@ -11661,10 +11919,32 @@ TrapSyntax:
 ::Class RaisingMakeString Subclass RaisingReply
 ::Method makeString
   If self~condition == "HALT" Then Raise Halt Description "boom-makestring"
+  If self~condition == "THROW" Then Throw User Boom Description "boom-makestring"
   Raise User Boom Description "boom-makestring"
 ::Class RaisingStringText Subclass RaisingReply
 ::Method string
+  If self~condition == "THROW" Then Throw User Boom Description "boom-string"
   Raise User Boom Description "boom-string"
+
+-- Section 46: runs SQL with CALL ON USER BOOM, which must not catch a
+-- thrown USER BOOM
+::Class CallOnRunner
+::Attribute handled
+::Attribute wentOn
+::Method init
+  Expose handled wentOn
+  handled = .false
+  wentOn = .false
+::Method run
+  Expose handled wentOn
+  Use Strict Arg db, sql
+  Call On User Boom Name Handler
+  db~exec(sql, .true)
+  wentOn = .true
+  Return
+Handler:
+  handled = .true
+  Return
 
 -- Section 39: runs SQL on another thread and keeps what reached it
 ::Class CallbackWorker

@@ -811,7 +811,7 @@
     The routine must return a whole number, even when its value is ignored. &changed11;If it returns nothing, a syntax
     error, 44.1, is raised when the routine that executes the SQL returns, and if it returns something else, a syntax
     error, 98.900. A condition raised in the callback routine is also raised there, as a SYNTAX error: see <link linkend="sctOOCallbacks">Callback Methods</link>
-    for how, and for how SQLite stops. Before ooSQLite 1.1 a USER or ERROR condition raised in a callback routine was
+    for how, and for how SQLite stops; a condition thrown in it, with THROW, arrives as itself, as described there. Before ooSQLite 1.1 a USER or ERROR condition raised in a callback routine was
     lost, and a callback routine of <emphasis role="italic">oosqlExec</emphasis> that returned nothing, or raised one of them, crashed the
     interpreter.
   </para>

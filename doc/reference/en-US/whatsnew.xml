@@ -391,6 +391,20 @@
 
 <section id="sctWhatsChangedExtended"><title>New and Extended Methods and Routines</title>
 <variablelist>
+  <varlistentry><term><emphasis role="bold">Conditions thrown in callbacks arrive as themselves</emphasis></term>
+  <listitem>
+  <para>
+    ooRexx 5.3.0 has a THROW instruction: a thrown condition goes from caller to caller until something catches it, as
+    a SYNTAX error does, whatever its name. A condition thrown in a callback, or by the MAKESTRING or STRING method of
+    the value a callback returns, now arrives as itself, with its name, its description, its additional information and
+    <computeroutput>THROWN</computeroutput> <computeroutput>.true</computeroutput>, and goes on beyond the caller of the
+    method or routine that executes the SQL, until a CATCH clause or <computeroutput>SIGNAL ON</computeroutput> catches
+    it. Before, it became a SYNTAX error, 98.900, like a raised condition (see <link
+    linkend="sctWhatsChangedCompat">Changes That Can Affect Existing Programs</link>), and a thrown SYNTAX error lost its
+    <computeroutput>THROWN</computeroutput> entry. SQLite is stopped as for a raised condition, and a raised condition
+    still arrives as a SYNTAX error. See <link linkend="sctOOCallbacks">Callback Methods</link>.
+  </para>
+  </listitem></varlistentry>
   <varlistentry><term><emphasis role="bold">New builtin extensions compress and zipFile</emphasis></term>
   <listitem>
   <para>

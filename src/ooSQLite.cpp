@@ -770,7 +770,13 @@ static int bindCheckedValue(RexxThreadContext *c, sqlite3_stmt *stmt, int index,
  * condition of the thread, as it always did; any other condition becomes a
  * SYNTAX error that keeps the original condition object as its second
  * ADDITIONAL item: 4.1 for HALT, as an untrapped HALT, and 98.900 for the
- * rest.  The callback then tells SQLite to stop where SQLite allows it, and
+ * rest.  A condition thrown with THROW (RFE #31, ooRexx r13541), whatever its
+ * name, is thrown again as itself with THROW PROPAGATE: it crosses the native
+ * API as a SYNTAX error does (the API call returns, and the condition is
+ * pending), and once the ooSQLite method or routine returns, ooRexx throws it
+ * again in its caller, from caller to caller until something catches it.
+ * Turned into 98.900, a CATCH clause or SIGNAL ON for it would never see it.
+ * The callback then tells SQLite to stop where SQLite allows it, and
  * the condition reaches the caller once SQLite has returned.
  *
  * Arguments: the callback object or routine, the name of the method or
@@ -801,6 +807,7 @@ static const char *callbackTrampolineSource =
     "return s\n"
     "trapped:\n"
     "  co = condition('O')\n"
+    "  if co~thrown == .true then throw propagate\n"
     "  if co~condition == 'SYNTAX' then raise propagate\n"
     "  if co~condition == 'HALT' then raise syntax 4.1 array('HALT', co)\n"
     "  m = 'The' co~condition 'condition was raised' where 'the callback \"'name'\"'\n"
