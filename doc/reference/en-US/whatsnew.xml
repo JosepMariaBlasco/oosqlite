@@ -1068,8 +1068,9 @@
   </para></listitem>
   <listitem><para>
     Every change is built and tested by continuous integration on Linux. A second workflow, run on demand, builds
-    ooSQLite, its shell and the example libraries on Windows x64 and on macOS (arm64 and x86_64), with the portable
-    builds of ooRexx at the same revision as on Linux, and runs the whole test suite there.
+    ooSQLite, its shell and the example libraries on Windows x64 and on macOS (arm64 and x86_64), with ooRexx at the
+    same revision as on Linux, and runs the whole test suite there. Both build that revision of ooRexx from its
+    Subversion repository, as long as there is no build of it to download.
   </para></listitem>
 </itemizedlist>
 </section>

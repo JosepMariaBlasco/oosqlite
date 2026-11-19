@@ -11,14 +11,37 @@ jobs:
     name: Linux (Ubuntu 24.04)
     runs-on: ubuntu-24.04
     env:
-      # ooRexx revision (SourceForge's 5.3.0 beta builds).  Sessions read it
-      # from here too: scripts/setup-oorexx.sh.
-      OOREXX_REV: "13532"
+      # ooRexx revision: main/trunk of ooRexx's Subversion repository, built
+      # here (scripts/oorexx-source.sh, scripts/oorexx-build.sh) and cached,
+      # since SourceForge has no 5.3.0 beta builds of it.  Sessions and the
+      # platforms workflow read it from here too.  (With SourceForge's .deb,
+      # scripts/setup-oorexx.sh installs the same revision.)
+      OOREXX_REV: "13550"
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install ooRexx
-        run: sudo TMPDIR="$RUNNER_TEMP" scripts/setup-oorexx.sh
+      - name: Restore ooRexx
+        id: oorexx
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/oorexx
+          key: oorexx-r${{ env.OOREXX_REV }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/oorexx-*.sh') }}
+
+      - name: Build ooRexx from Subversion
+        if: steps.oorexx.outputs.cache-hit != 'true'
+        run: |
+          command -v svn >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq subversion; }
+          scripts/oorexx-source.sh "$RUNNER_TEMP/oorexx-src"
+          scripts/oorexx-build.sh "$RUNNER_TEMP/oorexx-src" "$RUNNER_TEMP/oorexx"
+
+      - name: Use ooRexx
+        run: |
+          home="$RUNNER_TEMP/oorexx"
+          echo "$home/bin" >> "$GITHUB_PATH"
+          echo "LD_LIBRARY_PATH=$home/lib" >> "$GITHUB_ENV"
+          echo "CPATH=$home/include" >> "$GITHUB_ENV"
+          echo "LIBRARY_PATH=$home/lib" >> "$GITHUB_ENV"
+          LD_LIBRARY_PATH="$home/lib" "$home/bin/rexx" -v
 
       - name: Build
         run: make -f Makefile.lin lib -j"$(nproc)"
@@ -29,7 +52,7 @@ jobs:
       - name: Test
         working-directory: tests
         run: |
-          export LD_LIBRARY_PATH="$PWD/../bin/linux"
+          export LD_LIBRARY_PATH="$PWD/../bin/linux:$LD_LIBRARY_PATH"
           export REXX_PATH="$PWD/framework:$PWD/../bin/linux"
           # Lets the tests of section C13 force their race (tests/ooSQLite.testGroup)
           export OOSQLITE_TEST_HOOKS=1

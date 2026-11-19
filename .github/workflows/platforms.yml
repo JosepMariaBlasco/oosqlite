@@ -4,28 +4,79 @@ name: Platforms
 # "gh workflow run platforms.yml").  The CI workflow (ci.yml) runs on Linux at
 # every push and must stay fast; this one checks that the other platforms
 # still build (the library, the example libraries and the shell) and pass the
-# suite.  ooRexx is SourceForge's portable build at
-# the revision ci.yml pins (OOREXX_REV), via scripts/setup-oorexx-portable.sh.
+# suite.  ooRexx is built from main/trunk of its Subversion repository at the
+# revision ci.yml pins (OOREXX_REV), and cached: the source job exports it
+# once (scripts/oorexx-source.sh) for every platform, and each platform builds
+# it (scripts/oorexx-build.sh).  SourceForge has no builds of that revision;
+# with them, scripts/setup-oorexx-portable.sh installs the portable build.
 
 on:
   workflow_dispatch:
 
 jobs:
-  windows:
-    name: Windows (x64)
-    runs-on: windows-latest
-    timeout-minutes: 40
+  source:
+    name: ooRexx source
+    runs-on: ubuntu-24.04
+    outputs:
+      rev: ${{ steps.rev.outputs.rev }}
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install ooRexx (portable)
-        shell: bash
+      - name: Revision
+        id: rev
         run: |
-          home=$(scripts/setup-oorexx-portable.sh windows.x86_64 "$RUNNER_TEMP/oorexx")
-          echo "REXX_HOME=$(cygpath -w "$home")" >> "$GITHUB_ENV"
-          cygpath -w "$home/bin" >> "$GITHUB_PATH"
+          rev=$(sed -n 's/^ *OOREXX_REV: *"\{0,1\}\([0-9]*\)"\{0,1\} *$/\1/p' .github/workflows/ci.yml | head -1)
+          [ -n "$rev" ]
+          echo "rev=$rev" >> "$GITHUB_OUTPUT"
+
+      - name: Export ooRexx from Subversion
+        run: |
+          command -v svn >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq subversion; }
+          scripts/oorexx-source.sh "$RUNNER_TEMP/oorexx-src"
+          tar -C "$RUNNER_TEMP" -czf "$RUNNER_TEMP/oorexx-src.tgz" oorexx-src
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oorexx-src
+          path: ${{ runner.temp }}/oorexx-src.tgz
+          retention-days: 1
+
+  windows:
+    name: Windows (x64)
+    needs: source
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
 
       - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Restore ooRexx
+        id: oorexx
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/oorexx
+          key: oorexx-r${{ needs.source.outputs.rev }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/oorexx-*.sh') }}
+
+      - uses: actions/download-artifact@v4
+        if: steps.oorexx.outputs.cache-hit != 'true'
+        with:
+          name: oorexx-src
+          path: ${{ runner.temp }}
+
+      - name: Build ooRexx
+        if: steps.oorexx.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          tar -C "$RUNNER_TEMP" -xzf "$RUNNER_TEMP/oorexx-src.tgz"
+          scripts/oorexx-build.sh "$RUNNER_TEMP/oorexx-src" "$RUNNER_TEMP/oorexx"
+
+      - name: Use ooRexx
+        shell: bash
+        run: |
+          home="$RUNNER_TEMP/oorexx"
+          echo "REXX_HOME=$(cygpath -w "$home")" >> "$GITHUB_ENV"
+          cygpath -w "$home" >> "$GITHUB_PATH"
 
       - name: Build
         shell: cmd
@@ -62,14 +113,34 @@ jobs:
             arch: arm64
           - os: macos-15-intel
             arch: x86_64
+    needs: source
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install ooRexx (portable)
+      - name: Restore ooRexx
+        id: oorexx
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/oorexx
+          key: oorexx-r${{ needs.source.outputs.rev }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/oorexx-*.sh') }}
+
+      - uses: actions/download-artifact@v4
+        if: steps.oorexx.outputs.cache-hit != 'true'
+        with:
+          name: oorexx-src
+          path: ${{ runner.temp }}
+
+      - name: Build ooRexx
+        if: steps.oorexx.outputs.cache-hit != 'true'
         run: |
-          home=$(scripts/setup-oorexx-portable.sh macos.arm64.x86_64 "$RUNNER_TEMP/oorexx")
+          tar -C "$RUNNER_TEMP" -xzf "$RUNNER_TEMP/oorexx-src.tgz"
+          scripts/oorexx-build.sh "$RUNNER_TEMP/oorexx-src" "$RUNNER_TEMP/oorexx"
+
+      - name: Use ooRexx
+        run: |
+          home="$RUNNER_TEMP/oorexx"
           echo "REXX_HOME=$home" >> "$GITHUB_ENV"
           echo "$home/bin" >> "$GITHUB_PATH"
 
@@ -84,7 +155,7 @@ jobs:
         working-directory: tests
         run: |
           rexx -v
-          export DYLD_LIBRARY_PATH="$PWD/../bin/macos"
+          export DYLD_LIBRARY_PATH="$PWD/../bin/macos:$REXX_HOME/lib"
           export REXX_PATH="$PWD/framework:$PWD/../bin/macos"
           # Lets the tests of section C13 force their race (tests/ooSQLite.testGroup)
           export OOSQLITE_TEST_HOOKS=1
