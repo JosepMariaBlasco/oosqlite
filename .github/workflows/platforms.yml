@@ -68,8 +68,11 @@ jobs:
         if: steps.oorexx.outputs.cache-hit != 'true'
         shell: bash
         run: |
-          tar -C "$RUNNER_TEMP" -xzf "$RUNNER_TEMP/oorexx-src.tgz"
-          scripts/oorexx-build.sh "$RUNNER_TEMP/oorexx-src" "$RUNNER_TEMP/oorexx"
+          # GNU tar takes "D:" for a remote host: unpack from inside the folder,
+          # and give paths as D:/..., which both bash and CMake understand
+          t=$(cygpath -m "$RUNNER_TEMP")
+          (cd "$t" && tar -xzf oorexx-src.tgz)
+          scripts/oorexx-build.sh "$t/oorexx-src" "$t/oorexx"
 
       - name: Use ooRexx
         shell: bash
